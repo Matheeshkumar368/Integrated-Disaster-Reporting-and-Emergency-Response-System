@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+    <meta http-equiv="Pragma" content="no-cache"/>
+    <meta http-equiv="Expires" content="0"/>
+    <title>Admin Profile - Disaster Management</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #0f1a2a 0%, #0a1420 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding-bottom: 5rem;
+        }
+        .header {
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            padding: 1.8rem 1rem;
+            text-align: center;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+        }
+        .header h1 {
+            font-size: 2.4rem;
+            color: white;
+            font-weight: 700;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+        }
+        .profile-card {
+            background: rgba(30, 41, 59, 0.95);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(220,38,38,0.2);
+            margin-bottom: 1.5rem;
+        }
+        .profile-header {
+            text-align: center;
+            padding: 2rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 2rem;
+        }
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #dc2626, #f87171);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 3rem;
+            color: white;
+        }
+        .profile-name {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .profile-role {
+            display: inline-block;
+            padding: 0.5rem 1.5rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 1rem;
+            background: rgba(220,38,38,0.2);
+            color: #ef4444;
+        }
+        .info-grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+        }
+        .info-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            background: rgba(220,38,38,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: #ef4444;
+        }
+        .info-content {
+            flex: 1;
+        }
+        .info-label {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-bottom: 0.3rem;
+        }
+        .info-value {
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            color: #94a3b8;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            background: #1e293b;
+            color: white;
+            font-size: 1rem;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #dc2626;
+        }
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(220,38,38,0.4);
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            color: white;
+        }
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(239,68,68,0.4);
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, #64748b, #94a3b8);
+            color: white;
+        }
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        .message {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .message.success {
+            background: rgba(34,197,94,0.2);
+            color: #22c55e;
+            border: 1px solid #22c55e;
+        }
+        .message.error {
+            background: rgba(239,68,68,0.2);
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+        .admin-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.05);
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid rgba(220,38,38,0.2);
+        }
+        .stat-card i {
+            font-size: 2rem;
+            color: #ef4444;
+            margin-bottom: 0.5rem;
+        }
+        .stat-card .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: white;
+        }
+        .stat-card .stat-label {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1e293b;
+            display: flex;
+            justify-content: space-around;
+            padding: 1rem 0;
+            box-shadow: 0 -6px 20px rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        .bottom-nav a {
+            color: #94a3b8;
+            text-decoration: none;
+            text-align: center;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+        .bottom-nav a i {
+            font-size: 1.9rem;
+            display: block;
+            margin-bottom: 0.4rem;
+        }
+        .bottom-nav a.active,
+        .bottom-nav a:hover {
+            color: #ef4444;
+            transform: translateY(-3px);
+        }
+        #editMode {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1><i class="fas fa-user-shield"></i> Admin Profile</h1>
+</div>
+
+<div class="container">
+    <div id="messageBox"></div>
+
+    <!-- View Mode -->
+    <div id="viewMode">
+        <div class="profile-card">
+            <div class="profile-header">
+                <div class="profile-avatar">
+                    <i class="fas fa-user-shield" id="avatarIcon"></i>
+                </div>
+                <div class="profile-name" id="userName">Loading...</div>
+                <span class="profile-role" id="userRole">Admin</span>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-icon">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <div class="info-content">
+                        <div class="info-label">Email Address</div>
+                        <div class="info-value" id="userEmail">-</div>
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-icon">
+                        <i class="fas fa-phone"></i>
+                    </div>
+                    <div class="info-content">
+                        <div class="info-label">Phone Number</div>
+                        <div class="info-value" id="userPhone">-</div>
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <div class="info-content">
+                        <div class="info-label">Base Location</div>
+                        <div class="info-value" id="userLocation">-</div>
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <div class="info-content">
+                        <div class="info-label">Account Type</div>
+                        <div class="info-value" id="userRoleText">Admin</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Statistics -->
+            <div class="admin-stats">
+                <div class="stat-card">
+                    <i class="fas fa-bell"></i>
+                    <div class="stat-value" id="totalAlerts">0</div>
+                    <div class="stat-label">Total Alerts</div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <div class="stat-value" id="activeDisasters">0</div>
+                    <div class="stat-label">Active Disasters</div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-users"></i>
+                    <div class="stat-value" id="totalCitizens">0</div>
+                    <div class="stat-label">Registered Citizens</div>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="enableEditMode()">
+                    <i class="fas fa-edit"></i> Edit Profile
+                </button>
+                <button class="btn btn-danger" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Mode -->
+    <div id="editMode">
+        <div class="profile-card">
+            <h2 style="color:#ef4444;margin-bottom:1.5rem;">
+                <i class="fas fa-edit"></i> Edit Admin Profile
+            </h2>
+
+            <form id="editForm">
+                <div class="form-group">
+                    <label><i class="fas fa-user"></i> Full Name</label>
+                    <input type="text" id="editName" required />
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-phone"></i> Phone Number</label>
+                    <input type="tel" id="editPhone" required />
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-map-marker-alt"></i> Base Location</label>
+                    <input type="text" id="editLocation" required />
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-lock"></i> New Password (leave blank to keep current)</label>
+                    <input type="password" id="editPassword" placeholder="Enter new password (optional)" />
+                </div>
+
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="cancelEdit()">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<nav class="bottom-nav">
+    <a href="/admin-dashboard.html" id="navDashboard">
+        <i class="fas fa-tachometer-alt"></i>
+        <span>Dashboard</span>
+    </a>
+    <a href="/reports.html" id="navReports">
+        <i class="fas fa-chart-bar"></i>
+        <span>Reports</span>
+    </a>
+    <a href="/admin-profile.html" class="active">
+        <i class="fas fa-user-shield"></i>
+        <span>Profile</span>
+    </a>
+</nav>
+
+<script>
+    const token = localStorage.getItem('token');
+    let currentUser = null;
+
+    if (!token) {
+        window.location.href = '/index.html';
+    }
+
+    // Verify Admin role
+    function checkAdminRole() {
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const role = payload.role;
+            if (role !== 'Admin') {
+                // Redirect to appropriate dashboard
+                if (role === 'Responder') {
+                    window.location.href = '/responder-profile.html';
+                } else {
+                    window.location.href = '/profile.html';
+                }
+            }
+        } catch (e) {
+            window.location.href = '/index.html';
+        }
+    }
+
+    // Load admin profile
+    function loadProfile() {
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const email = payload.sub;
+
+            // Fetch profile from backend
+            fetch('/api/auth/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    document.getElementById('userName').innerText = data.name || email.split('@')[0];
+                    document.getElementById('userEmail').innerText = data.email;
+                    document.getElementById('userPhone').innerText = data.phone || 'Not provided';
+                    document.getElementById('userLocation').innerText = data.location || 'Not provided';
+                    document.getElementById('userRoleText').innerText = data.role;
+                    
+                    currentUser = data;
+                } else {
+                    document.getElementById('userName').innerText = email.split('@')[0];
+                    document.getElementById('userEmail').innerText = email;
+                    document.getElementById('userPhone').innerText = 'Not available';
+                    document.getElementById('userLocation').innerText = 'Not available';
+                    
+                    currentUser = { email, role: 'Admin' };
+                }
+            })
+            .catch(err => {
+                console.error('Error fetching profile:', err);
+                document.getElementById('userName').innerText = email.split('@')[0];
+                document.getElementById('userEmail').innerText = email;
+                currentUser = { email, role: 'Admin' };
+            });
+
+            // Load admin statistics
+            loadAdminStats();
+
+        } catch (e) {
+            console.error('Error loading profile:', e);
+            window.location.href = '/index.html';
+        }
+    }
+
+    // Load admin statistics
+    function loadAdminStats() {
+        // Fetch alerts count
+        fetch('/api/alerts', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                document.getElementById('totalAlerts').innerText = data.alerts ? data.alerts.length : 0;
+            }
+        })
+        .catch(err => console.error('Error loading alerts:', err));
+
+        // Fetch disasters count
+        fetch('/api/disasters', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const disasters = data.disasters || [];
+                const activeCount = disasters.filter(d => d.status === 'Active').length;
+                document.getElementById('activeDisasters').innerText = activeCount;
+            }
+        })
+        .catch(err => console.error('Error loading disasters:', err));
+
+        // For now, show placeholder for citizens count
+        document.getElementById('totalCitizens').innerText = '5';
+    }
+
+    function enableEditMode() {
+        document.getElementById('viewMode').style.display = 'none';
+        document.getElementById('editMode').style.display = 'block';
+
+        document.getElementById('editName').value = document.getElementById('userName').innerText;
+        document.getElementById('editPhone').value = document.getElementById('userPhone').innerText;
+        document.getElementById('editLocation').value = document.getElementById('userLocation').innerText;
+    }
+
+    function cancelEdit() {
+        document.getElementById('viewMode').style.display = 'block';
+        document.getElementById('editMode').style.display = 'none';
+    }
+
+    function showMessage(text, type) {
+        const messageBox = document.getElementById('messageBox');
+        messageBox.innerHTML = `<div class="message ${type}">${text}</div>`;
+        setTimeout(() => {
+            messageBox.innerHTML = '';
+        }, 5000);
+    }
+
+    document.getElementById('editForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const updatedData = {
+            email: currentUser.email,
+            name: document.getElementById('editName').value,
+            phone: document.getElementById('editPhone').value,
+            location: document.getElementById('editLocation').value,
+            password: document.getElementById('editPassword').value
+        };
+
+        fetch('/api/auth/update-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedData)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showMessage('✓ Profile updated successfully!', 'success');
+                document.getElementById('userName').innerText = updatedData.name;
+                document.getElementById('userPhone').innerText = updatedData.phone;
+                document.getElementById('userLocation').innerText = updatedData.location;
+                document.getElementById('editPassword').value = '';
+                cancelEdit();
+            } else {
+                showMessage('✗ Failed to update profile: ' + data.message, 'error');
+            }
+        })
+        .catch(err => {
+            console.error('Error updating profile:', err);
+            showMessage('✗ Network error. Please try again.', 'error');
+        });
+    });
+
+    function logout() {
+        if (confirm('Are you sure you want to logout?')) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('userRole');
+            window.location.href = '/index.html';
+        }
+    }
+
+    // Initialize
+    checkAdminRole();
+    loadProfile();
+</script>
+
+</body>
+</html>

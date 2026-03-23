@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+    <meta http-equiv="Pragma" content="no-cache"/>
+    <meta http-equiv="Expires" content="0"/>
+    <title>Responder Dashboard - Rescue Operations</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #0f1a2a 0%, #0a1420 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding-bottom: 5rem;
+        }
+        .header {
+            background: linear-gradient(135deg, #3b82f6, #60a5fa);
+            padding: 1.8rem 1rem;
+            text-align: center;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+        }
+        .header h1 {
+            font-size: 2.4rem;
+            color: white;
+            font-weight: 700;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
+        .responder-info {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(59,130,246,0.2);
+            color: #93c5fd;
+            font-size: 1.1rem;
+            border-bottom: 2px solid #3b82f6;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: rgba(30, 41, 59, 0.95);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+            border-left: 4px solid;
+            transition: transform 0.3s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .stat-card.pending { border-left-color: #ef4444; }
+        .stat-card.assigned { border-left-color: #f59e0b; }
+        .stat-card.completed { border-left-color: #22c55e; }
+        .stat-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .stat-number {
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 0.5rem 0;
+        }
+        .stat-label {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+        .section-title {
+            color: #3b82f6;
+            font-size: 1.8rem;
+            margin: 2rem 0 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+        .alerts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .alert-card {
+            background: rgba(30, 41, 59, 0.95);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+            border-left: 4px solid;
+            transition: all 0.3s;
+        }
+        .alert-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(59,130,246,0.3);
+        }
+        .alert-card.high { border-left-color: #ef4444; }
+        .alert-card.medium { border-left-color: #f59e0b; }
+        .alert-card.low { border-left-color: #10b981; }
+        .alert-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .alert-icon {
+            font-size: 2rem;
+        }
+        .alert-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+        .alert-detail {
+            margin: 0.8rem 0;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .alert-message {
+            background: rgba(255,255,255,0.05);
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            line-height: 1.6;
+        }
+        .btn-acknowledge {
+            width: 100%;
+            padding: 0.9rem;
+            background: linear-gradient(135deg, #3b82f6, #60a5fa);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 1rem;
+        }
+        .btn-acknowledge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59,130,246,0.4);
+        }
+        .btn-acknowledge:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .badge {
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .badge.high { background: rgba(239,68,68,0.2); color: #ef4444; }
+        .badge.medium { background: rgba(245,158,11,0.2); color: #f59e0b; }
+        .badge.low { background: rgba(16,185,129,0.2); color: #10b981; }
+        .badge.active { background: rgba(239,68,68,0.2); color: #ef4444; }
+        .badge.acknowledged { background: rgba(59,130,246,0.2); color: #3b82f6; }
+        .no-alerts {
+            text-align: center;
+            padding: 4rem 1rem;
+            color: #64748b;
+        }
+        .no-alerts i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1e293b;
+            display: flex;
+            justify-content: space-around;
+            padding: 1rem 0;
+            box-shadow: 0 -6px 20px rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        .bottom-nav a {
+            color: #94a3b8;
+            text-decoration: none;
+            text-align: center;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+        .bottom-nav a i {
+            font-size: 1.9rem;
+            display: block;
+            margin-bottom: 0.4rem;
+        }
+        .bottom-nav a.active,
+        .bottom-nav a:hover {
+            color: #3b82f6;
+            transform: translateY(-3px);
+        }
+        @media (max-width: 768px) {
+            .alerts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1><i class="fas fa-user-nurse"></i> Responder Dashboard - Rescue Operations</h1>
+</div>
+
+<div class="responder-info">
+    <i class="fas fa-shield-alt"></i> Logged in as Responder: <strong id="responderName">Loading...</strong>
+</div>
+
+<div class="container">
+    <!-- Statistics -->
+    <div class="stats-grid">
+        <div class="stat-card pending">
+            <div class="stat-icon" style="color:#ef4444;">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="stat-number" id="pendingCount">0</div>
+            <div class="stat-label">Pending Alerts</div>
+        </div>
+        
+        <div class="stat-card assigned">
+            <div class="stat-icon" style="color:#f59e0b;">
+                <i class="fas fa-tasks"></i>
+            </div>
+            <div class="stat-number" id="acknowledgedCount">0</div>
+            <div class="stat-label">Acknowledged</div>
+        </div>
+        
+        <div class="stat-card completed">
+            <div class="stat-icon" style="color:#22c55e;">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-number" id="resolvedCount">0</div>
+            <div class="stat-label">Resolved</div>
+        </div>
+    </div>
+
+    <!-- Active Alerts from Admin -->
+    <h2 class="section-title">
+        <i class="fas fa-bell"></i>
+        Emergency Alerts from Admin
+    </h2>
+    <p style="color:#94a3b8;margin-bottom:1.5rem;">
+        Review and acknowledge alerts to coordinate rescue operations
+    </p>
+
+    <div class="alerts-grid" id="alertsGrid">
+        <div style="text-align:center;padding:3rem;color:#64748b;">
+            <i class="fas fa-spinner fa-spin" style="font-size:3rem;"></i>
+            <p style="margin-top:1rem;">Loading alerts...</p>
+        </div>
+    </div>
+</div>
+
+<nav class="bottom-nav">
+    <a href="/responder-dashboard.html" class="active">
+        <i class="fas fa-ambulance"></i>
+        <span>Dashboard</span>
+    </a>
+    <a href="/responder-tasks.html">
+        <i class="fas fa-tasks"></i>
+        <span>Tasks</span>
+    </a>
+    <a href="/responder-rescue.html">
+        <i class="fas fa-hands-helping"></i>
+        <span>Rescue</span>
+    </a>
+    <a href="/responder-profile.html">
+        <i class="fas fa-user-nurse"></i>
+        <span>Profile</span>
+    </a>
+</nav>
+
+<script src="/js/emergency-alert.js"></script>
+<script>
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+        window.location.href = '/index.html';
+    }
+
+    // Check if user is Responder or Admin
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const role = payload.role || 'Citizen';
+        
+        if (role !== 'Responder' && role !== 'Admin') {
+            alert('Access Denied: This page is for Responders only');
+            window.location.href = 'citizen-dashboard.html';
+        }
+        
+        const userName = payload.sub ? payload.sub.split('@')[0] : 'Responder';
+        document.getElementById('responderName').innerText = userName + ' (' + role + ')';
+    } catch (e) {
+        console.error('Token error:', e);
+        window.location.href = '/index.html';
+    }
+
+    // Load alerts
+    function loadAlerts() {
+        console.log('Loading alerts for responder dashboard...');
+        fetch('/api/alerts')
+            .then(res => {
+                console.log('Alerts response status:', res.status);
+                if (!res.ok) {
+                    throw new Error('Failed to fetch alerts: ' + res.status);
+                }
+                return res.json();
+            })
+            .then(alerts => {
+                console.log('Alerts loaded:', alerts.length);
+                updateStatistics(alerts);
+                displayAlerts(alerts);
+            })
+            .catch(err => {
+                console.error('Error loading alerts:', err);
+                document.getElementById('alertsGrid').innerHTML = `
+                    <div class="no-alerts">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <p>Error loading alerts</p>
+                        <small style="color:#64748b;margin-top:0.5rem;display:block;">${err.message}</small>
+                        <button onclick="loadAlerts()" style="margin-top:1rem;padding:0.5rem 1rem;background:#3b82f6;color:white;border:none;border-radius:6px;cursor:pointer;">
+                            <i class="fas fa-sync"></i> Retry
+                        </button>
+                    </div>
+                `;
+            });
+    }
+
+    function updateStatistics(alerts) {
+        const pending = alerts.filter(a => a.status === 'Active').length;
+        const acknowledged = alerts.filter(a => a.status === 'Acknowledged').length;
+        const resolved = alerts.filter(a => a.status === 'Resolved').length;
+        
+        document.getElementById('pendingCount').innerText = pending;
+        document.getElementById('acknowledgedCount').innerText = acknowledged;
+        document.getElementById('resolvedCount').innerText = resolved;
+    }
+
+    function displayAlerts(alerts) {
+        const grid = document.getElementById('alertsGrid');
+        
+        // Show only active and acknowledged alerts
+        const relevantAlerts = alerts.filter(a => a.status === 'Active' || a.status === 'Acknowledged');
+        
+        if (relevantAlerts.length === 0) {
+            grid.innerHTML = `
+                <div class="no-alerts">
+                    <i class="fas fa-check-circle"></i>
+                    <p>No pending alerts at the moment</p>
+                    <small>All alerts have been handled</small>
+                </div>
+            `;
+            return;
+        }
+
+        grid.innerHTML = '';
+        
+        relevantAlerts.forEach(alert => {
+            const card = document.createElement('div');
+            card.className = `alert-card ${alert.severity.toLowerCase()}`;
+            
+            let icon = 'fa-exclamation-triangle';
+            if (alert.disasterType.includes('Cyclone')) icon = 'fa-wind';
+            else if (alert.disasterType.includes('Rain')) icon = 'fa-cloud-rain';
+            else if (alert.disasterType.includes('Flood')) icon = 'fa-water';
+            else if (alert.disasterType.includes('Earthquake')) icon = 'fa-house-crack';
+            
+            const acknowledgeBtn = alert.status === 'Active' 
+                ? `<button class="btn-acknowledge" onclick="acknowledgeAlert(${alert.alertId})">
+                     <i class="fas fa-check"></i> Acknowledge & Respond
+                   </button>`
+                : `<div style="text-align:center;padding:0.8rem;background:rgba(59,130,246,0.2);border-radius:8px;color:#3b82f6;font-weight:600;margin-top:1rem;">
+                     <i class="fas fa-check-circle"></i> Already Acknowledged
+                   </div>`;
+            
+            card.innerHTML = `
+                <div class="alert-header">
+                    <i class="fas ${icon} alert-icon" style="color:${alert.severity === 'High' ? '#ef4444' : alert.severity === 'Medium' ? '#f59e0b' : '#10b981'}"></i>
+                    <div class="alert-title">${alert.title}</div>
+                </div>
+                
+                <div class="alert-message">${alert.message}</div>
+                
+                <div class="alert-detail">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Type: ${alert.disasterType}</span>
+                </div>
+                
+                <div class="alert-detail">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span>Severity: <span class="badge ${alert.severity.toLowerCase()}">${alert.severity}</span></span>
+                </div>
+                
+                <div class="alert-detail">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>Region: ${alert.region}</span>
+                </div>
+                
+                <div class="alert-detail">
+                    <i class="fas fa-clock"></i>
+                    <span>${new Date(alert.createdAt).toLocaleString('en-IN')}</span>
+                </div>
+                
+                <div class="alert-detail">
+                    <i class="fas fa-user-shield"></i>
+                    <span>From: ${alert.createdBy}</span>
+                </div>
+                
+                ${acknowledgeBtn}
+            `;
+            
+            grid.appendChild(card);
+        });
+    }
+
+    async function acknowledgeAlert(alertId) {
+        if (!confirm('Acknowledge this alert and start rescue operations?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/alerts/${alertId}/acknowledge`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                alert('✓ Alert acknowledged! Rescue operation initiated.');
+                loadAlerts(); // Reload alerts
+            } else {
+                const error = await response.text();
+                alert('✗ Failed to acknowledge: ' + error);
+            }
+        } catch (error) {
+            alert('✗ Network error: ' + error.message);
+        }
+    }
+
+    // Load alerts on page load
+    loadAlerts();
+    
+    // Auto-refresh every 30 seconds
+    setInterval(loadAlerts, 30000);
+</script>
+
+</body>
+</html>

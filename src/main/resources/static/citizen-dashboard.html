@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+    <meta http-equiv="Pragma" content="no-cache"/>
+    <meta http-equiv="Expires" content="0"/>
+    <title>Citizen Dashboard - Rescue Operations</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #0f1a2a 0%, #0a1420 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding-bottom: 5rem;
+        }
+        .header {
+            background: linear-gradient(135deg, #10b981, #34d399);
+            padding: 1.8rem 1rem;
+            text-align: center;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+        }
+        .header h1 {
+            font-size: 2.4rem;
+            color: white;
+            font-weight: 700;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
+        .user-info {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(16,185,129,0.2);
+            color: #6ee7b7;
+            font-size: 1.1rem;
+            border-bottom: 2px solid #10b981;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+        }
+        .tab {
+            padding: 1rem 2rem;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 1.1rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        .tab.active {
+            color: #10b981;
+            border-bottom-color: #10b981;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .card {
+            background: rgba(30, 41, 59, 0.95);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(16,185,129,0.2);
+            margin-bottom: 2rem;
+        }
+        .card h2 {
+            color: #10b981;
+            margin-bottom: 1.5rem;
+            font-size: 1.8rem;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            color: #94a3b8;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            background: #1e293b;
+            color: white;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #10b981, #34d399);
+            color: white;
+            width: 100%;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(16,185,129,0.4);
+        }
+        .alerts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+        .alert-card {
+            background: rgba(30, 41, 59, 0.95);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+            border-left: 4px solid;
+            transition: all 0.3s;
+        }
+        .alert-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(16,185,129,0.3);
+        }
+        .alert-card.high { border-left-color: #ef4444; }
+        .alert-card.medium { border-left-color: #f59e0b; }
+        .alert-card.low { border-left-color: #10b981; }
+        .alert-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        .alert-detail {
+            margin: 0.8rem 0;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .message {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .message.success {
+            background: rgba(34,197,94,0.2);
+            color: #22c55e;
+            border: 1px solid #22c55e;
+        }
+        .message.error {
+            background: rgba(239,68,68,0.2);
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1e293b;
+            display: flex;
+            justify-content: space-around;
+            padding: 1rem 0;
+            box-shadow: 0 -6px 20px rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        .bottom-nav a {
+            color: #94a3b8;
+            text-decoration: none;
+            text-align: center;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+        .bottom-nav a i {
+            font-size: 1.9rem;
+            display: block;
+            margin-bottom: 0.4rem;
+        }
+        .bottom-nav a.active,
+        .bottom-nav a:hover {
+            color: #10b981;
+            transform: translateY(-3px);
+        }
+        @media (max-width: 768px) {
+            .alerts-grid {
+                grid-template-columns: 1fr;
+            }
+            .tabs {
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1><i class="fas fa-user"></i> Citizen Dashboard</h1>
+</div>
+
+<!-- New Alert Notification Toast -->
+<div id="citizenAlertToast" style="
+    position:fixed;
+    top:20px;
+    left:50%;
+    transform:translateX(-50%);
+    background:linear-gradient(135deg,#dc2626,#ef4444);
+    color:white;
+    padding:1rem 2rem;
+    border-radius:12px;
+    box-shadow:0 8px 25px rgba(239,68,68,0.5);
+    z-index:9999;
+    display:none;
+    animation:citizenSlideDown 0.3s ease;
+    text-align:center;
+    min-width:320px;
+    border:2px solid #fff;
+    cursor:pointer;
+" onclick="window.location.href='/alerts.html'">
+    <i class="fas fa-exclamation-triangle"></i> <span id="citizenAlertMessage">New Alert in Your Area! Click to view</span>
+</div>
+
+<style>
+@keyframes citizenSlideDown {
+    from {
+        transform:translateX(-50%) translateY(-100%);
+        opacity:0;
+    }
+    to {
+        transform:translateX(-50%) translateY(0);
+        opacity:1;
+    }
+}
+
+/* Emergency Contact Button Hover Effects */
+.emergency-btn:hover {
+    background: rgba(255,255,255,0.3) !important;
+    transform: scale(1.05);
+}
+</style>
+
+<div class="user-info">
+    <i class="fas fa-user-circle"></i> Logged in as: <strong id="citizenName">Loading...</strong>
+</div>
+
+<div class="container">
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tab active" onclick="showTab('report')">
+            <i class="fas fa-exclamation-triangle"></i> Report Incident
+        </button>
+        <button class="tab" onclick="showTab('alerts')">
+            <i class="fas fa-bell"></i> View Alerts
+        </button>
+    </div>
+
+    <!-- Emergency Contact Numbers -->
+    <div class="card" style="margin-bottom:1.5rem;background:linear-gradient(135deg,#dc2626,#ef4444);">
+        <h3 style="color:white;margin-bottom:1rem;"><i class="fas fa-phone-alt"></i> Emergency Contacts</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;">
+            <a href="tel:101" class="emergency-btn" style="display:flex;flex-direction:column;align-items:center;padding:1rem;background:rgba(255,255,255,0.2);border-radius:12px;text-decoration:none;color:white;transition:0.3s;">
+                <i class="fas fa-fire" style="font-size:2rem;margin-bottom:0.5rem;"></i>
+                <span style="font-weight:600;">Fire</span>
+                <span style="font-size:1.5rem;font-weight:bold;">101</span>
+            </a>
+            <a href="tel:102" class="emergency-btn" style="display:flex;flex-direction:column;align-items:center;padding:1rem;background:rgba(255,255,255,0.2);border-radius:12px;text-decoration:none;color:white;transition:0.3s;">
+                <i class="fas fa-ambulance" style="font-size:2rem;margin-bottom:0.5rem;"></i>
+                <span style="font-weight:600;">Ambulance</span>
+                <span style="font-size:1.5rem;font-weight:bold;">102</span>
+            </a>
+            <a href="tel:100" class="emergency-btn" style="display:flex;flex-direction:column;align-items:center;padding:1rem;background:rgba(255,255,255,0.2);border-radius:12px;text-decoration:none;color:white;transition:0.3s;">
+                <i class="fas fa-shield-alt" style="font-size:2rem;margin-bottom:0.5rem;"></i>
+                <span style="font-weight:600;">Police</span>
+                <span style="font-size:1.5rem;font-weight:bold;">100</span>
+            </a>
+            <a href="tel:108" class="emergency-btn" style="display:flex;flex-direction:column;align-items:center;padding:1rem;background:rgba(255,255,255,0.2);border-radius:12px;text-decoration:none;color:white;transition:0.3s;">
+                <i class="fas fa-heartbeat" style="font-size:2rem;margin-bottom:0.5rem;"></i>
+                <span style="font-weight:600;">Medical Emergency</span>
+                <span style="font-size:1.5rem;font-weight:bold;">108</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Report Incident Tab -->
+    <div id="reportTab" class="tab-content active">
+        <div class="card">
+            <h2><i class="fas fa-exclamation-triangle"></i> Report Emergency Incident</h2>
+            <p style="color:#94a3b8;margin-bottom:1.5rem;">
+                Report disasters or emergencies in your area. Responders will be notified immediately.
+            </p>
+            
+            <div id="reportMessageDisplay"></div>
+            
+            <form id="reportForm">
+                <div class="form-group">
+                    <label><i class="fas fa-map-marker-alt"></i> Select Zone / Location</label>
+                    <select id="zone" required>
+                        <option value="">Select your location</option>
+                        <option value="Chennai">Chennai</option>
+                        <option value="Coimbatore">Coimbatore</option>
+                        <option value="Madurai">Madurai</option>
+                        <option value="Tiruchirappalli">Tiruchirappalli</option>
+                        <option value="Salem">Salem</option>
+                        <option value="Tirunelveli">Tirunelveli</option>
+                        <option value="Dindigul">Dindigul</option>
+                        <option value="Vellore">Vellore</option>
+                        <option value="Erode">Erode</option>
+                        <option value="Thoothukudi">Thoothukudi</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-exclamation-circle"></i> Incident Type</label>
+                    <select id="incidentType" required>
+                        <option value="">Select incident type</option>
+                        <option value="Flood">Flood</option>
+                        <option value="Fire">Fire</option>
+                        <option value="Accident">Accident</option>
+                        <option value="Medical Emergency">Medical Emergency</option>
+                        <option value="Building Collapse">Building Collapse</option>
+                        <option value="Landslide">Landslide</option>
+                        <option value="Other">Other Emergency</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-comment-alt"></i> Incident Description</label>
+                    <textarea id="description" placeholder="Describe the emergency situation in detail..." required></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="submitBtn">
+                    <i class="fas fa-paper-plane"></i> Submit Emergency Report
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Alerts Tab -->
+    <div id="alertsTab" class="tab-content">
+        <div class="card">
+            <h2><i class="fas fa-bell"></i> Emergency Alerts in Your Area</h2>
+            <p style="color:#94a3b8;margin-bottom:1.5rem;">
+                Stay informed about disasters and emergencies from authorities
+            </p>
+            
+            <div class="alerts-grid" id="alertsGrid">
+                <div style="text-align:center;padding:3rem;color:#64748b;">
+                    <i class="fas fa-spinner fa-spin" style="font-size:3rem;"></i>
+                    <p style="margin-top:1rem;">Loading alerts...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<nav class="bottom-nav">
+    <a href="/citizen-dashboard.html" class="active">
+        <i class="fas fa-tachometer-alt"></i>
+        <span>Dashboard</span>
+    </a>
+    <a href="#" onclick="openCameraModal(); return false;">
+        <i class="fas fa-camera"></i>
+        <span>Report</span>
+    </a>
+    <a href="/training.html">
+        <i class="fas fa-graduation-cap"></i>
+        <span>Training</span>
+    </a>
+    <a href="/profile.html">
+        <i class="fas fa-user"></i>
+        <span>Profile</span>
+    </a>
+</nav>
+
+<!-- Camera Modal for Reporting -->
+<div id="cameraModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.95);z-index:10000;overflow-y:auto;">
+    <div style="max-width:600px;margin:2rem auto;padding:1.5rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+            <h2 style="color:#22c55e;margin:0;"><i class="fas fa-camera"></i> Report Disaster</h2>
+            <button onclick="closeCameraModal()" style="background:none;border:none;color:white;font-size:2rem;cursor:pointer;">&times;</button>
+        </div>
+        
+        <!-- Camera Selection -->
+        <div style="margin-bottom:1rem;">
+            <label style="color:#94a3b8;display:block;margin-bottom:0.5rem;">Select Camera:</label>
+            <select id="cameraSelect" onchange="switchCamera()" style="width:100%;padding:0.8rem;background:#1e293b;color:white;border:1px solid #334155;border-radius:8px;">
+                <option value="user">Front Camera</option>
+                <option value="environment">Back Camera</option>
+            </select>
+        </div>
+        
+        <!-- Video Preview -->
+        <div id="videoContainer" style="margin-bottom:1rem;display:none;">
+            <video id="cameraVideo" autoplay playsinline style="width:100%;border-radius:12px;background:#000;"></video>
+            <div style="display:flex;gap:1rem;margin-top:1rem;">
+                <button onclick="capturePhoto()" style="flex:1;padding:1rem;background:linear-gradient(135deg,#22c55e,#16a34a);color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;">
+                    <i class="fas fa-camera"></i> Capture Photo
+                </button>
+                <button onclick="stopCamera()" style="flex:1;padding:1rem;background:#dc2626;color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;">
+                    <i class="fas fa-stop"></i> Stop Camera
+                </button>
+            </div>
+        </div>
+        
+        <!-- Photo Preview -->
+        <div id="photoPreview" style="display:none;margin-bottom:1rem;">
+            <img id="capturedImage" style="width:100%;border-radius:12px;"/>
+            <div style="display:flex;gap:1rem;margin-top:1rem;">
+                <button onclick="retakePhoto()" style="flex:1;padding:1rem;background:#f59e0b;color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;">
+                    <i class="fas fa-redo"></i> Retake
+                </button>
+                <button onclick="deletePhoto()" style="flex:1;padding:1rem;background:#dc2626;color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </div>
+        </div>
+        
+        <!-- Message Input -->
+        <div style="margin-bottom:1rem;">
+            <label style="color:#94a3b8;display:block;margin-bottom:0.5rem;">Message to Responders:</label>
+            <textarea id="reportMessageText" placeholder="Describe the situation..." style="width:100%;min-height:100px;padding:0.8rem;background:#1e293b;color:white;border:1px solid #334155;border-radius:8px;resize:vertical;"></textarea>
+        </div>
+        
+        <!-- Location -->
+        <div style="margin-bottom:1rem;">
+            <label style="color:#94a3b8;display:block;margin-bottom:0.5rem;">Location:</label>
+            <input type="text" id="reportLocation" placeholder="Your location" style="width:100%;padding:0.8rem;background:#1e293b;color:white;border:1px solid #334155;border-radius:8px;"/>
+            <button onclick="getLocation()" style="margin-top:0.5rem;padding:0.6rem 1rem;background:#3b82f6;color:white;border:none;border-radius:8px;cursor:pointer;">
+                <i class="fas fa-map-marker-alt"></i> Get My Location
+            </button>
+        </div>
+        
+        <!-- Submit Button -->
+        <button onclick="submitReport()" id="submitReportBtn" style="width:100%;padding:1rem;background:linear-gradient(135deg,#22c55e,#16a34a);color:white;border:none;border-radius:8px;font-size:1.1rem;font-weight:600;cursor:pointer;">
+            <i class="fas fa-paper-plane"></i> Send Report to Responders
+        </button>
+        
+        <!-- Start Camera Button -->
+        <button onclick="startCamera()" id="startCameraBtn" style="width:100%;padding:1rem;background:linear-gradient(135deg,#3b82f6,#2563eb);color:white;border:none;border-radius:8px;font-size:1.1rem;font-weight:600;cursor:pointer;">
+            <i class="fas fa-camera"></i> Start Camera
+        </button>
+    </div>
+</div>
+
+<script src="/js/emergency-alert.js"></script>
+<script>
+    let cameraStream = null;
+    let capturedPhotoData = null;
+    
+    function openCameraModal() {
+        document.getElementById('cameraModal').style.display = 'block';
+    }
+    
+    function closeCameraModal() {
+        stopCamera();
+        document.getElementById('cameraModal').style.display = 'none';
+        document.getElementById('reportMessageText').value = '';
+        document.getElementById('reportLocation').value = '';
+        capturedPhotoData = null;
+    }
+    
+    async function startCamera() {
+        const facing = document.getElementById('cameraSelect').value;
+        try {
+            cameraStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: facing },
+                audio: false
+            });
+            document.getElementById('cameraVideo').srcObject = cameraStream;
+            document.getElementById('videoContainer').style.display = 'block';
+            document.getElementById('startCameraBtn').style.display = 'none';
+            document.getElementById('photoPreview').style.display = 'none';
+        } catch (error) {
+            alert('Camera access denied or not available: ' + error.message);
+        }
+    }
+    
+    function stopCamera() {
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(track => track.stop());
+            cameraStream = null;
+        }
+        document.getElementById('videoContainer').style.display = 'none';
+        document.getElementById('startCameraBtn').style.display = 'block';
+    }
+    
+    function switchCamera() {
+        if (cameraStream) {
+            stopCamera();
+            startCamera();
+        }
+    }
+    
+    function capturePhoto() {
+        const video = document.getElementById('cameraVideo');
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        capturedPhotoData = canvas.toDataURL('image/jpeg', 0.8);
+        
+        document.getElementById('capturedImage').src = capturedPhotoData;
+        document.getElementById('photoPreview').style.display = 'block';
+        stopCamera();
+    }
+    
+    function retakePhoto() {
+        capturedPhotoData = null;
+        document.getElementById('photoPreview').style.display = 'none';
+        startCamera();
+    }
+    
+    function deletePhoto() {
+        capturedPhotoData = null;
+        document.getElementById('photoPreview').style.display = 'none';
+        document.getElementById('startCameraBtn').style.display = 'block';
+    }
+    
+    function getLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    document.getElementById('reportLocation').value = 
+                        `Lat: ${position.coords.latitude.toFixed(6)}, Lon: ${position.coords.longitude.toFixed(6)}`;
+                },
+                (error) => {
+                    alert('Location access denied: ' + error.message);
+                }
+            );
+        } else {
+            alert('Geolocation not supported by browser');
+        }
+    }
+    
+    async function submitReport() {
+        const message = document.getElementById('reportMessageText').value;
+        const location = document.getElementById('reportLocation').value;
+        
+        if (!message) {
+            alert('Please enter a message');
+            return;
+        }
+        
+        if (!location) {
+            alert('Please enter your location');
+            return;
+        }
+        
+        const reportData = {
+            message: message,
+            location: location,
+            photoData: capturedPhotoData,
+            timestamp: new Date().toISOString()
+        };
+        
+        const submitBtn = document.getElementById('submitReportBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+        
+        try {
+            const response = await fetch('/api/citizen-reports', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(reportData)
+            });
+            
+            if (response.ok) {
+                alert('✅ Report sent to responders successfully!');
+                closeCameraModal();
+            } else {
+                const error = await response.text();
+                alert('✗ Failed to send report: ' + error);
+            }
+        } catch (error) {
+            alert('✗ Network error: ' + error.message);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Report to Responders';
+        }
+    }
+</script>
+
+<script>
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+        window.location.href = '/index.html';
+    }
+
+    // Check URL parameters for tab navigation (from alerts.html redirect)
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    if (tabParam === 'alerts') {
+        // Delay to ensure DOM is loaded
+        setTimeout(() => showTab('alerts'), 100);
+    }
+
+    // Check if user is Citizen
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const role = payload.role || 'Citizen';
+        
+        if (role !== 'Citizen') {
+            alert('Access Denied: This page is for Citizens only');
+            if (role === 'Admin') {
+                window.location.href = '/admin-dashboard.html';
+            } else if (role === 'Responder') {
+                window.location.href = '/responder-dashboard.html';
+            }
+        }
+        
+        const userName = payload.sub ? payload.sub.split('@')[0] : 'Citizen';
+        document.getElementById('citizenName').innerText = userName + ' (Citizen)';
+    } catch (e) {
+        console.error('Token error:', e);
+        window.location.href = '/index.html';
+    }
+
+    // Tab switching
+    function showTab(tabName) {
+        // Hide all tabs
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        // Show selected tab
+        if (tabName === 'report') {
+            document.getElementById('reportTab').classList.add('active');
+            document.querySelectorAll('.tab')[0].classList.add('active');
+        } else if (tabName === 'alerts') {
+            document.getElementById('alertsTab').classList.add('active');
+            document.querySelectorAll('.tab')[1].classList.add('active');
+            loadAlerts();
+        }
+    }
+
+    // Handle report submission
+    document.getElementById('reportForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const reportData = {
+            zone: document.getElementById('zone').value,
+            incidentType: document.getElementById('incidentType').value,
+            description: document.getElementById('description').value,
+            reportedBy: JSON.parse(atob(token.split('.')[1])).sub,
+            timestamp: new Date().toISOString()
+        };
+
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+
+        try {
+            // For now, store in localStorage (in production, send to backend)
+            const reports = JSON.parse(localStorage.getItem('citizenReports') || '[]');
+            reports.push(reportData);
+            localStorage.setItem('citizenReports', JSON.stringify(reports));
+
+            showMessage('✓ Emergency report submitted successfully! Responders have been notified.', 'success', 'reportMessageDisplay');
+            document.getElementById('reportForm').reset();
+        } catch (error) {
+            showMessage('✗ Failed to submit report: ' + error.message, 'error', 'reportMessageDisplay');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Emergency Report';
+        }
+    });
+
+    // Load alerts
+    let citizenLastAlertCount = 0;
+    
+    // Show citizen alert notification
+    function showCitizenAlertNotification(alert) {
+        const toast = document.getElementById('citizenAlertToast');
+        const message = document.getElementById('citizenAlertMessage');
+        
+        message.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <strong>ALERT:</strong> ${alert.title} in ${alert.region}!`;
+        toast.style.display = 'block';
+        
+        // Play notification sound
+        try {
+            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleAoSPaDj8bE2ExlQr+3wtzITF0uw6e66MBQWULTq8LcvExZOsOnvty4TGEqw6O64LxMXSrDn7rctExdJrujuuC4TF0qv5+64LBMXSq7n7bgtExdJrebtuC4TF0mt5e24LBMXSK3l7bgtExZIrOXtuC0TFkeu5e24LRMWR67l7bgtExZHr+XtuC4TFkew5u64LhIWRLDm7rguEhZDsObwuC4SFkOx5vC4LhIWQrHl8LguERZBsOXvuC4RFkCw5e+4LhAWQLHm8LguEBZAsObwuC4QFkCw5vC4LhAWQLHm8LguD');
+            audio.volume = 0.3;
+            audio.play().catch(() => {});
+        } catch(e) {}
+        
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 8000);
+    }
+    
+    function loadAlerts() {
+        // Load only broadcasted alerts for citizens
+        fetch('/api/alerts/broadcasted')
+            .then(res => res.json())
+            .then(alerts => {
+                // Check for new alerts
+                const sortedAlerts = alerts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                
+                if (sortedAlerts.length > 0) {
+                    const latestAlert = sortedAlerts[0];
+                    const alertTime = new Date(latestAlert.createdAt).getTime();
+                    const now = Date.now();
+                    
+                    // If new alert (within last 30 seconds) or count increased
+                    if (citizenLastAlertCount > 0 && alerts.length > citizenLastAlertCount) {
+                        showCitizenAlertNotification(latestAlert);
+                    } else if (citizenLastAlertCount === 0 && alerts.length > 0) {
+                        // First load - show for recent alerts
+                        if (now - alertTime < 30000) {
+                            showCitizenAlertNotification(latestAlert);
+                        }
+                    }
+                    
+                    citizenLastAlertCount = alerts.length;
+                }
+                
+                displayAlerts(alerts);
+            })
+            .catch(err => {
+                console.error('Error loading alerts:', err);
+                document.getElementById('alertsGrid').innerHTML = `
+                    <div style="text-align:center;padding:3rem;color:#64748b;">
+                        <i class="fas fa-exclamation-circle" style="font-size:3rem;"></i>
+                        <p style="margin-top:1rem;">Error loading alerts</p>
+                    </div>
+                `;
+            });
+    }
+
+    function displayAlerts(alerts) {
+        const grid = document.getElementById('alertsGrid');
+        
+        if (alerts.length === 0) {
+            grid.innerHTML = `
+                <div style="text-align:center;padding:3rem;color:#64748b;">
+                    <i class="fas fa-check-circle" style="font-size:3rem;"></i>
+                    <p style="margin-top:1rem;">No active alerts at the moment</p>
+                </div>
+            `;
+            return;
+        }
+
+        grid.innerHTML = '';
+        
+        alerts.forEach(alert => {
+            const card = document.createElement('div');
+            card.className = `alert-card ${alert.severity.toLowerCase()}`;
+            
+            let icon = 'fa-exclamation-triangle';
+            if (alert.disasterType.includes('Cyclone')) icon = 'fa-wind';
+            else if (alert.disasterType.includes('Rain')) icon = 'fa-cloud-rain';
+            else if (alert.disasterType.includes('Flood')) icon = 'fa-water';
+            else if (alert.disasterType.includes('Earthquake')) icon = 'fa-house-crack';
+            
+            const severityColor = alert.severity === 'High' ? '#ef4444' : 
+                                 alert.severity === 'Medium' ? '#f59e0b' : '#10b981';
+            
+            card.innerHTML = `
+                <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;">
+                    <i class="fas ${icon}" style="font-size:2rem;color:${severityColor};"></i>
+                    <div class="alert-title" style="color:${severityColor};">${alert.title}</div>
+                </div>
+                
+                <div style="background:rgba(255,255,255,0.05);padding:1rem;border-radius:8px;margin:1rem 0;">
+                    ${alert.message}
+                </div>
+                
+                <div class="alert-detail">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Type: ${alert.disasterType}</span>
+                </div>
+                
+                <div class="alert-detail">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span>Severity: <span style="color:${severityColor};font-weight:600;">${alert.severity}</span></span>
+                </div>
+                
+                <div class="alert-detail">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>Region: ${alert.region}</span>
+                </div>
+                
+                <div class="alert-detail">
+                    <i class="fas fa-clock"></i>
+                    <span>${new Date(alert.createdAt).toLocaleString('en-IN')}</span>
+                </div>
+                
+                ${alert.mediaUrl ? `
+                <div style="margin:1rem 0;">
+                    <img src="${alert.mediaUrl}" style="max-width:100%;border-radius:8px;max-height:200px;object-fit:cover;" onerror="this.style.display='none'">
+                </div>
+                ` : ''}
+                
+                <button onclick="sendMessageToResponder('${alert.title}', ${alert.alertId})" style="width:100%;margin-top:1rem;padding:0.8rem;background:linear-gradient(135deg,#10b981,#34d399);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;transition:all 0.3s;">
+                    <i class="fas fa-envelope"></i> Contact Responder
+                </button>
+            `;
+            
+            grid.appendChild(card);
+        });
+    }
+
+    function showMessage(text, type, elementId) {
+        const messageBox = document.getElementById(elementId);
+        messageBox.innerHTML = `<div class="message ${type}">${text}</div>`;
+        setTimeout(() => {
+            messageBox.innerHTML = '';
+        }, 5000);
+    }
+    
+    // Send message to responder
+    async function sendMessageToResponder(alertTitle, alertId) {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert('Please login first');
+            return;
+        }
+        
+        const message = prompt('Enter your message to the responder:');
+        if (!message) return;
+        
+        try {
+            const response = await fetch('/api/messages', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    message: message,
+                    receiverEmail: 'responder@disaster.gov.in',
+                    receiverRole: 'Responder',
+                    relatedAlertId: alertId
+                })
+            });
+            
+            if (response.ok) {
+                alert('Message sent to responder successfully!');
+            } else {
+                const error = await response.text();
+                alert('Failed to send message: ' + error);
+            }
+        } catch (error) {
+            alert('Network error: ' + error.message);
+        }
+    }
+</script>
+
+</body>
+</html>

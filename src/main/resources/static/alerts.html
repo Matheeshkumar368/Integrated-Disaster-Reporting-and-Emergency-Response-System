@@ -1,16 +1,515 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Alerts - Disaster System</title>
-    <!-- copy head + styles from disasters.html -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+    <meta http-equiv="Pragma" content="no-cache"/>
+    <meta http-equiv="Expires" content="0"/>
+    <title>Emergency Alerts</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <script>
+        // Redirect to citizen-dashboard with alerts tab open
+        window.location.href = '/citizen-dashboard.html?tab=alerts';
+    </script>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #0f1a2a 0%, #0a1420 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding-bottom: 5rem;
+        }
+        .header {
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            padding: 1.8rem 1rem;
+            text-align: center;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+        }
+        .header h1 {
+            font-size: 2.4rem;
+            color: white;
+            font-weight: 700;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
+        .user-role {
+            text-align: center;
+            padding: 0.8rem;
+            font-size: 1.15rem;
+            color: #94a3b8;
+            background: rgba(30,41,59,0.6);
+            margin: 0 1.5rem 1rem;
+            border-radius: 12px;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.2rem;
+            padding: 1.5rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            justify-content: center;
+        }
+        .filter {
+            padding: 1rem 1.4rem;
+            background: #1e293b;
+            border: none;
+            border-radius: 50px;
+            color: white;
+            font-size: 1.05rem;
+            cursor: pointer;
+            min-width: 170px;
+        }
+        .alerts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 1.8rem;
+            padding: 0 1.5rem 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .alert-card {
+            background: #1e293b;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+            transition: all 0.3s ease;
+            border-left: 5px solid;
+        }
+        .alert-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 16px 40px rgba(239,68,68,0.3);
+        }
+        .alert-card.high { border-left-color: #ef4444; }
+        .alert-card.medium { border-left-color: #f59e0b; }
+        .alert-card.low { border-left-color: #10b981; }
+        .alert-header {
+            padding: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+            background: rgba(239,68,68,0.1);
+        }
+        .alert-icon {
+            font-size: 2.2rem;
+            color: #ef4444;
+        }
+        .alert-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #ef4444;
+        }
+        .alert-body {
+            padding: 1.3rem;
+        }
+        .alert-message {
+            margin-bottom: 1.2rem;
+            color: #cbd5e1;
+            line-height: 1.6;
+        }
+        .alert-detail {
+            margin: 0.9rem 0;
+            color: #94a3b8;
+            font-size: 1.05rem;
+        }
+        .alert-detail i {
+            margin-right: 0.7rem;
+            width: 22px;
+            text-align: center;
+        }
+        .status-active { color: #22c55e; font-weight: bold; }
+        .status-acknowledged { color: #3b82f6; font-weight: bold; }
+        .status-resolved { color: #64748b; font-weight: bold; }
+        .severity-high { color: #ef4444; }
+        .severity-medium { color: #f59e0b; }
+        .severity-low { color: #10b981; }
+        .btn-acknowledge {
+            width: 100%;
+            padding: 0.9rem;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: all 0.3s;
+        }
+        .btn-acknowledge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(59,130,246,0.4);
+        }
+        .btn-acknowledge:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .no-alerts {
+            text-align: center;
+            padding: 5rem 1rem;
+            color: #94a3b8;
+            font-size: 1.5rem;
+        }
+        .no-alerts i {
+            font-size: 6rem;
+            opacity: 0.4;
+            margin-bottom: 1.2rem;
+        }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1e293b;
+            display: flex;
+            justify-content: space-around;
+            padding: 1rem 0;
+            box-shadow: 0 -6px 20px rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        .bottom-nav a {
+            color: #94a3b8;
+            text-decoration: none;
+            text-align: center;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+        .bottom-nav a i {
+            font-size: 1.9rem;
+            display: block;
+            margin-bottom: 0.4rem;
+        }
+        .bottom-nav a.active,
+        .bottom-nav a:hover {
+            color: #ef4444;
+            transform: translateY(-3px);
+        }
+        @media (max-width: 768px) {
+            .controls { flex-direction: column; }
+            .alerts-grid { grid-template-columns: 1fr; }
+        }
+    </style>
 </head>
 <body>
-    <div class="header"><h1>Active Alerts</h1></div>
-    <div style="padding:2rem; text-align:center;">
-        <h2>Coming Soon: Personal Alert Notifications</h2>
-        <p>You will receive push notifications for nearby disasters here.</p>
-    </div>
-    <!-- paste bottom nav from above -->
+
+<div class="header">
+    <h1><i class="fas fa-bell"></i> Emergency Alerts</h1>
+</div>
+
+<!-- Activation Notification Toast -->
+<div id="activationToast" style="
+    position:fixed;
+    top:20px;
+    left:50%;
+    transform:translateX(-50%);
+    background:linear-gradient(135deg,#dc2626,#ef4444);
+    color:white;
+    padding:1rem 2rem;
+    border-radius:12px;
+    box-shadow:0 8px 25px rgba(239,68,68,0.5);
+    z-index:9999;
+    display:none;
+    animation:slideDown 0.3s ease;
+    text-align:center;
+    min-width:300px;
+">
+    <i class="fas fa-bell"></i> <span id="activationMessage">New Alert Activated!</span>
+</div>
+
+<style>
+@keyframes slideDown {
+    from {
+        transform:translateX(-50%) translateY(-100%);
+        opacity:0;
+    }
+    to {
+        transform:translateX(-50%) translateY(0);
+        opacity:1;
+    }
+}
+</style>
+
+<div id="userRole" class="user-role">
+    Logged in as: <strong id="roleText">Loading...</strong>
+</div>
+
+<div class="controls">
+    <select class="filter" id="severityFilter">
+        <option value="">All Severities</option>
+        <option value="High">High</option>
+        <option value="Medium">Medium</option>
+        <option value="Low">Low</option>
+    </select>
+    <select class="filter" id="regionFilter">
+        <option value="">All Regions</option>
+        <option value="Chennai">Chennai</option>
+        <option value="Coimbatore">Coimbatore</option>
+        <option value="Madurai">Madurai</option>
+        <option value="Tiruchirappalli">Tiruchirappalli</option>
+        <option value="Salem">Salem</option>
+        <option value="Tirunelveli">Tirunelveli</option>
+        <option value="Tamil Nadu">Tamil Nadu (All)</option>
+    </select>
+</div>
+
+<div class="alerts-grid" id="alertsGrid"></div>
+
+<nav class="bottom-nav">
+    <a href="/citizen-dashboard.html" id="dashboardLink">
+        <i class="fas fa-tachometer-alt"></i>
+        <span>Dashboard</span>
+    </a>
+    <a href="#" onclick="openCameraModal(); return false;">
+        <i class="fas fa-camera"></i>
+        <span>Report</span>
+    </a>
+    <a href="/alerts.html" class="active">
+        <i class="fas fa-bell"></i>
+        <span>Alerts</span>
+    </a>
+    <a href="/training.html">
+        <i class="fas fa-graduation-cap"></i>
+        <span>Training</span>
+    </a>
+    <a href="/profile.html">
+        <i class="fas fa-user"></i>
+        <span>Profile</span>
+    </a>
+</nav>
+
+<script src="/js/emergency-alert.js"></script>
+<script>
+    const token = localStorage.getItem('token');
+    let userRole = 'Citizen';
+
+    if (token) {
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            userRole = payload.role || 'Citizen';
+            document.getElementById('roleText').innerText = userRole;
+            
+            // Hide Reports link for non-Admins
+            if (userRole !== 'Admin') {
+                document.getElementById('navReports').style.display = 'none';
+            }
+        } catch (e) {
+            document.getElementById('roleText').innerText = 'Guest';
+        }
+    } else {
+        document.getElementById('roleText').innerText = 'Not logged in';
+    }
+
+    // Role-based dashboard redirect
+    function goToDashboard() {
+        const token = localStorage.getItem('token');
+        const storedRole = localStorage.getItem('userRole');
+        if (!token) {
+            window.location.href = '/index.html';
+            return;
+        }
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const role = storedRole || payload.role || 'Citizen';
+            if (role === 'Admin') {
+                window.location.href = '/admin-dashboard.html';
+            } else if (role === 'Responder') {
+                window.location.href = '/responder-dashboard.html';
+            } else {
+                window.location.href = '/citizen-dashboard.html';
+            }
+        } catch (e) {
+            // Try stored role
+            if (storedRole === 'Admin') {
+                window.location.href = '/admin-dashboard.html';
+            } else if (storedRole === 'Responder') {
+                window.location.href = '/responder-dashboard.html';
+            } else {
+                localStorage.removeItem('token');
+                localStorage.removeItem('userRole');
+                window.location.href = '/index.html';
+            }
+        }
+    }
+
+    const grid = document.getElementById('alertsGrid');
+    const severityFilter = document.getElementById('severityFilter');
+    const regionFilter = document.getElementById('regionFilter');
+
+    let allAlerts = [];
+    let lastAlertCount = 0;
+    let lastAlertTime = null;
+
+    // Show activation notification when new alert is detected
+    function showActivationNotification(alert) {
+        const toast = document.getElementById('activationToast');
+        const message = document.getElementById('activationMessage');
+        
+        message.innerHTML = `<i class="fas fa-bell"></i> <strong>ALERT ACTIVATED:</strong> ${alert.title} - ${alert.region}`;
+        toast.style.display = 'block';
+        
+        // Play notification sound if available
+        try {
+            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleAoSPaDj8bE2ExlQr+3wtzITF0uw6e66MBQWULTq8LcvExZOsOnvty4TGEqw6O64LxMXSrDn7rctExdJrujuuC4TF0qv5+64LBMXSq7n7bgtExdJrebtuC4TF0mt5e24LBMWSK3l7bgtExZIrOXtuC0TFkeu5e24LRMWR67l7bgtExZHr+XtuC4TFkew5u64LhIWRLDm7rguEhZDsObwuC4SFkOx5vC4LhIWQrHl8LguERZBsOXvuC4RFkCw5e+4LhAWQLHm8LguEBZAsObwuC4QFkCw5vC4LhAWQLHm8LguD');
+            audio.volume = 0.3;
+            audio.play().catch(() => {});
+        } catch(e) {}
+        
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 6000);
+    }
+
+    function renderAlerts(alerts) {
+        grid.innerHTML = '';
+
+        if (alerts.length === 0) {
+            grid.innerHTML = `
+                <div class="no-alerts">
+                    <i class="fas fa-bell-slash"></i>
+                    <br>No active alerts at this time
+                    <br><small>Stay safe and check back later</small>
+                </div>
+            `;
+            return;
+        }
+
+        alerts.forEach(alert => {
+            const card = document.createElement('div');
+            card.className = `alert-card ${alert.severity.toLowerCase()}`;
+
+            let icon = 'fa-exclamation-triangle';
+            if (alert.disasterType.includes('Cyclone')) icon = 'fa-wind';
+            else if (alert.disasterType.includes('Rain')) icon = 'fa-cloud-rain';
+            else if (alert.disasterType.includes('Flood')) icon = 'fa-water';
+            else if (alert.disasterType.includes('Earthquake')) icon = 'fa-house-crack';
+            else if (alert.disasterType.includes('Fog')) icon = 'fa-smog';
+
+            let statusClass = 'status-active';
+            if (alert.status === 'Acknowledged') statusClass = 'status-acknowledged';
+            else if (alert.status === 'Resolved') statusClass = 'status-resolved';
+
+            const acknowledgeBtn = (userRole === 'Responder' || userRole === 'Admin') && alert.status === 'Active'
+                ? `<button class="btn-acknowledge" onclick="acknowledgeAlert(${alert.alertId})">
+                     <i class="fas fa-check"></i> Acknowledge Alert
+                   </button>`
+                : '';
+
+            card.innerHTML = `
+                <div class="alert-header">
+                    <i class="fas ${icon} alert-icon"></i>
+                    <div class="alert-title">${alert.title}</div>
+                </div>
+                <div class="alert-body">
+                    <div class="alert-message">${alert.message}</div>
+                    <div class="alert-detail">
+                        <i class="fas fa-exclamation-triangle"></i>Type: ${alert.disasterType}
+                    </div>
+                    <div class="alert-detail">
+                        <i class="fas fa-exclamation-circle"></i>Severity: 
+                        <span class="severity-${alert.severity.toLowerCase()}">${alert.severity}</span>
+                    </div>
+                    <div class="alert-detail">
+                        <i class="fas fa-map-marker-alt"></i>Region: ${alert.region}
+                    </div>
+                    <div class="alert-detail">
+                        <i class="fas fa-clock"></i>${new Date(alert.createdAt).toLocaleString('en-IN')}
+                    </div>
+                    <div class="alert-detail ${statusClass}">
+                        <i class="fas fa-info-circle"></i>Status: ${alert.status}
+                    </div>
+                    ${acknowledgeBtn}
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    function filterAlerts() {
+        let filtered = allAlerts;
+
+        const severity = severityFilter.value;
+        if (severity) {
+            filtered = filtered.filter(a => a.severity === severity);
+        }
+
+        const region = regionFilter.value;
+        if (region) {
+            filtered = filtered.filter(a => a.region === region);
+        }
+
+        renderAlerts(filtered);
+    }
+
+    async function acknowledgeAlert(alertId) {
+        if (!token) {
+            alert('Please login to acknowledge alerts');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/alerts/${alertId}/acknowledge`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                alert('Alert acknowledged successfully');
+                loadAlerts();
+            } else {
+                const error = await response.text();
+                alert('Failed to acknowledge: ' + error);
+            }
+        } catch (error) {
+            alert('Network error: ' + error.message);
+        }
+    }
+
+    function loadAlerts() {
+        fetch('/api/alerts')
+            .then(res => res.json())
+            .then(data => {
+                // Check for new alerts
+                const newAlerts = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                
+                // If we have alerts and the count increased, or there's a very recent alert (within last 30 seconds)
+                if (newAlerts.length > 0) {
+                    const latestAlert = newAlerts[0];
+                    const alertTime = new Date(latestAlert.createdAt).getTime();
+                    const now = Date.now();
+                    
+                    // Check if this is a new alert (within last 30 seconds)
+                    if (lastAlertCount > 0 && newAlerts.length > lastAlertCount) {
+                        showActivationNotification(latestAlert);
+                    } else if (lastAlertCount === 0 && newAlerts.length > 0) {
+                        // First load - show notification for recent alerts
+                        if (now - alertTime < 30000) {
+                            showActivationNotification(latestAlert);
+                        }
+                    }
+                    
+                    // Save current state
+                    lastAlertCount = newAlerts.length;
+                    lastAlertTime = alertTime;
+                }
+                
+                allAlerts = newAlerts;
+                filterAlerts();
+            })
+            .catch(err => {
+                console.error('Error loading alerts:', err);
+                renderAlerts([]);
+            });
+    }
+
+    severityFilter.addEventListener('change', filterAlerts);
+    regionFilter.addEventListener('change', filterAlerts);
+
+    loadAlerts();
+    setInterval(loadAlerts, 30000); // Refresh every 30 seconds
+</script>
+
 </body>
 </html>

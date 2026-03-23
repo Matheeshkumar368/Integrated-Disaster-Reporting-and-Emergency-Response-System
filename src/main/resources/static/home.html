@@ -144,7 +144,7 @@
         </p>
 
         <div class="menu-buttons">
-            <button class="menu-btn" onclick="window.location.href='/disasters.html'">
+            <button class="menu-btn" onclick="window.location.href='citizen-dashboard.html'">
                 <i class="fas fa-map-marker-alt"></i> View Live Disasters
             </button>
             <button class="menu-btn" onclick="alert('Chat feature coming soon!')">
@@ -167,9 +167,52 @@
     Real-time alerts • Coordination • Safety
 </div>
 
+<script src="/js/emergency-alert.js"></script>
 <script>
+    // Check user role and redirect automatically
+    const token = localStorage.getItem('token');
+    const storedRole = localStorage.getItem('userRole');
+    if (token) {
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            // Use stored role as primary, fallback to JWT role
+            const role = storedRole || payload.role || 'Citizen';
+            
+            // Redirect based on role
+            if (role === 'Admin') {
+                window.location.href = '/admin-dashboard.html';
+            } else if (role === 'Responder') {
+                window.location.href = '/responder-rescue.html';
+            } else if (role === 'Citizen') {
+                window.location.href = 'citizen-dashboard.html';
+            } else {
+                window.location.href = 'citizen-dashboard.html';
+            }
+        } catch (e) {
+            console.error('Error decoding token:', e);
+            // If token is invalid, try stored role or redirect to login
+            if (storedRole) {
+                if (storedRole === 'Admin') {
+                    window.location.href = '/admin-dashboard.html';
+                } else if (storedRole === 'Responder') {
+                    window.location.href = '/responder-rescue.html';
+                } else {
+                    window.location.href = 'citizen-dashboard.html';
+                }
+            } else {
+                localStorage.removeItem('token');
+                localStorage.removeItem('userRole');
+                window.location.href = '/index.html';
+            }
+        }
+    } else {
+        // No token, redirect to login
+        window.location.href = '/index.html';
+    }
+
     function logout() {
         localStorage.removeItem('token');
+        localStorage.removeItem('userRole');
         alert("Logged out successfully!");
         window.location.href = '/';
     }

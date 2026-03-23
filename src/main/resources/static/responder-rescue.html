@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Responder - Rescue Operations</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #0f1a2a 0%, #0a1420 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding-bottom: 5rem;
+        }
+        .header {
+            background: linear-gradient(135deg, #3b82f6, #60a5fa);
+            padding: 1.8rem 1rem;
+            text-align: center;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+        }
+        .header h1 {
+            font-size: 2.4rem;
+            color: white;
+            font-weight: 700;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
+        .responder-info {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(59,130,246,0.2);
+            color: #93c5fd;
+            font-size: 1.1rem;
+            border-bottom: 2px solid #3b82f6;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: rgba(30, 41, 59, 0.95);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+            border-left: 4px solid;
+            transition: transform 0.3s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .stat-card.pending { border-left-color: #ef4444; }
+        .stat-card.acknowledged { border-left-color: #f59e0b; }
+        .stat-card.completed { border-left-color: #22c55e; }
+        .stat-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .stat-number {
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 0.5rem 0;
+        }
+        .stat-label {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+        .section-title {
+            color: #3b82f6;
+            font-size: 1.8rem;
+            margin: 2rem 0 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+        .requests-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .request-card {
+            background: rgba(30, 41, 59, 0.95);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+            border-left: 4px solid;
+            transition: all 0.3s;
+        }
+        .request-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(59,130,246,0.3);
+        }
+        .request-card.high { border-left-color: #ef4444; }
+        .request-card.medium { border-left-color: #f59e0b; }
+        .request-card.low { border-left-color: #10b981; }
+        .request-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .request-icon {
+            font-size: 2rem;
+        }
+        .request-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+        .request-detail {
+            margin: 0.8rem 0;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn-respond {
+            width: 100%;
+            padding: 0.9rem;
+            background: linear-gradient(135deg, #3b82f6, #60a5fa);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 1rem;
+        }
+        .btn-respond:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59,130,246,0.4);
+        }
+        .badge {
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .badge.high { background: rgba(239,68,68,0.2); color: #ef4444; }
+        .badge.medium { background: rgba(245,158,11,0.2); color: #f59e0b; }
+        .badge.low { background: rgba(16,185,129,0.2); color: #10b981; }
+        .no-data {
+            text-align: center;
+            padding: 4rem 1rem;
+            color: #64748b;
+        }
+        .no-data i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1e293b;
+            display: flex;
+            justify-content: space-around;
+            padding: 1rem 0;
+            box-shadow: 0 -6px 20px rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        .bottom-nav a {
+            color: #94a3b8;
+            text-decoration: none;
+            text-align: center;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+        .bottom-nav a i {
+            font-size: 1.9rem;
+            display: block;
+            margin-bottom: 0.4rem;
+        }
+        .bottom-nav a.active,
+        .bottom-nav a:hover {
+            color: #3b82f6;
+            transform: translateY(-3px);
+        }
+        @media (max-width: 768px) {
+            .requests-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1><i class="fas fa-ambulance"></i> Rescue Operations Center</h1>
+</div>
+
+<div class="responder-info">
+    <i class="fas fa-shield-alt"></i> Logged in as: <strong id="responderName">Loading...</strong>
+</div>
+
+<div class="container">
+    <!-- Statistics -->
+    <div class="stats-grid">
+        <div class="stat-card pending">
+            <div class="stat-icon" style="color:#ef4444;">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="stat-number" id="citizenRequestsCount">0</div>
+            <div class="stat-label">Citizen Rescue Requests</div>
+        </div>
+        
+        <div class="stat-card acknowledged">
+            <div class="stat-icon" style="color:#f59e0b;">
+                <i class="fas fa-camera"></i>
+            </div>
+            <div class="stat-number" id="citizenPhotosCount">0</div>
+            <div class="stat-label">Disaster Photos</div>
+        </div>
+        
+        <div class="stat-card completed">
+            <div class="stat-icon" style="color:#22c55e;">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-number" id="completedCount">0</div>
+            <div class="stat-label">Completed Today</div>
+        </div>
+    </div>
+
+    <!-- Citizen Rescue Requests -->
+    <h2 class="section-title">
+        <i class="fas fa-ambulance"></i>
+        Citizen Rescue Requests
+    </h2>
+    <p style="color:#94a3b8;margin-bottom:1.5rem;">
+        Citizens requesting immediate rescue assistance
+    </p>
+
+    <div class="requests-grid" id="citizenRequestsGrid">
+        <div style="text-align:center;padding:3rem;color:#64748b;">
+            <i class="fas fa-spinner fa-spin" style="font-size:3rem;"></i>
+            <p style="margin-top:1rem;">Loading rescue requests...</p>
+        </div>
+    </div>
+    
+    <!-- Citizen Photos Section -->
+    <h2 class="section-title" style="margin-top:3rem;">
+        <i class="fas fa-camera"></i>
+        Disaster Photos from Citizens
+    </h2>
+    <p style="color:#94a3b8;margin-bottom:1.5rem;">
+        Real-time photos sent by citizens showing disaster situations
+    </p>
+    
+    <div class="requests-grid" id="citizenPhotosGrid">
+        <div style="text-align:center;padding:3rem;color:#64748b;">
+            <i class="fas fa-spinner fa-spin" style="font-size:3rem;"></i>
+            <p style="margin-top:1rem;">Loading photos...</p>
+        </div>
+    </div>
+</div>
+
+<nav class="bottom-nav">
+    <a href="/responder-dashboard.html">
+        <i class="fas fa-ambulance"></i>
+        <span>Dashboard</span>
+    </a>
+    <a href="/responder-rescue.html" class="active">
+        <i class="fas fa-hands-helping"></i>
+        <span>Rescue</span>
+    </a>
+    <a href="/responder-profile.html">
+        <i class="fas fa-user-nurse"></i>
+        <span>Profile</span>
+    </a>
+</nav>
+
+<script src="/js/emergency-alert.js"></script>
+<script>
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+        window.location.href = '/index.html';
+    }
+
+    // Check if user is Responder or Admin
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const role = payload.role || 'Citizen';
+        
+        if (role !== 'Responder' && role !== 'Admin') {
+            alert('Access Denied: This page is for Responders only');
+            window.location.href = 'citizen-dashboard.html';
+        }
+        
+        const userName = payload.sub ? payload.sub.split('@')[0] : 'Responder';
+        document.getElementById('responderName').innerText = userName + ' (' + role + ')';
+    } catch (e) {
+        console.error('Token error:', e);
+        window.location.href = '/index.html';
+    }
+
+    // Load Citizen Rescue Requests from API
+    async function loadCitizenRequests() {
+        try {
+            const response = await fetch('/api/citizen-reports/pending', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to load reports');
+            }
+            
+            const reports = await response.json();
+            const grid = document.getElementById('requestsGrid');
+            
+            if (reports.length === 0) {
+                grid.innerHTML = `
+                <div class="no-data">
+                    <i class="fas fa-check-circle"></i>
+                    <p>No rescue requests at the moment</p>
+                    <small>All citizens are safe</small>
+                </div>
+            `;
+                document.getElementById('citizenRequestsCount').innerText = '0';
+                return;
+            }
+            
+            document.getElementById('citizenRequestsCount').innerText = reports.length;
+            grid.innerHTML = '';
+            
+            reports.forEach(report => {
+                const card = document.createElement('div');
+                card.className = 'request-card';
+                card.innerHTML = `
+                    <div class="request-header">
+                        <div>
+                            <i class="fas fa-user-circle" style="font-size:1.5rem;color:#3b82f6;"></i>
+                            <span style="margin-left:0.5rem;font-weight:600;">${report.citizenEmail}</span>
+                        </div>
+                        <span class="status-badge pending">Pending</span>
+                    </div>
+                    <div class="request-body">
+                        <p style="margin-bottom:1rem;color:#cbd5e1;">${report.message}</p>
+                        ${report.photoData ? `
+                        <div style="margin-bottom:1rem;">
+                            <img src="${report.photoData}" style="width:100%;max-height:300px;object-fit:cover;border-radius:8px;"/>
+                        </div>
+                        ` : ''}
+                        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;color:#94a3b8;">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>${report.location}</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:0.5rem;color:#94a3b8;">
+                            <i class="fas fa-clock"></i>
+                            <span>${new Date(report.timestamp).toLocaleString('en-IN')}</span>
+                        </div>
+                    </div>
+                    <button onclick="acknowledgeReport(${report.reportId})" class="btn-acknowledge">
+                        <i class="fas fa-check"></i> Acknowledge & Notify Citizen
+                    </button>
+                `;
+                grid.appendChild(card);
+            });
+        } catch (error) {
+            console.error('Error loading citizen reports:', error);
+            document.getElementById('requestsGrid').innerHTML = `
+                <div class="no-data">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Error loading reports</p>
+                </div>
+            `;
+        }
+    }
+    
+    // Acknowledge report
+    async function acknowledgeReport(reportId) {
+        try {
+            const response = await fetch(`/api/citizen-reports/${reportId}/acknowledge`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (response.ok) {
+                alert('✅ Report acknowledged! Citizen has been notified.');
+                loadCitizenRequests(); // Reload
+            } else {
+                const error = await response.text();
+                alert('✗ Failed to acknowledge: ' + error);
+            }
+        } catch (error) {
+            alert('✗ Network error: ' + error.message);
+        }
+    }
+        const grid = document.getElementById('citizenRequestsGrid');
+        
+        // Update count
+        document.getElementById('citizenRequestsCount').innerText = requests.length;
+        
+        if (requests.length === 0) {
+            grid.innerHTML = `
+                <div class="no-data">
+                    <i class="fas fa-check-circle"></i>
+                    <p>No rescue requests at the moment</p>
+                    <small>All citizens are safe</small>
+                </div>
+            `;
+        } else {
+            grid.innerHTML = '';
+            
+            requests.reverse().forEach((request, index) => {
+                const card = document.createElement('div');
+                card.className = `request-card ${request.severity.toLowerCase()}`;
+                
+                let icon = 'fa-ambulance';
+                const severityColor = request.severity === 'High' ? '#ef4444' : 
+                                     request.severity === 'Medium' ? '#f59e0b' : '#10b981';
+                
+                card.innerHTML = `
+                    <div class="request-header">
+                        <i class="fas ${icon} request-icon" style="color:${severityColor};"></i>
+                        <div class="request-title" style="color:${severityColor};">Rescue Request</div>
+                    </div>
+                    
+                    <div class="request-detail">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Type: ${request.type}</span>
+                    </div>
+                    
+                    <div class="request-detail">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>Location: ${request.location}</span>
+                    </div>
+                    
+                    ${request.gpsLocation ? `
+                    <div class="request-detail">
+                        <i class="fas fa-location-dot"></i>
+                        <span>GPS: ${request.gpsLocation}</span>
+                        ${request.latitude && request.longitude ? `
+                            <a href="https://www.google.com/maps?q=${request.latitude},${request.longitude}" target="_blank" 
+                               style="color:#3b82f6;margin-left:0.5rem;text-decoration:none;">
+                                <i class="fas fa-external-link-alt"></i> View on Map
+                            </a>
+                        ` : ''}
+                    </div>
+                    ` : ''}
+                    
+                    <div class="request-detail">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span>Severity: <span class="badge ${request.severity.toLowerCase()}">${request.severity}</span></span>
+                    </div>
+                    
+                    <div class="request-detail">
+                        <i class="fas fa-user"></i>
+                        <span>Requested by: ${request.requestedBy}</span>
+                    </div>
+                    
+                    <div class="request-detail">
+                        <i class="fas fa-clock"></i>
+                        <span>${new Date(request.timestamp).toLocaleString('en-IN')}</span>
+                    </div>
+                    
+                    <button class="btn-respond" onclick="respondToRequest(${index})">
+                        <i class="fas fa-check"></i> Respond & Dispatch Team
+                    </button>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+        
+        // Load citizen photos
+        loadCitizenPhotos();
+    }
+    
+    // Load Citizen Photos
+    function loadCitizenPhotos() {
+        const photos = JSON.parse(localStorage.getItem('disasterPhotos') || '[]');
+        const grid = document.getElementById('citizenPhotosGrid');
+        
+        // Update count
+        document.getElementById('citizenPhotosCount').innerText = photos.length;
+        
+        if (photos.length === 0) {
+            grid.innerHTML = `
+                <div class="no-data">
+                    <i class="fas fa-camera"></i>
+                    <p>No photos received yet</p>
+                    <small>Citizens can send photos from disaster locations</small>
+                </div>
+            `;
+            return;
+        }
+        
+        grid.innerHTML = '';
+        
+        photos.reverse().forEach((photo, index) => {
+            const card = document.createElement('div');
+            card.className = 'request-card medium';
+            
+            card.innerHTML = `
+                <div class="request-header">
+                    <i class="fas fa-camera request-icon" style="color:#3b82f6;"></i>
+                    <div class="request-title" style="color:#3b82f6;">Disaster Photo</div>
+                </div>
+                
+                <div style="margin:1rem 0;">
+                    <img src="${photo.photo}" alt="Disaster photo" style="width:100%;border-radius:8px;max-height:300px;object-fit:cover;">
+                </div>
+                
+                <div class="request-detail">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Type: ${photo.type}</span>
+                </div>
+                
+                <div class="request-detail">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>Location: ${photo.location}</span>
+                </div>
+                
+                ${photo.gpsLocation ? `
+                <div class="request-detail">
+                    <i class="fas fa-location-dot"></i>
+                    <span>GPS: ${photo.gpsLocation}</span>
+                    ${photo.latitude && photo.longitude ? `
+                        <a href="https://www.google.com/maps?q=${photo.latitude},${photo.longitude}" target="_blank" 
+                           style="color:#3b82f6;margin-left:0.5rem;text-decoration:none;">
+                            <i class="fas fa-external-link-alt"></i> View on Map
+                        </a>
+                    ` : ''}
+                </div>
+                ` : ''}
+                
+                <div class="request-detail">
+                    <i class="fas fa-user"></i>
+                    <span>Sent by: ${photo.reportedBy}</span>
+                </div>
+                
+                <div class="request-detail">
+                    <i class="fas fa-clock"></i>
+                    <span>${new Date(photo.timestamp).toLocaleString('en-IN')}</span>
+                </div>
+                
+                <button class="btn-respond" onclick="acknowledgePhoto(${index})">
+                    <i class="fas fa-check"></i> Acknowledge & Take Action
+                </button>
+            `;
+            
+            grid.appendChild(card);
+        });
+    }
+    
+    // Respond to citizen rescue request
+    function respondToRequest(index) {
+        if (!confirm('Dispatch rescue team to this location?')) {
+            return;
+        }
+
+        const requests = JSON.parse(localStorage.getItem('rescueRequests') || '[]');
+        const request = requests[index];
+        
+        // Store acknowledgment for citizen to see
+        const acknowledgments = JSON.parse(localStorage.getItem('responderAcknowledgments') || '[]');
+        acknowledgments.push({
+            type: 'rescue',
+            originalRequest: request,
+            acknowledgedAt: new Date().toISOString(),
+            responderMessage: 'Rescue team dispatched and on the way to your location',
+            status: 'Dispatched'
+        });
+        localStorage.setItem('responderAcknowledgments', JSON.stringify(acknowledgments));
+        
+        requests.splice(index, 1);
+        localStorage.setItem('rescueRequests', JSON.stringify(requests));
+        
+        alert('✅ Rescue team dispatched!\n\nTeam is on the way to the location.\nCitizen will be notified.');
+        loadCitizenRequests();
+        
+        // Update completed count
+        const completed = parseInt(document.getElementById('completedCount').innerText) + 1;
+        document.getElementById('completedCount').innerText = completed;
+    }
+    
+    // Acknowledge photo
+    function acknowledgePhoto(index) {
+        if (!confirm('Mark this photo as reviewed and take action?')) {
+            return;
+        }
+        
+        const photos = JSON.parse(localStorage.getItem('disasterPhotos') || '[]');
+        const photo = photos[index];
+        
+        // Store acknowledgment for citizen to see
+        const acknowledgments = JSON.parse(localStorage.getItem('responderAcknowledgments') || '[]');
+        acknowledgments.push({
+            type: 'photo',
+            originalPhoto: photo,
+            acknowledgedAt: new Date().toISOString(),
+            responderMessage: 'Photo received and reviewed. Taking appropriate action based on the situation.',
+            status: 'Acknowledged'
+        });
+        localStorage.setItem('responderAcknowledgments', JSON.stringify(acknowledgments));
+        
+        photos.splice(index, 1);
+        localStorage.setItem('disasterPhotos', JSON.stringify(photos));
+        
+        alert('✅ Photo acknowledged! Taking appropriate action.\nCitizen will be notified.');
+        loadCitizenPhotos();
+        
+        // Update completed count
+        const completed = parseInt(document.getElementById('completedCount').innerText) + 1;
+        document.getElementById('completedCount').innerText = completed;
+    }
+
+    // Load data on page load
+    loadCitizenRequests();
+    
+    // Auto-refresh every 30 seconds
+    setInterval(() => {
+        loadCitizenRequests();
+    }, 30000);
+</script>
+
+</body>
+</html>

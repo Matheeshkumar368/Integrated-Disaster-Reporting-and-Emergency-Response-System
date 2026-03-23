@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rescue Operations - Responder</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3a5f 0%, #0d2137 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+        
+        .header {
+            background: rgba(0,0,0,0.3);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        .header h1 {
+            font-size: 1.5rem;
+            color: #60a5fa;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .btn-primary:hover { background: #2563eb; }
+        
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .btn-danger:hover { background: #dc2626; }
+        
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-success:hover { background: #059669; }
+        
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .container {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 1.2rem;
+            text-align: center;
+        }
+        
+        .stat-card h3 {
+            font-size: 1.8rem;
+            margin-bottom: 0.3rem;
+        }
+        
+        .stat-card p {
+            color: #94a3b8;
+            font-size: 0.85rem;
+        }
+        
+        .stat-card.pending h3 { color: #f59e0b; }
+        .stat-card.in-progress h3 { color: #3b82f6; }
+        .stat-card.completed h3 { color: #10b981; }
+        
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 0.5rem;
+        }
+        
+        .tab {
+            padding: 0.8rem 1.5rem;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 1rem;
+            border-radius: 8px 8px 0 0;
+            transition: 0.3s;
+        }
+        
+        .tab:hover { background: rgba(255,255,255,0.05); }
+        
+        .tab.active {
+            background: rgba(59,130,246,0.2);
+            color: #60a5fa;
+            border-bottom: 2px solid #60a5fa;
+        }
+        
+        .section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            display: none;
+        }
+        
+        .section.active { display: block; }
+        
+        .section h2 {
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+            color: #60a5fa;
+        }
+        
+        .form-group select option {
+            background: #1e293b;
+            color: white;
+            padding: 10px;
+        }
+        
+        .task-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            margin-bottom: 0.3rem;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+        
+        .form-group input, .form-group select, .form-group textarea {
+            padding: 0.7rem;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 0.9rem;
+        }
+        
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #60a5fa;
+        }
+        
+        .tasks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1rem;
+        }
+        
+        .task-card {
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 1.2rem;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .task-card.high { border-left-color: #ef4444; }
+        .task-card.medium { border-left-color: #f59e0b; }
+        .task-card.low { border-left-color: #10b981; }
+        
+        .task-card h3 {
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+        
+        .task-card .meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            margin: 0.8rem 0;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+        
+        .task-card .meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        
+        .task-card p {
+            font-size: 0.9rem;
+            color: #cbd5e1;
+            margin: 0.5rem 0;
+        }
+        
+        .task-card .status {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-right: 0.5rem;
+        }
+        
+        .status.pending { background: #f59e0b; color: white; }
+        .status.in-progress { background: #3b82f6; color: white; }
+        .status.completed { background: #10b981; color: white; }
+        
+        .task-card .actions {
+            margin-top: 1rem;
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .task-card .actions .btn {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+        }
+        
+        .notes-section {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .notes-section textarea {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+            color: white;
+            font-size: 0.9rem;
+            min-height: 60px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .notes-list {
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            padding: 0.8rem;
+            font-size: 0.85rem;
+            color: #94a3b8;
+            white-space: pre-wrap;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        
+        .reports-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+        
+        .report-card {
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 1.2rem;
+        }
+        
+        .report-card h3 {
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+        
+        .report-card .meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            margin: 0.5rem 0;
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+        
+        .report-card p {
+            font-size: 0.9rem;
+            color: #cbd5e1;
+            margin: 0.5rem 0;
+        }
+        
+        .report-card .status {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 15px;
+            font-size: 0.75rem;
+        }
+        
+        .status.submitted { background: #f59e0b; color: white; }
+        .status.under-review { background: #3b82f6; color: white; }
+        .status.approved { background: #10b981; color: white; }
+        .status.archived { background: #6b7280; color: white; }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #94a3b8;
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #475569;
+        }
+        
+        #notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 2000;
+            transform: translateX(150%);
+            transition: transform 0.3s;
+        }
+        
+        #notification.show { transform: translateX(0); }
+        #notification.success { background: #10b981; }
+        #notification.error { background: #ef4444; }
+        
+        .location-btn {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 0.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .location-btn:hover { background: #059669; }
+    </style>
+</head>
+<body>
+    <div id="notification"></div>
+    
+    <header class="header">
+        <h1><i class="fas fa-ambulance"></i> Rescue Operations</h1>
+        <div class="header-actions">
+            <span id="userInfo">Welcome, Responder</span>
+            <button class="btn btn-danger" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+    </header>
+    
+    <div class="container">
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card pending">
+                <h3 id="pendingCount">0</h3>
+                <p>Pending</p>
+            </div>
+            <div class="stat-card in-progress">
+                <h3 id="inProgressCount">0</h3>
+                <p>In Progress</p>
+            </div>
+            <div class="stat-card completed">
+                <h3 id="completedCount">0</h3>
+                <p>Completed</p>
+            </div>
+        </div>
+        
+        <!-- Team Rescue Section -->
+        <div class="section" style="background: linear-gradient(135deg, rgba(59,130,246,0.2) 0%, rgba(16,185,129,0.2) 100%);">
+            <h2><i class="fas fa-users"></i> Team Rescue</h2>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+                <div class="form-group" style="flex: 1; min-width: 200px;">
+                    <label>Your Assigned Zone</label>
+                    <input type="text" id="myZone" readonly style="background: rgba(16,185,129,0.2); border-color: #10b981;">
+                </div>
+                <div class="form-group" style="flex: 2; min-width: 300px;">
+                    <label>Select Rescue Team (Same Zone)</label>
+                    <select id="teamSelect" onchange="selectTeam()">
+                        <option value="">-- Select a Team --</option>
+                    </select>
+                </div>
+                <div style="margin-top: 20px;">
+                    <button class="btn btn-primary" onclick="loadTeamTasks()">
+                        <i class="fas fa-search"></i> Load Team Tasks
+                    </button>
+                </div>
+            </div>
+            <div id="teamInfo" style="margin-top: 1rem; padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 8px; display: none;">
+                <p><strong><i class="fas fa-user-friends"></i> Selected Team:</strong> <span id="selectedTeamName">-</span></p>
+                <p><strong><i class="fas fa-map-marker-alt"></i> Zone:</strong> <span id="selectedTeamZone">-</span></p>
+                <p><strong><i class="fas fa-envelope"></i> Email:</strong> <span id="selectedTeamEmail">-</span></p>
+            </div>
+        </div>
+        
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('tasks')">
+                <i class="fas fa-tasks"></i> My Tasks
+            </button>
+            <button class="tab" onclick="switchTab('reports')">
+                <i class="fas fa-file-alt"></i> Incident Reports
+            </button>
+        </div>
+        
+        <!-- Tasks Section -->
+        <div id="tasksSection" class="section active">
+            <h2><i class="fas fa-tasks"></i> Assigned Tasks</h2>
+            <div id="tasksContainer" class="tasks-grid">
+                <div class="empty-state">
+                    <i class="fas fa-clipboard-list"></i>
+                    <p>No tasks assigned to you yet.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Reports Section -->
+        <div id="reportsSection" class="section">
+            <h2><i class="fas fa-file-medical"></i> Submit Incident Report</h2>
+            <div class="task-form">
+                <div class="form-group">
+                    <label>Report Title *</label>
+                    <input type="text" id="reportTitle" placeholder="Enter report title">
+                </div>
+                <div class="form-group">
+                    <label>Report Type *</label>
+                    <select id="reportType">
+                        <option value="Status Update">Status Update</option>
+                        <option value="Emergency">Emergency</option>
+                        <option value="Situation Report">Situation Report</option>
+                        <option value="Resource Request">Resource Request</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Zone *</label>
+                    <select id="reportZone">
+                        <option value="Chennai">Chennai</option>
+                        <option value="Coimbatore">Coimbatore</option>
+                        <option value="Madurai">Madurai</option>
+                        <option value="Tiruchirappalli">Tiruchirappalli</option>
+                        <option value="Salem">Salem</option>
+                        <option value="Tirunelveli">Tirunelveli</option>
+                        <option value="Erode">Erode</option>
+                        <option value="Vellore">Vellore</option>
+                        <option value="Thoothukudi">Thoothukudi</option>
+                        <option value="Dindigul">Dindigul</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Latitude</label>
+                    <input type="number" step="any" id="reportLat" placeholder="Click 'Get Location'">
+                </div>
+                <div class="form-group">
+                    <label>Longitude</label>
+                    <input type="number" step="any" id="reportLng" placeholder="Click 'Get Location'">
+                </div>
+                <div class="form-group">
+                    <label>Location Name</label>
+                    <input type="text" id="reportLocation" placeholder="Location description">
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label>Description *</label>
+                <textarea id="reportDescription" placeholder="Describe the incident in detail..."></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="getLocation()" style="margin-bottom: 1rem;">
+                <i class="fas fa-map-marker-alt"></i> Get Current Location
+            </button>
+            <button class="btn btn-success" onclick="submitReport()">
+                <i class="fas fa-paper-plane"></i> Submit Report
+            </button>
+            
+            <h3 style="margin: 2rem 0 1rem; color: #60a5fa;">My Submitted Reports</h3>
+            <div id="reportsContainer" class="reports-grid">
+                <div class="empty-state">
+                    <i class="fas fa-file-alt"></i>
+                    <p>No reports submitted yet.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let tasks = [];
+        let reports = [];
+        let myResponderInfo = null;
+        let zoneResponders = [];
+        let selectedTeamEmail = null;
+        
+        // Check authentication and load data
+        (function() {
+            const token = localStorage.getItem('token');
+            const storedRole = localStorage.getItem('userRole');
+            
+            if (!token) {
+                window.location.href = '/index.html';
+                return;
+            }
+            
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                const role = storedRole || payload.role;
+                
+                if (role !== 'Responder') {
+                    alert('Access denied. Responder only.');
+                    window.location.href = '/index.html';
+                    return;
+                }
+                
+                // Get responder info
+                myResponderInfo = {
+                    email: payload.sub,
+                    role: role
+                };
+            } catch(e) {
+                console.error('Error decoding token:', e);
+                localStorage.removeItem('token');
+                localStorage.removeItem('userRole');
+                window.location.href = '/index.html';
+            }
+            
+            loadTasks();
+            loadReports();
+            loadMyInfo();
+        })();
+        
+        async function loadMyInfo() {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch('/api/auth/profile', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token 
+                    }
+                });
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    document.getElementById('myZone').value = data.location || data.role || 'Not Assigned';
+                    loadZoneResponders(data.location || '');
+                }
+            } catch(e) {
+                console.error('Error loading my info:', e);
+            }
+        }
+        
+        async function loadZoneResponders(myZone) {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch('/api/tasks/responders', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    // Filter responders in the same zone or no zone assigned
+                    zoneResponders = data.responders.filter(r => 
+                        r.assignedZone === myZone || 
+                        !r.assignedZone || 
+                        r.assignedZone === ''
+                    );
+                    
+                    const select = document.getElementById('teamSelect');
+                    select.innerHTML = '<option value="">-- Select a Team --</option>';
+                    
+                    zoneResponders.forEach(r => {
+                        const option = document.createElement('option');
+                        option.value = r.email;
+                        option.textContent = `${r.name} - ${r.assignedZone || 'General'} Zone`;
+                        select.appendChild(option);
+                    });
+                }
+            } catch(e) {
+                console.error('Error loading responders:', e);
+            }
+        }
+        
+        function selectTeam() {
+            const select = document.getElementById('teamSelect');
+            selectedTeamEmail = select.value;
+            
+            const infoDiv = document.getElementById('teamInfo');
+            if (selectedTeamEmail) {
+                const responder = zoneResponders.find(r => r.email === selectedTeamEmail);
+                if (responder) {
+                    document.getElementById('selectedTeamName').textContent = responder.name;
+                    document.getElementById('selectedTeamZone').textContent = responder.assignedZone || 'General';
+                    document.getElementById('selectedTeamEmail').textContent = responder.email;
+                    infoDiv.style.display = 'block';
+                }
+            } else {
+                infoDiv.style.display = 'none';
+            }
+        }
+        
+        async function loadTeamTasks() {
+            if (!selectedTeamEmail) {
+                showNotification('Please select a team first', 'error');
+                return;
+            }
+            
+            try {
+                const token = localStorage.getItem('token');
+                // Load tasks for selected team
+                const res = await fetch('/api/tasks', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    // Filter tasks assigned to selected team
+                    const teamTasks = data.tasks.filter(t => t.assignedTo === selectedTeamEmail);
+                    tasks = teamTasks;
+                    updateStats();
+                    renderTasks();
+                    showNotification(`Loaded ${teamTasks.length} tasks for selected team`, 'success');
+                }
+            } catch(e) {
+                console.error('Error loading team tasks:', e);
+                showNotification('Error loading team tasks', 'error');
+            }
+        }
+        
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            
+            if (tab === 'tasks') {
+                document.querySelector('.tab:nth-child(1)').classList.add('active');
+                document.getElementById('tasksSection').classList.add('active');
+            } else {
+                document.querySelector('.tab:nth-child(2)').classList.add('active');
+                document.getElementById('reportsSection').classList.add('active');
+            }
+        }
+        
+        function showNotification(message, type) {
+            const notif = document.getElementById('notification');
+            notif.textContent = message;
+            notif.className = type + ' show';
+            setTimeout(() => notif.classList.remove('show'), 3000);
+        }
+        
+        async function loadTasks() {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch('/api/tasks/my-tasks', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    tasks = data.tasks;
+                    updateStats();
+                    renderTasks();
+                }
+            } catch(e) {
+                console.error('Error loading tasks:', e);
+            }
+        }
+        
+        async function loadReports() {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch('/api/reports/my-reports', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    reports = data.reports;
+                    renderReports();
+                }
+            } catch(e) {
+                console.error('Error loading reports:', e);
+            }
+        }
+        
+        function updateStats() {
+            document.getElementById('pendingCount').textContent = tasks.filter(t => t.status === 'Pending').length;
+            document.getElementById('inProgressCount').textContent = tasks.filter(t => t.status === 'In Progress').length;
+            document.getElementById('completedCount').textContent = tasks.filter(t => t.status === 'Completed').length;
+        }
+        
+        function renderTasks() {
+            const container = document.getElementById('tasksContainer');
+            
+            if (tasks.length === 0) {
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-clipboard-list"></i><p>No tasks assigned to you yet.</p></div>';
+                return;
+            }
+            
+            container.innerHTML = tasks.map(task => `
+                <div class="task-card ${task.priority.toLowerCase()}">
+                    <h3>${task.title}</h3>
+                    <span class="status ${task.status.toLowerCase().replace(' ', '-')}">${task.status}</span>
+                    <p>${task.description || 'No description'}</p>
+                    <div class="meta">
+                        <span><i class="fas fa-map-marker-alt"></i> ${task.zone || 'N/A'}</span>
+                        <span><i class="fas fa-flag"></i> ${task.priority}</span>
+                        ${task.deadline ? `<span><i class="fas fa-clock"></i> Due: ${new Date(task.deadline).toLocaleString()}</span>` : ''}
+                    </div>
+                    ${task.latitude && task.longitude ? `<p style="font-size:0.8rem;color:#60a5fa"><i class="fas fa-crosshairs"></i> ${task.latitude}, ${task.longitude}</p>` : ''}
+                    ${task.locationName ? `<p style="font-size:0.85rem;color:#94a3b8"><i class="fas fa-location-arrow"></i> ${task.locationName}</p>` : ''}
+                    <div class="actions">
+                        ${task.status === 'Pending' ? `<button class="btn btn-warning" onclick="updateStatus(${task.taskId}, 'In Progress')"><i class="fas fa-play"></i> Start</button>` : ''}
+                        ${task.status === 'In Progress' ? `<button class="btn btn-success" onclick="updateStatus(${task.taskId}, 'Completed')"><i class="fas fa-check"></i> Complete</button>` : ''}
+                    </div>
+                    <div class="notes-section">
+                        <textarea id="note-${task.taskId}" placeholder="Add notes about this task..."></textarea>
+                        <button class="btn btn-primary" onclick="addNote(${task.taskId})" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">
+                            <i class="fas fa-plus"></i> Add Note
+                        </button>
+                        ${task.notes ? `<div class="notes-list">${task.notes}</div>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function renderReports() {
+            const container = document.getElementById('reportsContainer');
+            
+            if (reports.length === 0) {
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-file-alt"></i><p>No reports submitted yet.</p></div>';
+                return;
+            }
+            
+            container.innerHTML = reports.map(report => `
+                <div class="report-card">
+                    <h3>${report.title}</h3>
+                    <span class="status ${report.status.toLowerCase().replace(' ', '-')}">${report.status}</span>
+                    <div class="meta">
+                        <span>${report.reportType}</span>
+                        <span>${report.zone}</span>
+                        <span>${new Date(report.timestamp).toLocaleString()}</span>
+                    </div>
+                    <p>${report.description || 'No description'}</p>
+                    ${report.latitude && report.longitude ? `<p style="font-size:0.8rem;color:#60a5fa"><i class="fas fa-crosshairs"></i> ${report.latitude}, ${report.longitude}</p>` : ''}
+                </div>
+            `).join('');
+        }
+        
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        document.getElementById('reportLat').value = position.coords.latitude.toFixed(6);
+                        document.getElementById('reportLng').value = position.coords.longitude.toFixed(6);
+                        showNotification('Location obtained!', 'success');
+                    },
+                    (error) => {
+                        showNotification('Error getting location: ' + error.message, 'error');
+                    }
+                );
+            } else {
+                showNotification('Geolocation not supported', 'error');
+            }
+        }
+        
+        async function updateStatus(taskId, status) {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch(`/api/tasks/${taskId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ status })
+                });
+                
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    showNotification('Status updated to ' + status, 'success');
+                    loadTasks();
+                } else {
+                    showNotification(data.message || 'Error updating status', 'error');
+                }
+            } catch(e) {
+                console.error('Error updating status:', e);
+                showNotification('Error updating status', 'error');
+            }
+        }
+        
+        async function addNote(taskId) {
+            const note = document.getElementById(`note-${taskId}`).value.trim();
+            if (!note) {
+                showNotification('Please enter a note', 'error');
+                return;
+            }
+            
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch(`/api/tasks/${taskId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ status: 'In Progress', notes: note })
+                });
+                
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    showNotification('Note added', 'success');
+                    document.getElementById(`note-${taskId}`).value = '';
+                    loadTasks();
+                } else {
+                    showNotification(data.message || 'Error adding note', 'error');
+                }
+            } catch(e) {
+                console.error('Error adding note:', e);
+                showNotification('Error adding note', 'error');
+            }
+        }
+        
+        async function submitReport() {
+            const title = document.getElementById('reportTitle').value.trim();
+            const description = document.getElementById('reportDescription').value.trim();
+            const reportType = document.getElementById('reportType').value;
+            const zone = document.getElementById('reportZone').value;
+            const lat = document.getElementById('reportLat').value;
+            const lng = document.getElementById('reportLng').value;
+            const locationName = document.getElementById('reportLocation').value.trim();
+            
+            if (!title || !description) {
+                showNotification('Please fill in required fields', 'error');
+                return;
+            }
+            
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch('/api/reports', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({
+                        title, description, reportType, zone,
+                        latitude: lat ? parseFloat(lat) : null,
+                        longitude: lng ? parseFloat(lng) : null,
+                        locationName: locationName || null
+                    })
+                });
+                
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    showNotification('Report submitted successfully', 'success');
+                    document.getElementById('reportTitle').value = '';
+                    document.getElementById('reportDescription').value = '';
+                    document.getElementById('reportLat').value = '';
+                    document.getElementById('reportLng').value = '';
+                    document.getElementById('reportLocation').value = '';
+                    loadReports();
+                } else {
+                    showNotification(data.message || 'Error submitting report', 'error');
+                }
+            } catch(e) {
+                console.error('Error submitting report:', e);
+                showNotification('Error submitting report', 'error');
+            }
+        }
+        
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('userRole');
+            window.location.href = '/index.html';
+        }
+    </script>
+</body>
+</html>

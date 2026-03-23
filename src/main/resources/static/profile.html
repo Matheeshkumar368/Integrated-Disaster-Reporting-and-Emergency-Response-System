@@ -1,21 +1,668 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Profile - Disaster System</title>
-    <!-- copy head + styles -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+    <meta http-equiv="Pragma" content="no-cache"/>
+    <meta http-equiv="Expires" content="0"/>
+    <title>User Profile - Disaster Management</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #0f1a2a 0%, #0a1420 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding-bottom: 5rem;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+            padding: 1.8rem 1rem;
+            text-align: center;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+        }
+        .header h1 {
+            font-size: 2.4rem;
+            color: white;
+            font-weight: 700;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+        }
+        .profile-card {
+            background: rgba(30, 41, 59, 0.95);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(59,130,246,0.2);
+            margin-bottom: 1.5rem;
+        }
+        .profile-header {
+            text-align: center;
+            padding: 2rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 2rem;
+        }
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #60a5fa);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 3rem;
+            color: white;
+        }
+        .profile-name {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .profile-role {
+            display: inline-block;
+            padding: 0.5rem 1.5rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        .role-admin {
+            background: rgba(239,68,68,0.2);
+            color: #ef4444;
+        }
+        .role-responder {
+            background: rgba(59,130,246,0.2);
+            color: #3b82f6;
+        }
+        .role-citizen {
+            background: rgba(16,185,129,0.2);
+            color: #10b981;
+        }
+        .info-grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+        }
+        .info-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            background: rgba(59,130,246,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: #3b82f6;
+        }
+        .info-content {
+            flex: 1;
+        }
+        .info-label {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-bottom: 0.3rem;
+        }
+        .info-value {
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            color: #94a3b8;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            background: #1e293b;
+            color: white;
+            font-size: 1rem;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #60a5fa);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59,130,246,0.4);
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            color: white;
+        }
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(239,68,68,0.4);
+        }
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        .message {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .message.success {
+            background: rgba(34,197,94,0.2);
+            color: #22c55e;
+            border: 1px solid #22c55e;
+        }
+        .message.error {
+            background: rgba(239,68,68,0.2);
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1e293b;
+            display: flex;
+            justify-content: space-around;
+            padding: 1rem 0;
+            box-shadow: 0 -6px 20px rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        .bottom-nav a {
+            color: #94a3b8;
+            text-decoration: none;
+            text-align: center;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+        .bottom-nav a i {
+            font-size: 1.9rem;
+            display: block;
+            margin-bottom: 0.4rem;
+        }
+        .bottom-nav a.active,
+        .bottom-nav a:hover {
+            color: #3b82f6;
+            transform: translateY(-3px);
+        }
+        #editMode {
+            display: none;
+        }
+    </style>
 </head>
 <body>
-    <div class="header"><h1>Your Profile</h1></div>
-    <div style="padding:2rem; max-width:500px; margin:auto;">
-        <h2>Matheesh</h2>
-        <p>Email: matheesh@example.com</p>
-        <p>Location: Coimbatore, Tamil Nadu</p>
-        <p>Role: Citizen</p>
-        <button style="width:100%; padding:1rem; background:#3b82f6; color:white; border:none; border-radius:8px; margin-top:1rem;">
-            Edit Profile
-        </button>
+
+<div class="header">
+    <h1><i class="fas fa-user-circle"></i> User Profile</h1>
+</div>
+
+<div class="container">
+    <div id="messageBox"></div>
+
+    <!-- View Mode -->
+    <div id="viewMode">
+        <div class="profile-card">
+            <div class="profile-header">
+                <div class="profile-avatar">
+                    <i class="fas fa-user" id="avatarIcon"></i>
+                </div>
+                <div class="profile-name" id="userName">Loading...</div>
+                <span class="profile-role" id="userRole">Loading...</span>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-icon">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <div class="info-content">
+                        <div class="info-label">Email Address</div>
+                        <div class="info-value" id="userEmail">-</div>
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-icon">
+                        <i class="fas fa-phone"></i>
+                    </div>
+                    <div class="info-content">
+                        <div class="info-label">Phone Number</div>
+                        <div class="info-value" id="userPhone">-</div>
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <div class="info-content">
+                        <div class="info-label">Location</div>
+                        <div class="info-value" id="userLocation">-</div>
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <div class="info-content">
+                        <div class="info-label">Account Type</div>
+                        <div class="info-value" id="userRoleText">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Emergency Alert Settings -->
+            <div class="emergency-settings-card" style="background: rgba(220, 38, 38, 0.1); border: 1px solid rgba(220, 38, 38, 0.3); border-radius: 12px; padding: 1.5rem; margin-top: 1.5rem;">
+                <h3 style="color: #ef4444; margin-bottom: 1rem; font-size: 1.3rem;">
+                    <i class="fas fa-exclamation-triangle"></i> Emergency Sound Alert
+                </h3>
+                <p style="color: #94a3b8; margin-bottom: 1rem; font-size: 0.95rem;">
+                    Configure a keyboard shortcut to emit a loud alarm sound when you need help but cannot verbally call for assistance.
+                </p>
+                <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <label style="color: #94a3b8; font-size: 0.9rem; display: block; margin-bottom: 0.5rem;">Current Shortcut:</label>
+                        <div id="currentShortcut" style="background: #1e293b; padding: 0.8rem 1rem; border-radius: 8px; font-size: 1.1rem; font-weight: 600; color: #3b82f6;">F12</div>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; margin-top: 1.2rem;">
+                        <button type="button" class="btn" style="background: #3b82f6; color: white; padding: 0.7rem 1.2rem;" onclick="enableEditShortcut()">
+                            <i class="fas fa-edit"></i> Change
+                        </button>
+                        <button type="button" class="btn" style="background: #dc2626; color: white; padding: 0.7rem 1.2rem;" onclick="EmergencyAlertSystem.testAlarm()">
+                            <i class="fas fa-volume-up"></i> Test
+                        </button>
+                    </div>
+                </div>
+                <div id="shortcutEditSection" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <label style="color: #94a3b8; font-size: 0.9rem; display: block; margin-bottom: 0.5rem;">Press a key or key combination:</label>
+                    <input type="text" id="newShortcut" placeholder="Click here and press your desired key" 
+                           style="width: 100%; padding: 0.8rem; border: 1px solid #334155; border-radius: 8px; background: #1e293b; color: white; font-size: 1rem;"
+                           onkeydown="captureShortcut(event)" readonly>
+                    <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                        <button type="button" class="btn" style="background: #10b981; color: white;" onclick="saveShortcut()">
+                            <i class="fas fa-save"></i> Save
+                        </button>
+                        <button type="button" class="btn" style="background: #64748b; color: white;" onclick="cancelShortcutEdit()">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="enableEditMode()">
+                    <i class="fas fa-edit"></i> Edit Profile
+                </button>
+                <button class="btn btn-danger" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
     </div>
-    <!-- bottom nav -->
+
+    <!-- Edit Mode -->
+    <div id="editMode">
+        <div class="profile-card">
+            <h2 style="color:#3b82f6;margin-bottom:1.5rem;">
+                <i class="fas fa-edit"></i> Edit Profile
+            </h2>
+
+            <form id="editForm">
+                <div class="form-group">
+                    <label><i class="fas fa-user"></i> Full Name</label>
+                    <input type="text" id="editName" required />
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-phone"></i> Phone Number</label>
+                    <input type="tel" id="editPhone" required />
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-map-marker-alt"></i> Location</label>
+                    <input type="text" id="editLocation" required />
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-lock"></i> New Password (leave blank to keep current)</label>
+                    <input type="password" id="editPassword" placeholder="Enter new password (optional)" />
+                </div>
+
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                    <button type="button" class="btn" style="background:#64748b;color:white;" onclick="cancelEdit()">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<nav class="bottom-nav">
+    <a href="/citizen-dashboard.html" id="navDashboard">
+        <i class="fas fa-tachometer-alt"></i>
+        <span>Dashboard</span>
+    </a>
+    <a href="#" onclick="openCameraModal(); return false;">
+        <i class="fas fa-camera"></i>
+        <span>Report</span>
+    </a>
+    <a href="/training.html">
+        <i class="fas fa-graduation-cap"></i>
+        <span>Training</span>
+    </a>
+    <a href="/profile.html" class="active">
+        <i class="fas fa-user"></i>
+        <span>Profile</span>
+    </a>
+</nav>
+
+<script src="/js/emergency-alert.js"></script>
+<script>
+    const token = localStorage.getItem('token');
+    let currentUser = null;
+
+    if (!token) {
+        window.location.href = '/index.html';
+    }
+
+    // Role-based redirect to appropriate profile page
+    function redirectToCorrectProfile() {
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const role = payload.role;
+            if (role === 'Admin') {
+                window.location.href = '/admin-profile.html';
+            } else if (role === 'Responder') {
+                window.location.href = '/responder-profile.html';
+            }
+            // If Citizen, stay on profile.html
+        } catch (e) {
+            window.location.href = '/index.html';
+        }
+    }
+
+    // Role-based dashboard redirect
+    function goToDashboard() {
+        const token = localStorage.getItem('token');
+        const storedRole = localStorage.getItem('userRole');
+        if (!token) {
+            window.location.href = '/index.html';
+            return;
+        }
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const role = storedRole || payload.role || 'Citizen';
+            if (role === 'Admin') {
+                window.location.href = '/admin-dashboard.html';
+            } else if (role === 'Responder') {
+                window.location.href = '/responder-dashboard.html';
+            } else {
+                window.location.href = '/citizen-dashboard.html';
+            }
+        } catch (e) {
+            // Try stored role
+            if (storedRole === 'Admin') {
+                window.location.href = '/admin-dashboard.html';
+            } else if (storedRole === 'Responder') {
+                window.location.href = '/responder-dashboard.html';
+            } else {
+                localStorage.removeItem('token');
+                localStorage.removeItem('userRole');
+                window.location.href = '/index.html';
+            }
+        }
+    }
+
+    // Load user profile
+    function loadProfile() {
+        // Check role and redirect to appropriate profile
+        redirectToCorrectProfile();
+        
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const email = payload.sub;
+            const role = payload.role || 'Citizen';
+
+            // Hide Reports link for non-Admins (check if element exists)
+            const navReports = document.getElementById('navReports');
+            if (navReports && role !== 'Admin') {
+                navReports.style.display = 'none';
+            }
+
+            // Fetch profile from backend
+            fetch('/api/auth/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Update UI with real data from backend
+                    document.getElementById('userName').innerText = data.name || email.split('@')[0];
+                    document.getElementById('userEmail').innerText = data.email;
+                    document.getElementById('userPhone').innerText = data.phone || 'Not provided';
+                    document.getElementById('userLocation').innerText = data.location || 'Not provided';
+                    document.getElementById('userRoleText').innerText = data.role;
+                    
+                    currentUser = data;
+                } else {
+                    // Fallback to JWT data if backend fails
+                    document.getElementById('userName').innerText = email.split('@')[0];
+                    document.getElementById('userEmail').innerText = email;
+                    document.getElementById('userPhone').innerText = 'Not available';
+                    document.getElementById('userLocation').innerText = 'Not available';
+                    document.getElementById('userRoleText').innerText = role;
+                    
+                    currentUser = { email, role };
+                }
+            })
+            .catch(err => {
+                console.error('Error fetching profile:', err);
+                // Fallback to JWT data
+                document.getElementById('userName').innerText = email.split('@')[0];
+                document.getElementById('userEmail').innerText = email;
+                document.getElementById('userPhone').innerText = 'Not available';
+                document.getElementById('userLocation').innerText = 'Not available';
+                document.getElementById('userRoleText').innerText = role;
+                
+                currentUser = { email, role };
+            });
+
+            // Set role-specific styling
+            const roleElement = document.getElementById('userRole');
+            roleElement.innerText = role;
+            roleElement.className = 'profile-role role-' + role.toLowerCase();
+
+            // Set avatar icon based on role
+            const avatarIcon = document.getElementById('avatarIcon');
+            if (role === 'Admin') {
+                avatarIcon.className = 'fas fa-user-shield';
+            } else if (role === 'Responder') {
+                avatarIcon.className = 'fas fa-user-nurse';
+            } else {
+                avatarIcon.className = 'fas fa-user';
+            }
+
+            // Hide reports for non-admin
+            if (role !== 'Admin') {
+                const reportsNav = document.getElementById('navReports');
+                if (reportsNav) reportsNav.style.display = 'none';
+            }
+
+            // Update dashboard link based on role
+            if (role === 'Admin') {
+                document.getElementById('navDashboard').href = '/admin-dashboard.html';
+            } else if (role === 'Responder') {
+                document.getElementById('navDashboard').href = '/responder-dashboard.html';
+            } else if (role === 'Citizen') {
+                document.getElementById('navDashboard').href = 'citizen-dashboard.html';
+            } else {
+                document.getElementById('navDashboard').href = 'citizen-dashboard.html';
+            }
+
+        } catch (e) {
+            console.error('Error loading profile:', e);
+            window.location.href = '/index.html';
+        }
+    }
+
+    function enableEditMode() {
+        document.getElementById('viewMode').style.display = 'none';
+        document.getElementById('editMode').style.display = 'block';
+
+        // Pre-fill form
+        document.getElementById('editName').value = document.getElementById('userName').innerText;
+        document.getElementById('editPhone').value = document.getElementById('userPhone').innerText;
+        document.getElementById('editLocation').value = document.getElementById('userLocation').innerText;
+    }
+
+    function cancelEdit() {
+        document.getElementById('viewMode').style.display = 'block';
+        document.getElementById('editMode').style.display = 'none';
+    }
+
+    function showMessage(text, type) {
+        const messageBox = document.getElementById('messageBox');
+        messageBox.innerHTML = `<div class="message ${type}">${text}</div>`;
+        setTimeout(() => {
+            messageBox.innerHTML = '';
+        }, 5000);
+    }
+
+    document.getElementById('editForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const updatedData = {
+            email: currentUser.email,
+            name: document.getElementById('editName').value,
+            phone: document.getElementById('editPhone').value,
+            location: document.getElementById('editLocation').value,
+            password: document.getElementById('editPassword').value
+        };
+
+        // Send to backend API
+        fetch('/api/auth/update-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedData)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showMessage('✓ Profile updated successfully!', 'success');
+                
+                // Update display
+                document.getElementById('userName').innerText = updatedData.name;
+                document.getElementById('userPhone').innerText = updatedData.phone;
+                document.getElementById('userLocation').innerText = updatedData.location;
+                
+                // Clear password field
+                document.getElementById('editPassword').value = '';
+                
+                cancelEdit();
+            } else {
+                showMessage('✗ Failed to update profile: ' + data.message, 'error');
+            }
+        })
+        .catch(err => {
+            console.error('Error updating profile:', err);
+            showMessage('✗ Network error. Please try again.', 'error');
+        });
+    });
+
+    function logout() {
+        if (confirm('Are you sure you want to logout?')) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('userRole');
+            window.location.href = '/index.html';
+        }
+    }
+
+    // Emergency shortcut functions
+    function loadShortcut() {
+        const shortcut = localStorage.getItem('emergencyShortcut') || 'F12';
+        document.getElementById('currentShortcut').innerText = shortcut;
+    }
+
+    function enableEditShortcut() {
+        document.getElementById('shortcutEditSection').style.display = 'block';
+        document.getElementById('newShortcut').value = '';
+        document.getElementById('newShortcut').focus();
+    }
+
+    function captureShortcut(event) {
+        event.preventDefault();
+        
+        let shortcut = '';
+        if (event.ctrlKey) shortcut += 'Ctrl+';
+        if (event.altKey) shortcut += 'Alt+';
+        if (event.shiftKey) shortcut += 'Shift+';
+        
+        // Get the key name
+        let key = event.key;
+        if (key === ' ') key = 'Space';
+        if (key === 'Control' || key === 'Alt' || key === 'Shift' || key === 'Meta') {
+            return; // Don't capture modifier keys alone
+        }
+        
+        shortcut += key;
+        document.getElementById('newShortcut').value = shortcut;
+    }
+
+    function saveShortcut() {
+        const newShortcut = document.getElementById('newShortcut').value;
+        if (newShortcut) {
+            localStorage.setItem('emergencyShortcut', newShortcut);
+            document.getElementById('currentShortcut').innerText = newShortcut;
+            document.getElementById('shortcutEditSection').style.display = 'none';
+            showMessage('✓ Emergency shortcut updated to: ' + newShortcut, 'success');
+        }
+    }
+
+    function cancelShortcutEdit() {
+        document.getElementById('shortcutEditSection').style.display = 'none';
+    }
+
+    loadProfile();
+    loadShortcut();
+</script>
+
 </body>
 </html>

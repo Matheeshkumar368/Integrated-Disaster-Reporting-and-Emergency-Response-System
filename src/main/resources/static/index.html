@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Disaster Management & Alert System</title>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
@@ -76,7 +79,25 @@ input {
     font-size: 1rem;
 }
 
-input:focus {
+select {
+    width: 100%;
+    height: 48px;
+    padding: 0 1rem;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 10px;
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+select option {
+    background: #1e293b;
+    color: white;
+    padding: 0.5rem;
+}
+
+input:focus, select:focus {
     outline: none;
     border-color: #60a5fa;
     box-shadow: 0 0 12px rgba(96,165,250,0.5);
@@ -144,22 +165,57 @@ button:hover {
 
 <div class="container">
 
-<h2 id="formTitle">Login</h2>
+<h2 id="formTitle">Select Your Role</h2>
 
-<div id="loginForm">
-<label>Email</label>
-<input id="loginEmail" type="text" placeholder="Enter your email">
-
-<label>Password</label>
-<input id="loginPassword" type="password" placeholder="Enter your password">
-
-<button onclick="login()">Login</button>
-
-<div class="extra-links">
-<p>Don't have an account? <a href="#" onclick="toggleForm()">Sign up</a></p>
+<!-- Role Selection Screen -->
+<div id="roleSelection">
+    <p style="text-align:center; color:#94a3b8; margin-bottom:2rem; font-size:1.1rem;">
+        Choose your role to continue
+    </p>
+    
+    <div style="display:flex; flex-direction:column; gap:1.2rem;">
+        <button onclick="selectRole('Admin')" style="background: linear-gradient(135deg, #dc2626, #ef4444); height:60px; display:flex; align-items:center; justify-content:center; gap:0.8rem;">
+            <i class="fas fa-user-shield" style="font-size:1.5rem;"></i>
+            <span style="font-size:1.2rem;">Admin</span>
+        </button>
+        
+        <button onclick="selectRole('Responder')" style="background: linear-gradient(135deg, #3b82f6, #60a5fa); height:60px; display:flex; align-items:center; justify-content:center; gap:0.8rem;">
+            <i class="fas fa-user-nurse" style="font-size:1.5rem;"></i>
+            <span style="font-size:1.2rem;">Responder</span>
+        </button>
+        
+        <button onclick="selectRole('Citizen')" style="background: linear-gradient(135deg, #10b981, #34d399); height:60px; display:flex; align-items:center; justify-content:center; gap:0.8rem;">
+            <i class="fas fa-user" style="font-size:1.5rem;"></i>
+            <span style="font-size:1.2rem;">Citizen</span>
+        </button>
+    </div>
+    
+    <div class="extra-links">
+        <p>Don't have an account? <a href="#" onclick="showRegisterForm()">Sign up</a></p>
+    </div>
 </div>
+
+<!-- Login Form (Hidden Initially) -->
+<div id="loginForm" style="display:none;">
+    <div style="text-align:center; margin-bottom:1.5rem;">
+        <div id="selectedRoleDisplay" style="display:inline-block; padding:0.8rem 1.5rem; background:rgba(59,130,246,0.2); border-radius:10px; color:#60a5fa; font-size:1.1rem; font-weight:600;">
+            <i class="fas fa-user" id="roleIcon"></i> <span id="roleText">Citizen</span>
+        </div>
+        <button onclick="backToRoleSelection()" style="display:block; margin:1rem auto 0; background:transparent; border:1px solid rgba(255,255,255,0.2); color:#94a3b8; font-size:0.9rem; padding:0.5rem 1rem; height:auto;">
+            <i class="fas fa-arrow-left"></i> Change Role
+        </button>
+    </div>
+
+    <label>Email</label>
+    <input id="loginEmail" type="text" placeholder="Enter your email">
+
+    <label>Password</label>
+    <input id="loginPassword" type="password" placeholder="Enter your password">
+
+    <button onclick="login()" id="loginBtn">Login</button>
 </div>
 
+<!-- Register Form -->
 <div id="registerForm" style="display:none;">
 
 <label>Name</label>
@@ -186,7 +242,7 @@ button:hover {
 <button onclick="register()">Register</button>
 
 <div class="extra-links">
-<p>Already have account? <a href="#" onclick="toggleForm()">Login</a></p>
+<p>Already have account? <a href="#" onclick="backToRoleSelection()">Login</a></p>
 </div>
 
 </div>
@@ -196,21 +252,49 @@ button:hover {
 </div>
 
 <script>
-// Toggle Login/Register
-function toggleForm() {
-    const loginForm = document.getElementById("loginForm");
-    const registerForm = document.getElementById("registerForm");
-    const title = document.getElementById("formTitle");
+let selectedRole = '';
 
-    if (loginForm.style.display === "none") {
-        loginForm.style.display = "block";
-        registerForm.style.display = "none";
-        title.innerText = "Login";
+// Select Role
+function selectRole(role) {
+    selectedRole = role;
+    document.getElementById('roleSelection').style.display = 'none';
+    document.getElementById('loginForm').style.display = 'block';
+    document.getElementById('formTitle').innerText = role + ' Login';
+    document.getElementById('roleText').innerText = role;
+    
+    // Update icon and color based on role
+    const roleIcon = document.getElementById('roleIcon');
+    const roleDisplay = document.getElementById('selectedRoleDisplay');
+    
+    if (role === 'Admin') {
+        roleIcon.className = 'fas fa-user-shield';
+        roleDisplay.style.background = 'rgba(220,38,38,0.2)';
+        roleDisplay.style.color = '#ef4444';
+    } else if (role === 'Responder') {
+        roleIcon.className = 'fas fa-user-nurse';
+        roleDisplay.style.background = 'rgba(59,130,246,0.2)';
+        roleDisplay.style.color = '#60a5fa';
     } else {
-        loginForm.style.display = "none";
-        registerForm.style.display = "block";
-        title.innerText = "Register";
+        roleIcon.className = 'fas fa-user';
+        roleDisplay.style.background = 'rgba(16,185,129,0.2)';
+        roleDisplay.style.color = '#34d399';
     }
+}
+
+// Back to Role Selection
+function backToRoleSelection() {
+    document.getElementById('roleSelection').style.display = 'block';
+    document.getElementById('loginForm').style.display = 'none';
+    document.getElementById('registerForm').style.display = 'none';
+    document.getElementById('formTitle').innerText = 'Select Your Role';
+    selectedRole = '';
+}
+
+// Show Register Form
+function showRegisterForm() {
+    document.getElementById('roleSelection').style.display = 'none';
+    document.getElementById('registerForm').style.display = 'block';
+    document.getElementById('formTitle').innerText = 'Register';
 }
 
 // Register
@@ -229,9 +313,19 @@ function register() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data)
     })
-    .then(res => res.text())
-    .then(msg => document.getElementById("status").innerText = msg)
-    .catch(() => document.getElementById("status").innerText = "Backend connection error");
+    .then(res => res.json())
+    .then(response => {
+        if (response.status === "success") {
+            alert("Registration Successful! Please login.");
+            backToRoleSelection();
+        } else {
+            alert(response.message || "Registration Failed");
+        }
+    })
+    .catch(err => {
+        console.error("Registration error:", err);
+        alert("Backend connection error");
+    });
 }
 
 // Login
@@ -241,6 +335,10 @@ function login() {
         password: document.getElementById("loginPassword").value
     };
 
+    const loginBtn = document.getElementById("loginBtn");
+    loginBtn.disabled = true;
+    loginBtn.innerText = "Logging in...";
+
     fetch("http://localhost:8080/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -248,16 +346,83 @@ function login() {
     })
     .then(res => res.json())
     .then(data => {
-        if (data.token) {
+        loginBtn.disabled = false;
+        loginBtn.innerText = "Login";
+        
+        if (data.status === "success" && data.token) {
+            // Get role from server response (more reliable than decoding JWT)
+            const actualRole = data.role || 'Citizen';
+            
+            // Debug: log the role for troubleshooting
+            console.log('Login response role:', actualRole);
+            
+            // Check if selected role matches actual role
+            if (selectedRole !== actualRole) {
+                alert(`❌ Access Denied!\n\nYou selected: ${selectedRole}\nBut your account is: ${actualRole}\n\nPlease go back and select the correct role.`);
+                return;
+            }
+            
+            // Role matches, proceed with login
             localStorage.setItem("token", data.token);
-            alert("Login Successful!");
-            window.location.href = "home.html";
+            localStorage.setItem("userRole", actualRole); // Store role for easy access
+            alert(`✅ Login Successful!\n\nWelcome ${actualRole}!`);
+            
+            // Redirect based on role
+            if (actualRole === 'Admin') {
+                window.location.href = "admin-dashboard.html";
+            } else if (actualRole === 'Responder') {
+                window.location.href = "responder-rescue.html";
+            } else if (actualRole === 'Citizen') {
+                window.location.href = "citizen-dashboard.html";
+            } else {
+                window.location.href = "citizen-dashboard.html";
+            }
         } else {
-            alert(data.error || "Login Failed");
+            alert("❌ " + (data.message || "Login Failed - Invalid credentials"));
         }
     })
-    .catch(() => alert("Backend connection error"));
+    .catch(err => {
+        loginBtn.disabled = false;
+        loginBtn.innerText = "Login";
+        console.error("Login error:", err);
+        alert("❌ Backend connection error - Make sure the server is running");
+    });
 }
+
+// Star animation
+const canvas = document.getElementById('starCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const stars = [];
+for (let i = 0; i < 150; i++) {
+    stars.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        radius: Math.random() * 1.5,
+        speed: Math.random() * 0.5
+    });
+}
+
+function drawStars() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'white';
+    stars.forEach(star => {
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+        ctx.fill();
+        star.y += star.speed;
+        if (star.y > canvas.height) star.y = 0;
+    });
+    requestAnimationFrame(drawStars);
+}
+drawStars();
+
+window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+});
 </script>
 
 </body>

@@ -20,6 +20,7 @@ public class User {
     private String phone;
     private String location;
     private String role;
+    private String assignedZone; // Zone assigned to responder (e.g., Chennai, Coimbatore)
 
     public User() {}
 
@@ -42,4 +43,7 @@ public class User {
 
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
+    
+    public String getAssignedZone() { return assignedZone; }
+    public void setAssignedZone(String assignedZone) { this.assignedZone = assignedZone; }
 }

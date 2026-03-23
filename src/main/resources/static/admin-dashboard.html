@@ -1,0 +1,1524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+    <meta http-equiv="Pragma" content="no-cache"/>
+    <meta http-equiv="Expires" content="0"/>
+    <title>Admin Dashboard - NDMA Live Monitoring</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #0f1a2a 0%, #0a1420 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding-bottom: 5rem;
+        }
+        .header {
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            padding: 1.8rem 1rem;
+            text-align: center;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+        }
+        .header h1 {
+            font-size: 2.4rem;
+            color: white;
+            font-weight: 700;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
+        .admin-info {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(220,38,38,0.2);
+            color: #fca5a5;
+            font-size: 1.1rem;
+            border-bottom: 2px solid #dc2626;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: rgba(30, 41, 59, 0.95);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(239,68,68,0.2);
+        }
+        .card h2 {
+            color: #ef4444;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+        .ndma-frame {
+            width: 100%;
+            height: 600px;
+            border: none;
+            border-radius: 12px;
+            background: white;
+        }
+        #disasterMap {
+            width: 100%;
+            height: 600px;
+            border-radius: 12px;
+            background: #1e293b;
+        }
+        .alert-form {
+            display: grid;
+            gap: 1rem;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group label {
+            color: #94a3b8;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            padding: 0.8rem;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            background: #1e293b;
+            color: white;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        .btn-broadcast {
+            padding: 1rem;
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-broadcast:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(239,68,68,0.4);
+        }
+        .message {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            text-align: center;
+            font-weight: 500;
+        }
+        .message.success {
+            background: rgba(34,197,94,0.2);
+            color: #22c55e;
+            border: 1px solid #22c55e;
+        }
+        .message.error {
+            background: rgba(239,68,68,0.2);
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: rgba(30, 41, 59, 0.95);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            border-left: 4px solid;
+        }
+        .stat-card.active { border-left-color: #ef4444; }
+        .stat-card.acknowledged { border-left-color: #3b82f6; }
+        .stat-card.resolved { border-left-color: #22c55e; }
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 0.5rem 0;
+        }
+        .stat-label {
+            color: #94a3b8;
+            font-size: 1rem;
+        }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1e293b;
+            display: flex;
+            justify-content: space-around;
+            padding: 1rem 0;
+            box-shadow: 0 -6px 20px rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        .bottom-nav a {
+            color: #94a3b8;
+            text-decoration: none;
+            text-align: center;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+        .bottom-nav a i {
+            font-size: 1.9rem;
+            display: block;
+            margin-bottom: 0.4rem;
+        }
+        .bottom-nav a.active,
+        .bottom-nav a:hover {
+            color: #ef4444;
+            transform: translateY(-3px);
+        }
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        /* Auto-broadcast toggle styles */
+        #autoBroadcastToggle:checked ~ #autoBroadcastSlider {
+            transform: translateX(30px);
+            background: #22c55e !important;
+        }
+        
+        #autoBroadcastToggle:checked + span {
+            background: #22c55e !important;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1><i class="fas fa-shield-alt"></i> Admin Dashboard - NDMA Live Monitoring</h1>
+</div>
+
+<div class="admin-info">
+    <i class="fas fa-user-shield"></i> Logged in as Admin: <strong id="adminName">Loading...</strong>
+</div>
+
+<div class="container">
+    <!-- Statistics -->
+    <div class="stats-grid">
+        <div class="stat-card active">
+            <i class="fas fa-exclamation-triangle" style="font-size:2rem;color:#ef4444;"></i>
+            <div class="stat-number" id="activeCount">0</div>
+            <div class="stat-label">Active Alerts</div>
+        </div>
+        <div class="stat-card acknowledged">
+            <i class="fas fa-check-circle" style="font-size:2rem;color:#3b82f6;"></i>
+            <div class="stat-number" id="acknowledgedCount">0</div>
+            <div class="stat-label">Acknowledged</div>
+        </div>
+        <div class="stat-card resolved">
+            <i class="fas fa-check-double" style="font-size:2rem;color:#22c55e;"></i>
+            <div class="stat-number" id="resolvedCount">0</div>
+            <div class="stat-label">Resolved</div>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <!-- Live Disaster Map -->
+        <div class="card">
+            <h2><i class="fas fa-globe-asia"></i> Live Disaster Map - Tamil Nadu</h2>
+            <p style="color:#94a3b8;margin-bottom:1rem;">
+                Interactive map showing real-time disasters from database. Click markers for details.
+                <a href="https://sachet.ndma.gov.in/" target="_blank" style="color:#ef4444;margin-left:1rem;">NDMA Website →</a>
+            </p>
+            <div id="disasterMap"></div>
+        </div>
+
+        <!-- Broadcast Alert Form -->
+        <div class="card">
+            <h2><i class="fas fa-broadcast-tower"></i> Broadcast Emergency Alert</h2>
+            <div id="messageBox"></div>
+            
+            <form id="alertForm" class="alert-form">
+                <div class="form-group">
+                    <label><i class="fas fa-heading"></i> Alert Title</label>
+                    <input type="text" id="title" placeholder="e.g., Heavy Rainfall Warning" required />
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-comment-alt"></i> Alert Message</label>
+                    <textarea id="message" placeholder="Describe the alert and safety instructions..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-exclamation-triangle"></i> Disaster Type</label>
+                    <select id="disasterType" required>
+                        <option value="">Select Type</option>
+                        <option value="Cyclone">Cyclone</option>
+                        <option value="Heavy Rain">Heavy Rain</option>
+                        <option value="Flood">Flood</option>
+                        <option value="Earthquake">Earthquake</option>
+                        <option value="Dense Fog">Dense Fog</option>
+                        <option value="Landslide">Landslide</option>
+                        <option value="Tsunami">Tsunami</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-exclamation-circle"></i> Severity Level</label>
+                    <select id="severity" required>
+                        <option value="">Select Severity</option>
+                        <option value="High">High - Immediate Action Required</option>
+                        <option value="Medium">Medium - Stay Alert</option>
+                        <option value="Low">Low - Advisory</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-map-marker-alt"></i> Region</label>
+                    <select id="region" required>
+                        <option value="">Select Region</option>
+                        <option value="Chennai">Chennai</option>
+                        <option value="Coimbatore">Coimbatore</option>
+                        <option value="Madurai">Madurai</option>
+                        <option value="Tiruchirappalli">Tiruchirappalli</option>
+                        <option value="Salem">Salem</option>
+                        <option value="Tirunelveli">Tirunelveli</option>
+                        <option value="Dindigul">Dindigul</option>
+                        <option value="Vellore">Vellore</option>
+                        <option value="Erode">Erode</option>
+                        <option value="Thoothukudi">Thoothukudi</option>
+                        <option value="Tamil Nadu">Tamil Nadu (All Regions)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-image"></i> Media URL (Photo/Video)</label>
+                    <input type="url" id="mediaUrl" placeholder="https://example.com/photo.jpg or video.mp4" />
+                    <small style="color:#64748b;margin-top:0.3rem;display:block;">Optional: Add link to photo or video from external source</small>
+                </div>
+
+                <button type="submit" class="btn-broadcast" id="submitBtn">
+                    <i class="fas fa-paper-plane"></i> Broadcast Alert to Citizens
+                </button>
+            </form>
+        </div>
+    </div>
+    </div>
+
+    <!-- Live Alerts Report Section - Shows alerts broadcasted to citizens -->
+    <div class="card" style="margin-top:2rem;background:linear-gradient(135deg, rgba(220,38,38,0.1), rgba(30,41,59,0.95));border:2px solid #dc2626;">
+        <h2><i class="fas fa-bullhorn"></i> 🚨 LIVE ALERTS BROADCASTED TO CITIZENS</h2>
+        <p style="color:#94a3b8;margin-bottom:1rem;">
+            <i class="fas fa-map-marker-alt"></i> Alerts activated to notify citizens in specific locations
+        </p>
+        
+        <div id="liveAlertsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:1rem;">
+            <!-- Live alerts will be loaded here -->
+        </div>
+        
+        <div id="noAlerts" style="display:none;text-align:center;padding:3rem;color:#64748b;">
+            <i class="fas fa-bell-slash" style="font-size:3rem;margin-bottom:1rem;opacity:0.5;"></i>
+            <p>No alerts broadcasted yet. Use Quick Alert below to notify citizens!</p>
+        </div>
+    </div>
+
+    <!-- Live Disasters from Database with Quick/Detailed Alert Options -->
+    <div class="card" style="margin-top:2rem;">
+        <h2><i class="fas fa-exclamation-circle"></i> Live Disasters - Quick Alert</h2>
+        <p style="color:#94a3b8;margin-bottom:1rem;">
+            Click on <strong>Quick Alert</strong> to instantly broadcast OR <strong>Detailed Alert</strong> to customize before sending
+        </p>
+        
+        <!-- Auto-Broadcast Toggle -->
+        <div style="background:rgba(30,41,59,0.8);padding:1rem;border-radius:12px;margin-bottom:1.5rem;border:1px solid #334155;">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+                <div style="display:flex;align-items:center;gap:1rem;">
+                    <i class="fas fa-robot" style="font-size:1.5rem;color:#7c3aed;"></i>
+                    <div>
+                        <div style="font-weight:600;color:#fff;font-size:1.1rem;">Auto-Broadcast Mode</div>
+                        <div style="color:#64748b;font-size:0.9rem;">Automatically broadcast High severity disasters</div>
+                    </div>
+                </div>
+                <label style="position:relative;display:inline-block;width:60px;height:30px;">
+                    <input type="checkbox" id="autoBroadcastToggle" style="opacity:0;width:0;height:0;" onchange="toggleAutoBroadcast()">
+                    <span style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#334155;transition:0.4s;border-radius:30px;"></span>
+                    <span style="position:absolute;content:'';height:22px;width:22px;left:4px;bottom:4px;background:white;transition:0.4s;border-radius:50%;" id="autoBroadcastSlider"></span>
+                </label>
+            </div>
+            <div id="autoBroadcastStatus" style="margin-top:0.8rem;color:#22c55e;font-size:0.9rem;display:none;">
+                <i class="fas fa-check-circle"></i> Auto-broadcast is <strong>ACTIVE</strong> - New High severity disasters will be automatically broadcast
+            </div>
+        </div>
+        
+        <div id="liveDisastersGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;">
+            <!-- Disasters will be loaded here -->
+        </div>
+        
+        <div id="noDisasters" style="display:none;text-align:center;padding:3rem;color:#64748b;">
+            <i class="fas fa-info-circle" style="font-size:3rem;margin-bottom:1rem;opacity:0.5;"></i>
+            <p>No active disasters at the moment</p>
+        </div>
+    </div>
+
+    <!-- All Alerts Section - Shows all alerts that can be broadcasted -->
+    <div class="card" style="margin-top:2rem;background:linear-gradient(135deg, rgba(59,130,246,0.1), rgba(30,41,59,0.95));border:2px solid #3b82f6;">
+        <h2><i class="fas fa-bell"></i> All Alerts - Manage & Broadcast</h2>
+        <p style="color:#94a3b8;margin-bottom:1rem;">
+            <i class="fas fa-info-circle"></i> View all alerts and broadcast them to citizens
+        </p>
+        
+        <div id="allAlertsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:1rem;">
+            <!-- All alerts will be loaded here -->
+        </div>
+        
+        <div id="noAllAlerts" style="display:none;text-align:center;padding:3rem;color:#64748b;">
+            <i class="fas fa-bell-slash" style="font-size:3rem;margin-bottom:1rem;opacity:0.5;"></i>
+            <p>No alerts available</p>
+        </div>
+    </div>
+
+    <!-- Quick Alert Notification Toast -->
+    <div id="quickAlertToast" style="
+        position:fixed;
+        top:20px;
+        right:20px;
+        background:linear-gradient(135deg,#22c55e,#16a34a);
+        color:white;
+        padding:1rem 1.5rem;
+        border-radius:12px;
+        box-shadow:0 8px 25px rgba(34,197,94,0.4);
+        z-index:9999;
+        display:none;
+        animation:slideIn 0.3s ease;
+    ">
+        <i class="fas fa-check-circle"></i> <span id="toastMessage">Alert broadcasted successfully!</span>
+    </div>
+
+    <!-- Alert Posted Notification -->
+    <div id="alertPostedNotification" style="
+        position:fixed;
+        bottom:80px;
+        right:20px;
+        background:linear-gradient(135deg,#dc2626,#ef4444);
+        color:white;
+        padding:1rem 1.5rem;
+        border-radius:12px;
+        box-shadow:0 8px 25px rgba(239,68,68,0.4);
+        z-index:9999;
+        display:none;
+        cursor:pointer;
+    " onclick="viewPostedAlerts()">
+        <i class="fas fa-bell"></i> <span id="notificationMessage">New alert posted! Click to view</span>
+    </div>
+</div>
+
+<nav class="bottom-nav">
+    <a href="/admin-dashboard.html" class="active">
+        <i class="fas fa-tachometer-alt"></i>
+        <span>Dashboard</span>
+    </a>
+    <a href="#" onclick="scrollToAlerts(); return false;" id="alertsNav" style="position:relative;">
+        <i class="fas fa-bell"></i>
+        <span>Alerts</span>
+        <span id="alertBadge" style="display:none;position:absolute;top:-8px;right:5px;background:#ef4444;color:white;border-radius:50%;padding:2px 6px;font-size:0.7rem;min-width:18px;text-align:center;">0</span>
+    </a>
+    <a href="/admin-tasks.html">
+        <i class="fas fa-tasks"></i>
+        <span>Tasks</span>
+    </a>
+    <a href="/reports.html">
+        <i class="fas fa-chart-bar"></i>
+        <span>Reports</span>
+    </a>
+    <a href="/admin-profile.html">
+        <i class="fas fa-user-shield"></i>
+        <span>Profile</span>
+    </a>
+</nav>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/js/emergency-alert.js"></script>
+<script>
+    const token = localStorage.getItem('token');
+    
+    // Check if user is Admin
+    if (!token) {
+        alert('Please login first');
+        window.location.href = '/index.html';
+    } else {
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            if (payload.role !== 'Admin') {
+                alert('Access Denied: Only Admin can access this page');
+                window.location.href = 'citizen-dashboard.html';
+            }
+            document.getElementById('adminName').innerText = payload.sub || 'Admin';
+        } catch (e) {
+            window.location.href = '/index.html';
+        }
+    }
+
+    const form = document.getElementById('alertForm');
+    const messageBox = document.getElementById('messageBox');
+    const submitBtn = document.getElementById('submitBtn');
+
+    function showMessage(text, type) {
+        messageBox.innerHTML = `<div class="message ${type}">${text}</div>`;
+        setTimeout(() => {
+            messageBox.innerHTML = '';
+        }, 5000);
+    }
+
+    // Load statistics
+    function loadStats() {
+        fetch('/api/alerts')
+            .then(res => res.json())
+            .then(alerts => {
+                const active = alerts.filter(a => a.status === 'Active').length;
+                const acknowledged = alerts.filter(a => a.status === 'Acknowledged').length;
+                const resolved = alerts.filter(a => a.status === 'Resolved').length;
+                
+                document.getElementById('activeCount').innerText = active;
+                document.getElementById('acknowledgedCount').innerText = acknowledged;
+                document.getElementById('resolvedCount').innerText = resolved;
+            })
+            .catch(err => console.error('Error loading stats:', err));
+    }
+
+    loadStats();
+    setInterval(loadStats, 30000); // Refresh every 30 seconds
+
+    // Initialize Leaflet Map
+    const map = L.map('disasterMap').setView([11.1271, 78.6569], 7); // Tamil Nadu center
+
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 18
+    }).addTo(map);
+
+    // Custom marker icons for different disaster types
+    const disasterIcons = {
+        'Cyclone': L.divIcon({
+            html: '<div style="background:#7c3aed;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:20px;border:3px solid white;box-shadow:0 4px 10px rgba(0,0,0,0.5);"><i class="fas fa-wind"></i></div>',
+            className: '',
+            iconSize: [40, 40]
+        }),
+        'Heavy Rain': L.divIcon({
+            html: '<div style="background:#3b82f6;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:20px;border:3px solid white;box-shadow:0 4px 10px rgba(0,0,0,0.5);"><i class="fas fa-cloud-rain"></i></div>',
+            className: '',
+            iconSize: [40, 40]
+        }),
+        'Flood': L.divIcon({
+            html: '<div style="background:#2563eb;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:20px;border:3px solid white;box-shadow:0 4px 10px rgba(0,0,0,0.5);"><i class="fas fa-water"></i></div>',
+            className: '',
+            iconSize: [40, 40]
+        }),
+        'Earthquake': L.divIcon({
+            html: '<div style="background:#dc2626;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:20px;border:3px solid white;box-shadow:0 4px 10px rgba(0,0,0,0.5);"><i class="fas fa-house-crack"></i></div>',
+            className: '',
+            iconSize: [40, 40]
+        }),
+        'default': L.divIcon({
+            html: '<div style="background:#f59e0b;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:20px;border:3px solid white;box-shadow:0 4px 10px rgba(0,0,0,0.5);"><i class="fas fa-exclamation-triangle"></i></div>',
+            className: '',
+            iconSize: [40, 40]
+        })
+    };
+
+    // Tamil Nadu major cities coordinates
+    const locationCoords = {
+        'Chennai': [13.0827, 80.2707],
+        'Coimbatore': [11.0168, 76.9558],
+        'Madurai': [9.9252, 78.1198],
+        'Tiruchirappalli': [10.7905, 78.7047],
+        'Salem': [11.6643, 78.1460],
+        'Tirunelveli': [8.7139, 77.7567],
+        'Dindigul': [10.3673, 77.9803],
+        'Vellore': [12.9165, 79.1325],
+        'Erode': [11.3410, 77.7172],
+        'Thoothukudi': [8.7642, 78.1348],
+        'Tamil Nadu': [11.1271, 78.6569]
+    };
+
+    // Load disasters and plot on map
+    function loadDisastersOnMap() {
+        fetch('/api/disasters')
+            .then(res => res.json())
+            .then(disasters => {
+                // Clear existing markers
+                map.eachLayer(layer => {
+                    if (layer instanceof L.Marker) {
+                        map.removeLayer(layer);
+                    }
+                });
+
+                disasters.forEach(disaster => {
+                    const coords = locationCoords[disaster.location] || locationCoords['Tamil Nadu'];
+                    const icon = disasterIcons[disaster.type] || disasterIcons['default'];
+                    
+                    const severityColor = disaster.severity === 'High' ? '#ef4444' : 
+                                         disaster.severity === 'Medium' ? '#f59e0b' : '#10b981';
+                    
+                    const marker = L.marker(coords, { icon: icon }).addTo(map);
+                    
+                    marker.bindPopup(`
+                        <div style="min-width:200px;">
+                            <h3 style="color:${severityColor};margin:0 0 0.5rem 0;font-size:1.1rem;">
+                                ${disaster.type}
+                            </h3>
+                            <p style="margin:0.3rem 0;color:#64748b;">
+                                <strong>Location:</strong> ${disaster.location}
+                            </p>
+                            <p style="margin:0.3rem 0;color:#64748b;">
+                                <strong>Severity:</strong> <span style="color:${severityColor}">${disaster.severity}</span>
+                            </p>
+                            <p style="margin:0.3rem 0;color:#64748b;">
+                                <strong>Time:</strong> ${new Date(disaster.timestamp).toLocaleString('en-IN')}
+                            </p>
+                            <button onclick="quickAlert('${disaster.type}', '${disaster.location}', '${disaster.severity}')" 
+                                    style="width:100%;margin-top:0.8rem;padding:0.6rem;background:#ef4444;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;">
+                                Create Alert
+                            </button>
+                        </div>
+                    `);
+                });
+            })
+            .catch(err => console.error('Error loading disasters on map:', err));
+    }
+
+    // Map disasters will be loaded after map initialization
+    setInterval(loadDisastersOnMap, 60000); // Refresh every minute
+
+    // Load live alerts from API (alerts broadcasted to citizens)
+    function loadLiveAlerts() {
+        fetch('/api/alerts')
+            .then(res => res.json())
+            .then(alerts => {
+                const grid = document.getElementById('liveAlertsGrid');
+                const noAlerts = document.getElementById('noAlerts');
+                
+                // Filter only ACTIVE alerts - these are being broadcasted to citizens
+                const activeAlerts = alerts.filter(a => a.status === 'Active');
+                
+                // Sort by created date, newest first
+                activeAlerts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                
+                if (activeAlerts.length === 0) {
+                    grid.style.display = 'none';
+                    noAlerts.style.display = 'block';
+                    return;
+                }
+                
+                grid.style.display = 'grid';
+                noAlerts.style.display = 'none';
+                grid.innerHTML = '';
+                
+                // Show all active alerts (these are being broadcasted to citizens)
+                activeAlerts.forEach(alert => {
+                    const card = document.createElement('div');
+                    card.style.cssText = 'background:rgba(30,41,59,0.95);border-radius:12px;padding:1.2rem;border:2px solid #22c55e;transition:all 0.3s;position:relative;overflow:hidden;';
+                    
+                    let borderColor = '#f59e0b';
+                    let icon = 'fa-exclamation-triangle';
+                    
+                    if (alert.severity === 'High') {
+                        borderColor = '#ef4444';
+                        icon = 'fa-exclamation-circle';
+                    } else if (alert.severity === 'Medium') {
+                        borderColor = '#f59e0b';
+                        icon = 'fa-exclamation-triangle';
+                    } else {
+                        borderColor = '#10b981';
+                        icon = 'fa-info-circle';
+                    }
+                    
+                    // Pulsing animation for active alerts
+                    card.innerHTML = `
+                        <div style="position:absolute;top:0;left:0;width:6px;height:100%;background:${borderColor};animation:pulse 1.5s infinite;"></div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.8rem;">
+                            <div style="display:flex;align-items:center;gap:0.8rem;">
+                                <i class="fas ${icon}" style="font-size:1.8rem;color:${borderColor};"></i>
+                                <div style="font-size:1.2rem;font-weight:700;color:#fff;">${alert.title}</div>
+                            </div>
+                            <span style="background:#22c55e;color:white;padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:600;animation:pulse 1.5s infinite;">
+                                <i class="fas fa-broadcast-tower"></i> LIVE
+                            </span>
+                        </div>
+                        <div style="color:#cbd5e1;margin-bottom:0.8rem;font-size:1rem;line-height:1.5;">
+                            ${alert.message}
+                        </div>
+                        <div style="display:flex;gap:1.5rem;margin-bottom:0.8rem;flex-wrap:wrap;">
+                            <div style="color:#ef4444;font-size:0.95rem;font-weight:600;">
+                                <i class="fas fa-tag"></i> ${alert.disasterType}
+                            </div>
+                            <div style="color:${borderColor};font-size:0.95rem;font-weight:600;">
+                                <i class="fas fa-exclamation-circle"></i> ${alert.severity}
+                            </div>
+                            <div style="color:#fbbf24;font-size:0.95rem;font-weight:600;">
+                                <i class="fas fa-map-marker-alt"></i> ${alert.region}
+                            </div>
+                        </div>
+                        <div style="color:#64748b;font-size:0.85rem;margin-bottom:0.5rem;">
+                            <i class="fas fa-clock"></i> Broadcasted: ${new Date(alert.createdAt).toLocaleString('en-IN')}
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:1rem;">
+                            <button onclick="quickAlertDirect('${alert.disasterType}', '${alert.region}', '${alert.severity}')" 
+                                    style="padding:0.7rem;background:linear-gradient(135deg,#22c55e,#16a34a);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;transition:all 0.3s;font-size:0.9rem;">
+                                <i class="fas fa-bolt"></i> Send Again
+                            </button>
+                            <button onclick="viewAlertDetails(${alert.alertId})" 
+                                    style="padding:0.7rem;background:linear-gradient(135deg,#3b82f6,#2563eb);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;transition:all 0.3s;font-size:0.9rem;">
+                                <i class="fas fa-eye"></i> Details
+                            </button>
+                        </div>
+                    `;
+                    
+                    card.onmouseenter = () => {
+                        card.style.transform = 'translateY(-4px)';
+                        card.style.boxShadow = '0 12px 30px rgba(34,197,94,0.4)';
+                    };
+                    card.onmouseleave = () => {
+                        card.style.transform = 'translateY(0)';
+                        card.style.boxShadow = 'none';
+                    };
+                    
+                    grid.appendChild(card);
+                });
+            })
+            .catch(err => {
+                console.error('Error loading live alerts:', err);
+                document.getElementById('noAlerts').style.display = 'block';
+            });
+    }
+    
+    // Load all alerts for admin management - Display as cards like alerts.html
+    function loadAllAlerts() {
+        const token = localStorage.getItem('token');
+        fetch('/api/alerts', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+            .then(res => res.json())
+            .then(alerts => {
+                const grid = document.getElementById('allAlertsGrid');
+                const noAlerts = document.getElementById('noAllAlerts');
+                
+                if (alerts.length === 0) {
+                    grid.style.display = 'none';
+                    noAlerts.style.display = 'block';
+                    return;
+                }
+                
+                grid.style.display = 'grid';
+                noAlerts.style.display = 'none';
+                grid.innerHTML = '';
+                
+                // Sort by date, newest first
+                alerts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                
+                alerts.forEach(alert => {
+                    const card = document.createElement('div');
+                    
+                    // Determine border color and icon based on disaster type
+                    let borderColor = '#f59e0b';
+                    let icon = 'fa-exclamation-triangle';
+                    
+                    if (alert.disasterType && alert.disasterType.includes('Cyclone')) {
+                        borderColor = '#7c3aed';
+                        icon = 'fa-wind';
+                    } else if (alert.disasterType && alert.disasterType.includes('Rain')) {
+                        borderColor = '#3b82f6';
+                        icon = 'fa-cloud-rain';
+                    } else if (alert.disasterType && alert.disasterType.includes('Flood')) {
+                        borderColor = '#2563eb';
+                        icon = 'fa-water';
+                    } else if (alert.disasterType && alert.disasterType.includes('Earthquake')) {
+                        borderColor = '#dc2626';
+                        icon = 'fa-house-crack';
+                    } else if (alert.disasterType && alert.disasterType.includes('Fire')) {
+                        borderColor = '#dc2626';
+                        icon = 'fa-fire';
+                    } else if (alert.disasterType && alert.disasterType.includes('Tsunami')) {
+                        borderColor = '#2563eb';
+                        icon = 'fa-water';
+                    }
+                    
+                    // Severity color
+                    const severityColor = alert.severity === 'High' ? '#ef4444' : 
+                                         alert.severity === 'Medium' ? '#f59e0b' : '#10b981';
+                    
+                    // Status color
+                    let statusColor = '#22c55e'; // Active
+                    if (alert.status === 'Acknowledged') statusColor = '#3b82f6';
+                    else if (alert.status === 'Resolved') statusColor = '#64748b';
+                    
+                    card.style.cssText = `
+                        background: #1e293b;
+                        border-radius: 16px;
+                        overflow: hidden;
+                        box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+                        transition: all 0.3s ease;
+                        border-left: 5px solid ${borderColor};
+                    `;
+                    
+                    card.innerHTML = `
+                        <div style="padding:1.3rem;display:flex;align-items:center;gap:1.2rem;background:rgba(239,68,68,0.1);">
+                            <i class="fas ${icon}" style="font-size:2.2rem;color:${borderColor};"></i>
+                            <div style="font-size:1.5rem;font-weight:600;color:${borderColor};">${alert.title}</div>
+                        </div>
+                        <div style="padding:1.3rem;">
+                            <div style="margin-bottom:1.2rem;color:#cbd5e1;line-height:1.6;">
+                                ${alert.message}
+                            </div>
+                            ${alert.mediaUrl ? `<div style="margin-bottom:1rem;"><img src="${alert.mediaUrl}" style="max-width:100%;border-radius:8px;max-height:200px;object-fit:cover;" onerror="this.style.display='none'"/></div>` : ''}
+                            <div style="margin:0.9rem 0;color:#94a3b8;font-size:1.05rem;">
+                                <i class="fas fa-exclamation-triangle" style="margin-right:0.7rem;width:22px;text-align:center;"></i>
+                                Type: ${alert.disasterType || 'N/A'}
+                            </div>
+                            <div style="margin:0.9rem 0;color:#94a3b8;font-size:1.05rem;">
+                                <i class="fas fa-exclamation-circle" style="margin-right:0.7rem;width:22px;text-align:center;"></i>
+                                Severity: <span style="color:${severityColor};font-weight:bold;">${alert.severity}</span>
+                            </div>
+                            <div style="margin:0.9rem 0;color:#94a3b8;font-size:1.05rem;">
+                                <i class="fas fa-map-marker-alt" style="margin-right:0.7rem;width:22px;text-align:center;"></i>
+                                Region: ${alert.region}
+                            </div>
+                            <div style="margin:0.9rem 0;color:#94a3b8;font-size:1.05rem;">
+                                <i class="fas fa-clock" style="margin-right:0.7rem;width:22px;text-align:center;"></i>
+                                ${new Date(alert.createdAt).toLocaleString('en-IN')}
+                            </div>
+                            <div style="margin:0.9rem 0;color:${statusColor};font-size:1.05rem;font-weight:bold;">
+                                <i class="fas fa-info-circle" style="margin-right:0.7rem;width:22px;text-align:center;"></i>
+                                Status: ${alert.status}
+                            </div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:1rem;">
+                                ${alert.status === 'Active' ? `
+                                <button onclick="acknowledgeAlertFromCard(${alert.alertId})" 
+                                        style="padding:0.9rem;background:linear-gradient(135deg,#3b82f6,#2563eb);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;transition:all 0.3s;font-size:1rem;">
+                                    <i class="fas fa-check"></i> Acknowledge
+                                </button>
+                                ` : `
+                                <button disabled style="padding:0.9rem;background:#334155;color:#64748b;border:none;border-radius:8px;cursor:not-allowed;font-weight:600;font-size:1rem;">
+                                    <i class="fas fa-check"></i> ${alert.status}
+                                </button>
+                                `}
+                                ${alert.status !== 'Resolved' ? `
+                                <button onclick="resolveAlertFromCard(${alert.alertId})" 
+                                        style="padding:0.9rem;background:linear-gradient(135deg,#22c55e,#16a34a);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;transition:all 0.3s;font-size:1rem;">
+                                    <i class="fas fa-check-double"></i> Resolve
+                                </button>
+                                ` : `
+                                <button disabled style="padding:0.9rem;background:#334155;color:#64748b;border:none;border-radius:8px;cursor:not-allowed;font-weight:600;font-size:1rem;">
+                                    <i class="fas fa-check-double"></i> Resolved
+                                </button>
+                                `}
+                            </div>
+                        </div>
+                    `;
+                    
+                    card.onmouseenter = () => {
+                        card.style.transform = 'translateY(-8px)';
+                        card.style.boxShadow = '0 16px 40px rgba(239,68,68,0.3)';
+                    };
+                    card.onmouseleave = () => {
+                        card.style.transform = 'translateY(0)';
+                        card.style.boxShadow = '0 8px 30px rgba(0,0,0,0.4)';
+                    };
+                    
+                    grid.appendChild(card);
+                });
+            })
+            .catch(err => {
+                console.error('Error loading all alerts:', err);
+                document.getElementById('noAllAlerts').style.display = 'block';
+            });
+    }
+    
+    // Acknowledge alert from card
+    async function acknowledgeAlertFromCard(alertId) {
+        try {
+            const response = await fetch(`/api/alerts/${alertId}/acknowledge`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (response.ok) {
+                showToast('✅ Alert acknowledged successfully!');
+                loadAllAlerts(); // Refresh
+                loadStats(); // Update stats
+            } else {
+                const error = await response.text();
+                showToast('✗ Failed to acknowledge: ' + error, 'error');
+            }
+        } catch (error) {
+            showToast('✗ Network error: ' + error.message, 'error');
+        }
+    }
+    
+    // Resolve alert from card
+    async function resolveAlertFromCard(alertId) {
+        try {
+            const response = await fetch(`/api/alerts/${alertId}/resolve`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (response.ok) {
+                showToast('✅ Alert resolved successfully!');
+                loadAllAlerts(); // Refresh
+                loadStats(); // Update stats
+            } else {
+                const error = await response.text();
+                showToast('✗ Failed to resolve: ' + error, 'error');
+            }
+        } catch (error) {
+            showToast('✗ Network error: ' + error.message, 'error');
+        }
+    }
+
+    // Add pulse animation CSS
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    `;
+    document.head.appendChild(style);
+
+    // View alert details - scroll to alert in current page
+    function viewAlertDetails(alertId) {
+        // Scroll to the specific alert in the All Alerts section
+        const allAlertsSection = document.querySelector('.card:has(#allAlertsGrid)');
+        if (allAlertsSection) {
+            allAlertsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    // Load live disasters
+    let autoBroadcastEnabled = false;
+    let broadcastedDisasterIds = new Set(); // Track already broadcasted disasters
+    
+    function toggleAutoBroadcast() {
+        const toggle = document.getElementById('autoBroadcastToggle');
+        const slider = document.getElementById('autoBroadcastSlider');
+        const status = document.getElementById('autoBroadcastStatus');
+        
+        autoBroadcastEnabled = toggle.checked;
+        
+        if (autoBroadcastEnabled) {
+            slider.style.transform = 'translateX(30px)';
+            slider.style.background = '#22c55e';
+            status.style.display = 'block';
+            
+            // Check for new high severity disasters immediately
+            checkAndAutoBroadcast();
+            
+            // Show confirmation toast
+            showToast('✅ Auto-Broadcast ENABLED! High severity disasters will be automatically broadcast.');
+        } else {
+            slider.style.transform = 'translateX(0)';
+            slider.style.background = 'white';
+            status.style.display = 'none';
+            showToast('ℹ️ Auto-Broadcast DISABLED');
+        }
+        
+        // Save preference to localStorage
+        localStorage.setItem('autoBroadcastEnabled', autoBroadcastEnabled);
+    }
+    
+    // Check and auto-broadcast high severity disasters
+    async function checkAndAutoBroadcast() {
+        if (!autoBroadcastEnabled) return;
+        
+        try {
+            const response = await fetch('/api/disasters');
+            const disasters = await response.json();
+            
+            // Check for HIGH severity disasters that haven't been broadcast yet
+            for (const disaster of disasters) {
+                const disasterKey = `${disaster.type}-${disaster.location}-${new Date(disaster.timestamp).getTime()}`;
+                
+                // If not already broadcast and is high severity
+                if (!broadcastedDisasterIds.has(disasterKey) && disaster.severity === 'High') {
+                    // Auto-broadcast this disaster
+                    console.log('Auto-broadcasting:', disaster.type, disaster.location);
+                    
+                    await quickAlertDirect(disaster.type, disaster.location, disaster.severity);
+                    
+                    // Mark as broadcasted
+                    broadcastedDisasterIds.add(disasterKey);
+                    
+                    // Show notification
+                    showToast(`🚨 AUTO-BROADCAST: ${disaster.type} in ${disaster.location}!`);
+                }
+            }
+        } catch (error) {
+            console.error('Error in auto-broadcast check:', error);
+        }
+    }
+    
+    // Load live disasters
+    function loadLiveDisasters() {
+        console.log('🔍 Loading live disasters...');
+        fetch('/api/disasters')
+            .then(res => {
+                console.log('📡 API Response status:', res.status);
+                return res.json();
+            })
+            .then(disasters => {
+                console.log('📊 Disasters received:', disasters.length, disasters);
+                const grid = document.getElementById('liveDisastersGrid');
+                const noDisasters = document.getElementById('noDisasters');
+                
+                if (!grid) {
+                    console.error('❌ Grid element not found!');
+                    return;
+                }
+                
+                if (disasters.length === 0) {
+                    console.log('⚠️ No disasters found');
+                    grid.style.display = 'none';
+                    noDisasters.style.display = 'block';
+                    return;
+                }
+                
+                console.log('✅ Creating', disasters.length, 'disaster cards');
+                grid.style.display = 'grid';
+                noDisasters.style.display = 'none';
+                grid.innerHTML = '';
+                
+                disasters.forEach((disaster, index) => {
+                    console.log(`Creating card ${index + 1}:`, disaster.type, disaster.location);
+                    const card = document.createElement('div');
+                    
+                    // Determine icon and color based on disaster type
+                    let borderColor = '#f59e0b';
+                    let bgColor = 'rgba(245,158,11,0.1)';
+                    let icon = 'fa-exclamation-triangle';
+                    let iconBg = '#f59e0b';
+                    
+                    if (disaster.type.includes('Cyclone')) {
+                        borderColor = '#7c3aed';
+                        bgColor = 'rgba(124,58,237,0.1)';
+                        icon = 'fa-wind';
+                        iconBg = '#7c3aed';
+                    } else if (disaster.type.includes('Rain')) {
+                        borderColor = '#3b82f6';
+                        bgColor = 'rgba(59,130,246,0.1)';
+                        icon = 'fa-cloud-rain';
+                        iconBg = '#3b82f6';
+                    } else if (disaster.type.includes('Flood')) {
+                        borderColor = '#2563eb';
+                        bgColor = 'rgba(37,99,235,0.1)';
+                        icon = 'fa-water';
+                        iconBg = '#2563eb';
+                    } else if (disaster.type.includes('Earthquake')) {
+                        borderColor = '#dc2626';
+                        bgColor = 'rgba(220,38,38,0.1)';
+                        icon = 'fa-house-crack';
+                        iconBg = '#dc2626';
+                    }
+                    
+                    // Severity color
+                    const severityColor = disaster.severity === 'High' ? '#ef4444' : 
+                                         disaster.severity === 'Medium' ? '#f59e0b' : '#10b981';
+                    
+                    card.style.cssText = `
+                        background: linear-gradient(135deg, ${bgColor}, #1e293b);
+                        border-radius: 16px;
+                        padding: 0;
+                        border-left: 5px solid ${borderColor};
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        overflow: hidden;
+                        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                    `;
+                    
+                    card.innerHTML = `
+                        <div style="padding:1.5rem;">
+                            <!-- Icon and Type -->
+                            <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;">
+                                <div style="
+                                    width:50px;
+                                    height:50px;
+                                    border-radius:12px;
+                                    background:${iconBg};
+                                    display:flex;
+                                    align-items:center;
+                                    justify-content:center;
+                                    box-shadow:0 4px 12px rgba(0,0,0,0.3);
+                                ">
+                                    <i class="fas ${icon}" style="font-size:1.5rem;color:white;"></i>
+                                </div>
+                                <div>
+                                    <div style="font-size:1.3rem;font-weight:700;color:${borderColor};margin-bottom:0.2rem;">
+                                        ${disaster.type}
+                                    </div>
+                                    <div style="color:#64748b;font-size:0.85rem;">
+                                        <i class="fas fa-clock"></i> ${new Date(disaster.timestamp).toLocaleString('en-IN', {
+                                            month: 'short',
+                                            day: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Location -->
+                            <div style="
+                                display:flex;
+                                align-items:center;
+                                gap:0.5rem;
+                                padding:0.6rem 0.8rem;
+                                background:rgba(30,41,59,0.6);
+                                border-radius:8px;
+                                margin-bottom:0.8rem;
+                            ">
+                                <i class="fas fa-map-marker-alt" style="color:#94a3b8;"></i>
+                                <span style="color:#e0e0e0;font-weight:500;">${disaster.location}</span>
+                            </div>
+                            
+                            <!-- Severity -->
+                            <div style="
+                                display:flex;
+                                align-items:center;
+                                gap:0.5rem;
+                                padding:0.6rem 0.8rem;
+                                background:rgba(30,41,59,0.6);
+                                border-radius:8px;
+                                margin-bottom:1rem;
+                            ">
+                                <i class="fas fa-exclamation-circle" style="color:#94a3b8;"></i>
+                                <span style="color:#94a3b8;">Severity:</span>
+                                <span style="
+                                    color:${severityColor};
+                                    font-weight:700;
+                                    padding:0.2rem 0.6rem;
+                                    background:${severityColor}20;
+                                    border-radius:6px;
+                                ">${disaster.severity}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Create Alert Button -->
+                        <button onclick="detailedAlert('${disaster.type}', '${disaster.location}', '${disaster.severity}')" 
+                                style="
+                                    width:100%;
+                                    padding:1rem;
+                                    background:linear-gradient(135deg,#dc2626,#ef4444);
+                                    color:white;
+                                    border:none;
+                                    border-top:1px solid rgba(220,38,38,0.3);
+                                    cursor:pointer;
+                                    font-weight:700;
+                                    font-size:1rem;
+                                    transition:all 0.3s;
+                                    display:flex;
+                                    align-items:center;
+                                    justify-content:center;
+                                    gap:0.5rem;
+                                ">
+                            <i class="fas fa-paper-plane"></i> Create Alert from This
+                        </button>
+                    `;
+                    
+                    // Hover effects
+                    card.onmouseenter = () => {
+                        card.style.transform = 'translateY(-6px)';
+                        card.style.boxShadow = `0 12px 30px ${borderColor}40`;
+                    };
+                    card.onmouseleave = () => {
+                        card.style.transform = 'translateY(0)';
+                        card.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
+                    };
+                    
+                    grid.appendChild(card);
+                });
+                
+                console.log('✅ All cards created successfully');
+            })
+            .catch(err => {
+                console.error('❌ Error loading disasters:', err);
+                document.getElementById('noDisasters').style.display = 'block';
+            });
+    }
+
+    // Quick Alert - Directly broadcast without opening form
+    async function quickAlertDirect(type, location, severity) {
+        const alertData = {
+            title: `${type} Alert - ${location}`,
+            message: `URGENT: ${type} detected in ${location}. Severity: ${severity}. Please take immediate precautions and stay safe. Follow local authorities instructions.`,
+            disasterType: type,
+            severity: severity,
+            region: location
+        };
+
+        try {
+            const response = await fetch('/api/alerts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(alertData)
+            });
+
+            if (response.ok) {
+                showToast('✓ Quick Alert broadcasted successfully to all citizens!');
+                showAlertPostedNotification();
+                loadStats();
+                loadLiveDisasters();
+                loadLiveAlerts(); // Refresh live alerts section
+            } else {
+                const error = await response.text();
+                showToast('✗ Failed to broadcast: ' + error, 'error');
+            }
+        } catch (error) {
+            showToast('✗ Network error: ' + error.message, 'error');
+        }
+    }
+
+    // Detailed Alert - Pre-fill form for customization
+    function detailedAlert(type, location, severity) {
+        // Auto-fill the form
+        document.getElementById('title').value = `${type} Alert - ${location}`;
+        document.getElementById('message').value = `${type} detected in ${location}. Severity: ${severity}. Please take necessary precautions and stay safe.`;
+        document.getElementById('disasterType').value = type;
+        document.getElementById('severity').value = severity;
+        
+        // Try to match region
+        const regionSelect = document.getElementById('region');
+        for (let option of regionSelect.options) {
+            if (location.includes(option.value) || option.value.includes(location)) {
+                regionSelect.value = option.value;
+                break;
+            }
+        }
+        
+        // Scroll to form
+        document.getElementById('disasterType').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Highlight the form
+        const form = document.querySelector('.card:has(#alertForm)');
+        form.style.border = '2px solid #ef4444';
+        setTimeout(() => {
+            form.style.border = '1px solid rgba(239,68,68,0.2)';
+        }, 2000);
+        
+        alert('✅ Form auto-filled! Review and click "Broadcast Alert to Citizens"');
+    }
+
+    // Show toast notification
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('quickAlertToast');
+        const toastMessage = document.getElementById('toastMessage');
+        
+        if (type === 'error') {
+            toast.style.background = 'linear-gradient(135deg,#dc2626,#ef4444)';
+            toast.style.boxShadow = '0 8px 25px rgba(239,68,68,0.4)';
+        } else {
+            toast.style.background = 'linear-gradient(135deg,#22c55e,#16a34a)';
+            toast.style.boxShadow = '0 8px 25px rgba(34,197,94,0.4)';
+        }
+        
+        toastMessage.innerHTML = message;
+        toast.style.display = 'block';
+        
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 4000);
+    }
+
+    // Show alert posted notification
+    let alertCount = 0;
+    function showAlertPostedNotification() {
+        alertCount++;
+        const notification = document.getElementById('alertPostedNotification');
+        const notificationMessage = document.getElementById('notificationMessage');
+        const badge = document.getElementById('alertBadge');
+        
+        notificationMessage.innerHTML = `<i class="fas fa-bell"></i> Alert posted! Click to view in Alerts`;
+        notification.style.display = 'block';
+        
+        // Show badge on alerts nav
+        badge.style.display = 'inline';
+        badge.innerText = alertCount;
+        
+        setTimeout(() => {
+            notification.style.display = 'none';
+        }, 8000);
+    }
+
+    // View posted alerts - scroll to live alerts section
+    function viewPostedAlerts() {
+        // Scroll to the Live Alerts section
+        const liveAlertsSection = document.querySelector('.card:has(#liveAlertsGrid)');
+        if (liveAlertsSection) {
+            liveAlertsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+    
+    // Scroll to All Alerts section when clicking Alerts in navigation
+    function scrollToAlerts() {
+        const allAlertsSection = document.querySelector('.card:has(#allAlertsGrid)');
+        if (allAlertsSection) {
+            allAlertsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    // Update badge when alert is broadcasted from form
+    function onAlertBroadcasted() {
+        showAlertPostedNotification();
+        loadLiveAlerts(); // Refresh the live alerts section
+        loadStats(); // Refresh statistics
+    }
+
+    // Load disasters on page load
+    loadLiveDisasters();
+    loadLiveAlerts();
+    loadAllAlerts(); // Load all alerts for admin management
+    
+    // Restore auto-broadcast preference
+    const savedAutoBroadcast = localStorage.getItem('autoBroadcastEnabled');
+    if (savedAutoBroadcast === 'true') {
+        document.getElementById('autoBroadcastToggle').checked = true;
+        document.getElementById('autoBroadcastSlider').style.transform = 'translateX(30px)';
+        document.getElementById('autoBroadcastSlider').style.background = '#22c55e';
+        document.getElementById('autoBroadcastStatus').style.display = 'block';
+        autoBroadcastEnabled = true;
+    }
+    
+    setInterval(loadLiveDisasters, 60000); // Refresh every minute
+    setInterval(loadLiveAlerts, 30000); // Refresh alerts every 30 seconds
+    setInterval(checkAndAutoBroadcast, 30000); // Check for auto-broadcast every 30 seconds
+
+    // ═══════════════════════════════════════════════════════════
+    // DISASTER MAP INITIALIZATION (Leaflet + OpenStreetMap)
+    // ═══════════════════════════════════════════════════════════
+    let disasterMap = null;
+    let mapMarkers = [];
+
+    function initializeDisasterMap() {
+        // Center on Tamil Nadu
+        const tamilNaduCenter = [11.1271, 78.6569];
+        
+        disasterMap = L.map('disasterMap').setView(tamilNaduCenter, 7);
+        
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 18
+        }).addTo(disasterMap);
+        
+        // Hide loading indicator
+        document.getElementById('mapLoading').style.display = 'none';
+        
+        // Load disasters onto map
+        loadDisastersOnMap();
+    }
+
+    // Initialize map when page loads
+    window.addEventListener('load', () => {
+        if (document.getElementById('disasterMap')) {
+            initializeDisasterMap();
+        }
+    });
+
+    function getCoordinatesForLocation(location) {
+        // Tamil Nadu city coordinates
+        const coords = {
+            'Chennai': [13.0827, 80.2707],
+            'Coimbatore': [11.0168, 76.9558],
+            'Madurai': [9.9252, 78.1198],
+            'Tiruchirappalli': [10.7905, 78.7047],
+            'Salem': [11.6643, 78.1460],
+            'Tirunelveli': [8.7139, 77.7567],
+            'Dindigul': [10.3687, 77.9803],
+            'Vellore': [12.9165, 79.1325],
+            'Erode': [11.3410, 77.7172],
+            'Thoothukudi': [8.7642, 78.1348],
+            'Thanjavur': [10.7870, 79.1378],
+            'Kanyakumari': [8.0883, 77.5385],
+            'Tiruppur': [11.1085, 77.3411],
+            'Tamil Nadu': [11.1271, 78.6569] // Center of Tamil Nadu
+        };
+        
+        // Try exact match first
+        if (coords[location]) return coords[location];
+        
+        // Try partial match
+        for (let city in coords) {
+            if (location.includes(city) || city.includes(location)) {
+                return coords[city];
+            }
+        }
+        
+        return null;
+    }
+
+    function createDisasterMarker(disaster, coords) {
+        // Choose icon and color based on disaster type
+        let iconColor = '#f59e0b';
+        let iconHtml = '⚠️';
+        
+        if (disaster.type.includes('Cyclone')) {
+            iconColor = '#7c3aed';
+            iconHtml = '🌀';
+        } else if (disaster.type.includes('Rain')) {
+            iconColor = '#3b82f6';
+            iconHtml = '🌧️';
+        } else if (disaster.type.includes('Flood')) {
+            iconColor = '#2563eb';
+            iconHtml = '🌊';
+        } else if (disaster.type.includes('Earthquake')) {
+            iconColor = '#dc2626';
+            iconHtml = '🏚️';
+        } else if (disaster.type.includes('Fog')) {
+            iconColor = '#64748b';
+            iconHtml = '🌫️';
+        }
+        
+        // Create custom icon
+        const customIcon = L.divIcon({
+            className: 'custom-disaster-icon',
+            html: `<div style="
+                background: ${iconColor};
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 20px;
+                border: 3px solid white;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+                cursor: pointer;
+            ">${iconHtml}</div>`,
+            iconSize: [40, 40],
+            iconAnchor: [20, 20]
+        });
+        
+        const marker = L.marker(coords, { icon: customIcon });
+        
+        // Create popup content
+        const popupContent = `
+            <div style="min-width:200px;font-family:'Segoe UI',Arial,sans-serif;">
+                <h3 style="margin:0 0 0.5rem;color:${iconColor};font-size:1.1rem;">
+                    ${iconHtml} ${disaster.type}
+                </h3>
+                <p style="margin:0.3rem 0;color:#64748b;font-size:0.9rem;">
+                    <strong>Location:</strong> ${disaster.location}
+                </p>
+                <p style="margin:0.3rem 0;color:#64748b;font-size:0.9rem;">
+                    <strong>Severity:</strong> 
+                    <span style="color:${disaster.severity === 'High' ? '#ef4444' : disaster.severity === 'Medium' ? '#f59e0b' : '#10b981'}">
+                        ${disaster.severity}
+                    </span>
+                </p>
+                <p style="margin:0.3rem 0;color:#64748b;font-size:0.85rem;">
+                    <strong>Time:</strong> ${new Date(disaster.timestamp).toLocaleString('en-IN')}
+                </p>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:0.8rem;">
+                    <button onclick="quickAlertDirect('${disaster.type}', '${disaster.location}', '${disaster.severity}')" 
+                            style="padding:0.5rem;background:#22c55e;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.85rem;">
+                        ⚡ Quick
+                    </button>
+                    <button onclick="detailedAlert('${disaster.type}', '${disaster.location}', '${disaster.severity}')" 
+                            style="padding:0.5rem;background:#dc2626;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.85rem;">
+                        📝 Detailed
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        marker.bindPopup(popupContent);
+        
+        return marker;
+    }
+
+    // Initialize map when page loads
+    setTimeout(initializeDisasterMap, 500);
+    
+    // Refresh map markers every 2 minutes
+    setInterval(loadDisastersOnMap, 120000);
+
+    // Handle form submission
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const alertData = {
+            title: document.getElementById('title').value,
+            message: document.getElementById('message').value,
+            disasterType: document.getElementById('disasterType').value,
+            severity: document.getElementById('severity').value,
+            region: document.getElementById('region').value
+        };
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Broadcasting...';
+
+        try {
+            const response = await fetch('/api/alerts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(alertData)
+            });
+
+            if (response.ok) {
+                showMessage('✓ Alert broadcasted successfully to all citizens!', 'success');
+                onAlertBroadcasted();
+                form.reset();
+                loadStats(); // Refresh statistics
+            } else {
+                const error = await response.text();
+                showMessage('✗ Failed to broadcast alert: ' + error, 'error');
+            }
+        } catch (error) {
+            showMessage('✗ Network error: ' + error.message, 'error');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Broadcast Alert to Citizens';
+        }
+    });
+</script>
+
+</body>
+</html>
