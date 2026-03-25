@@ -192,6 +192,11 @@ button:hover {
     
     <div class="extra-links">
         <p>Don't have an account? <a href="#" onclick="showRegisterForm()">Sign up</a></p>
+        <p style="margin-top: 0.8rem;">
+            <a href="/responder-register.html" style="color: #10b981; font-size: 0.9rem;">
+                <i class="fas fa-user-plus"></i> Register as Emergency Responder
+            </a>
+        </p>
     </div>
 </div>
 
@@ -371,7 +376,7 @@ function login() {
             if (actualRole === 'Admin') {
                 window.location.href = "admin-dashboard.html";
             } else if (actualRole === 'Responder') {
-                window.location.href = "responder-rescue.html";
+                window.location.href = "responder-dashboard.html";
             } else if (actualRole === 'Citizen') {
                 window.location.href = "citizen-dashboard.html";
             } else {

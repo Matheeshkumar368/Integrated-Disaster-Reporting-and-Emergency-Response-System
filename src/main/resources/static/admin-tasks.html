@@ -389,6 +389,22 @@
             </div>
         </div>
         
+        <!-- Responder Stats by Zone -->
+        <div class="section">
+            <h2><i class="fas fa-users"></i> Responders by Zone</h2>
+            <div id="responderZoneStats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                <!-- Dynamic content loaded via JavaScript -->
+            </div>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <button class="btn btn-primary" onclick="openRespondersModal()">
+                    <i class="fas fa-list"></i> View All Responders
+                </button>
+                <button class="btn btn-success" onclick="refreshResponderStats()">
+                    <i class="fas fa-sync-alt"></i> Refresh Stats
+                </button>
+            </div>
+        </div>
+        
         <!-- Create Task Section -->
         <div class="section">
             <h2><i class="fas fa-plus-circle"></i> Create New Task</h2>
@@ -480,6 +496,29 @@
         </div>
     </div>
     
+    <!-- Responder Management Modal -->
+    <div id="respondersModal" class="assign-modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <h2><i class="fas fa-users"></i> Registered Responders</h2>
+            <p style="margin-bottom: 1rem; color: #94a3b8;">View all registered responders and their details</p>
+            <div id="allRespondersList" class="responder-list" style="max-height: 400px;"></div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1rem;">
+                <button class="btn" style="background: rgba(255,255,255,0.1); color: white;" onclick="closeRespondersModal()">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Responder Details Modal -->
+    <div id="responderDetailModal" class="assign-modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <h2><i class="fas fa-user-circle"></i> Responder Details</h2>
+            <div id="responderDetailContent" style="margin: 1rem 0;"></div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button class="btn" style="background: rgba(255,255,255,0.1); color: white;" onclick="closeResponderDetailModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Assign Modal -->
     <div id="assignModal" class="assign-modal">
         <div class="modal-content">
@@ -527,6 +566,7 @@
             
             loadTasks();
             loadResponders();
+            loadResponderStats();
         })();
         
         function showNotification(message, type) {
@@ -788,6 +828,191 @@
             localStorage.removeItem('userRole');
             window.location.href = '/index.html';
         }
-    </script>
+        
+        // Load responder counts by zone
+        async function loadResponderStats() {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch('/api/auth/responders/by-zone', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                
+                const container = document.getElementById('responderZoneStats');
+                
+                if (data.status === 'success') {
+                    const total = data.totalResponders || 0;
+                    
+                    if (total === 0) {
+                        container.innerHTML = `
+                            <div class="stat-card" style="background: rgba(59,130,246,0.2);">
+                                <h3>0</h3>
+                                <p>Total Responders</p>
+                            </div>
+                            <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: #94a3b8;">
+                                <i class="fas fa-users-slash" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
+                                <p>No responders registered yet</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    let html = `<div class="stat-card" style="background: linear-gradient(135deg, rgba(59,130,246,0.3), rgba(59,130,246,0.1));">
+                        <h3 style="color: #60a5fa;">${total}</h3>
+                        <p>Total Responders</p>
+                    </div>`;
+                    
+                    if (data.zoneCounts) {
+                        const colors = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#14b8a6'];
+                        Object.entries(data.zoneCounts).forEach(([zone, count]) => {
+                            const colorIndex = Object.keys(data.zoneCounts).indexOf(zone) % colors.length;
+                            html += `<div class="stat-card" style="background: linear-gradient(135deg, rgba(${hexToRgb(colors[colorIndex])},0.3), rgba(${hexToRgb(colors[colorIndex])},0.1)); border-left: 3px solid ${colors[colorIndex]};">
+                                <h3 style="color: ${colors[colorIndex]};">${count}</h3>
+                                <p>${zone}</p>
+                            </div>`;
+                        });
+                    }
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = `
+                        <div class="stat-card" style="background: rgba(239,68,68,0.2);">
+                            <h3 style="color: #ef4444;">!</h3>
+                            <p>Error loading stats</p>
+                        </div>
+                    `;
+                }
+            } catch(e) {
+                console.error('Error loading responder stats:', e);
+                const container = document.getElementById('responderZoneStats');
+                container.innerHTML = `
+                    <div class="stat-card" style="background: rgba(239,68,68,0.2);">
+                        <h3 style="color: #ef4444;">!</h3>
+                        <p>Connection error</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? 
+                parseInt(result[1], 16) + ',' + parseInt(result[2], 16) + ',' + parseInt(result[3], 16) 
+                : '59,130,246';
+        }
+        
+        function refreshResponderStats() {
+            loadResponderStats();
+            loadResponders();
+            showNotification('Stats refreshed', 'success');
+        }
+        
+        function openRespondersModal() {
+            loadAllResponders();
+            document.getElementById('respondersModal').classList.add('active');
+        }
+        
+        function closeRespondersModal() {
+            document.getElementById('respondersModal').classList.remove('active');
+        }
+        
+        async function loadAllResponders() {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch('/api/auth/responders/all', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                
+                const container = document.getElementById('allRespondersList');
+                
+                if (data.status === 'success' && data.responders && data.responders.length > 0) {
+                    container.innerHTML = data.responders.map(r => `
+                        <div class="responder-item" onclick="viewResponderDetails('${r.email}')">
+                            <div class="responder-info">
+                                <h4>${r.name || 'Unknown'}</h4>
+                                <p>${r.email}</p>
+                                <p style="font-size: 0.75rem; color: #60a5fa;">
+                                    <i class="fas fa-map-marker-alt"></i> Zone: ${r.assignedZone || 'Not assigned'}
+                                    <span style="margin-left: 10px;">|</span>
+                                    <i class="fas fa-users"></i> Group: ${r.groupClassification || 'Not specified'}
+                                </p>
+                            </div>
+                            <div style="color: #60a5fa;">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><p>No responders registered yet.</p></div>';
+                }
+            } catch(e) {
+                console.error('Error loading all responders:', e);
+                document.getElementById('allRespondersList').innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error loading responders</p></div>';
+            }
+        }
+        
+        async function viewResponderDetails(email) {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch('/api/auth/responders/all', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    const responder = data.responders.find(r => r.email === email);
+                    if (responder) {
+                        const content = document.getElementById('responderDetailContent');
+                        content.innerHTML = `
+                            <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                    <div>
+                                        <label style="color: #94a3b8; font-size: 0.85rem;">Name</label>
+                                        <p style="font-size: 1.1rem; font-weight: 600;">${responder.name || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <label style="color: #94a3b8; font-size: 0.85rem;">Email</label>
+                                        <p style="font-size: 1.1rem; font-weight: 600;">${responder.email || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <label style="color: #94a3b8; font-size: 0.85rem;">Phone</label>
+                                        <p style="font-size: 1.1rem; font-weight: 600;">${responder.phone || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <label style="color: #94a3b8; font-size: 0.85rem;">Location</label>
+                                        <p style="font-size: 1.1rem; font-weight: 600;">${responder.location || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <label style="color: #94a3b8; font-size: 0.85rem;">Assigned Zone</label>
+                                        <p style="font-size: 1.1rem; font-weight: 600;">${responder.assignedZone || 'Not assigned'}</p>
+                                    </div>
+                                    <div>
+                                        <label style="color: #94a3b8; font-size: 0.85rem;">Group Classification</label>
+                                        <p style="font-size: 1.1rem; font-weight: 600; color: #60a5fa;">${responder.groupClassification || 'Not specified'}</p>
+                                    </div>
+                                </div>
+                                ${responder.additionalDetails ? `
+                                <div style="margin-top: 1rem;">
+                                    <label style="color: #94a3b8; font-size: 0.85rem;">Additional Details</label>
+                                    <p style="font-size: 0.95rem; color: #cbd5e1; margin-top: 0.5rem;">${responder.additionalDetails}</p>
+                                </div>
+                                ` : ''}
+                            </div>
+                        `;
+                        document.getElementById('responderDetailModal').classList.add('active');
+                    }
+                }
+            } catch(e) {
+                console.error('Error loading responder details:', e);
+                showNotification('Error loading responder details', 'error');
+            }
+        }
+        
+        function closeResponderDetailModal() {
+            document.getElementById('responderDetailModal').classList.remove('active');
+        }
+        
+        // Initialize
+        loadResponderStats();
 </body>
 </html>

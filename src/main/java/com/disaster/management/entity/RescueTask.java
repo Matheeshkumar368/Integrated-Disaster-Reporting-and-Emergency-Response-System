@@ -6,11 +6,17 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
-import jakarta.persistence.Column;
 
 @Entity
-@Table(name = "rescue_tasks")
+@Table(name = "rescue_tasks", indexes = {
+    @Index(name = "idx_assignedTo", columnList = "assignedTo"),
+    @Index(name = "idx_zone", columnList = "zone"),
+    @Index(name = "idx_status", columnList = "status"),
+    @Index(name = "idx_assignedTo_status", columnList = "assignedTo, status"),
+    @Index(name = "idx_zone_status", columnList = "zone, status")
+})
 public class RescueTask {
 
     @Id

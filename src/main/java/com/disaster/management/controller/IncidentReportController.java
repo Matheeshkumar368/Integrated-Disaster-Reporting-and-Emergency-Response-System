@@ -62,14 +62,24 @@ public class IncidentReportController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
         }
         
-        report.setReportedBy(email);
-        report.setReporterName(userOpt.get().getName());
-        IncidentReport createdReport = incidentReportService.createReport(report);
-        
-        response.put("status", "success");
-        response.put("message", "Report submitted successfully");
-        response.put("report", createdReport);
-        return ResponseEntity.ok(response);
+        try {
+            report.setReportedBy(email);
+            report.setReporterName(userOpt.get().getName());
+            IncidentReport createdReport = incidentReportService.createReport(report);
+            
+            response.put("status", "success");
+            response.put("message", "Report submitted successfully");
+            response.put("report", createdReport);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            response.put("status", "error");
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("message", "Failed to create report: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
     }
 
     // Get all reports (Admin)
@@ -170,17 +180,27 @@ public class IncidentReportController {
             return ResponseEntity.badRequest().body(response);
         }
         
-        IncidentReport report = incidentReportService.updateReportStatus(id, status);
-        
-        if (report != null) {
-            response.put("status", "success");
-            response.put("message", "Report status updated");
-            response.put("report", report);
-            return ResponseEntity.ok(response);
-        } else {
+        try {
+            IncidentReport report = incidentReportService.updateReportStatus(id, status);
+            
+            if (report != null) {
+                response.put("status", "success");
+                response.put("message", "Report status updated");
+                response.put("report", report);
+                return ResponseEntity.ok(response);
+            } else {
+                response.put("status", "error");
+                response.put("message", "Report not found");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
+        } catch (IllegalArgumentException e) {
             response.put("status", "error");
-            response.put("message", "Report not found");
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("message", "Failed to update report: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 
@@ -203,10 +223,20 @@ public class IncidentReportController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
         }
         
-        incidentReportService.deleteReport(id);
-        response.put("status", "success");
-        response.put("message", "Report deleted successfully");
-        return ResponseEntity.ok(response);
+        try {
+            incidentReportService.deleteReport(id);
+            response.put("status", "success");
+            response.put("message", "Report deleted successfully");
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            response.put("status", "error");
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("message", "Failed to delete report: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
     }
 
     // Get reports by zone

@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.disaster.management.entity.IncidentReport;
 import com.disaster.management.repository.IncidentReportRepository;
@@ -17,7 +18,14 @@ public class IncidentReportService {
     private IncidentReportRepository incidentReportRepository;
 
     // Create a new incident report
+    @Transactional
     public IncidentReport createReport(IncidentReport report) {
+        if (report.getTitle() == null || report.getTitle().trim().isEmpty()) {
+            throw new IllegalArgumentException("Report title is required");
+        }
+        if (report.getDescription() == null || report.getDescription().trim().isEmpty()) {
+            throw new IllegalArgumentException("Report description is required");
+        }
         report.setTimestamp(LocalDateTime.now());
         report.setStatus("Submitted");
         return incidentReportRepository.save(report);
@@ -54,7 +62,11 @@ public class IncidentReportService {
     }
 
     // Update report status
+    @Transactional
     public IncidentReport updateReportStatus(Long reportId, String status) {
+        if (reportId == null || status == null || status.trim().isEmpty()) {
+            throw new IllegalArgumentException("Report ID and status are required");
+        }
         Optional<IncidentReport> reportOpt = incidentReportRepository.findById(reportId);
         if (reportOpt.isPresent()) {
             IncidentReport report = reportOpt.get();
@@ -65,12 +77,20 @@ public class IncidentReportService {
     }
 
     // Update report
+    @Transactional
     public IncidentReport updateReport(IncidentReport report) {
+        if (report == null || report.getReportId() == null) {
+            throw new IllegalArgumentException("Report is required");
+        }
         return incidentReportRepository.save(report);
     }
 
     // Delete report
+    @Transactional
     public void deleteReport(Long id) {
+        if (id == null) {
+            throw new IllegalArgumentException("Report ID is required");
+        }
         incidentReportRepository.deleteById(id);
     }
 

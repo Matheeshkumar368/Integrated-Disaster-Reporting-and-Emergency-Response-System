@@ -63,13 +63,23 @@ public class RescueTaskController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
         }
         
-        task.setCreatedBy(email);
-        RescueTask createdTask = rescueTaskService.createTask(task);
-        
-        response.put("status", "success");
-        response.put("message", "Task created successfully");
-        response.put("task", createdTask);
-        return ResponseEntity.ok(response);
+        try {
+            task.setCreatedBy(email);
+            RescueTask createdTask = rescueTaskService.createTask(task);
+            
+            response.put("status", "success");
+            response.put("message", "Task created successfully");
+            response.put("task", createdTask);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            response.put("status", "error");
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("message", "Failed to create task: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
     }
 
     // Get all tasks (Admin)
@@ -173,18 +183,28 @@ public class RescueTaskController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
         
-        String responderName = responderOpt.get().getName();
-        RescueTask task = rescueTaskService.assignTask(id, responderEmail, responderName);
-        
-        if (task != null) {
-            response.put("status", "success");
-            response.put("message", "Task assigned successfully");
-            response.put("task", task);
-            return ResponseEntity.ok(response);
-        } else {
+        try {
+            String responderName = responderOpt.get().getName();
+            RescueTask task = rescueTaskService.assignTask(id, responderEmail, responderName);
+            
+            if (task != null) {
+                response.put("status", "success");
+                response.put("message", "Task assigned successfully");
+                response.put("task", task);
+                return ResponseEntity.ok(response);
+            } else {
+                response.put("status", "error");
+                response.put("message", "Task not found");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
+        } catch (IllegalArgumentException e) {
             response.put("status", "error");
-            response.put("message", "Task not found");
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("message", "Failed to assign task: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 
@@ -209,17 +229,27 @@ public class RescueTaskController {
             return ResponseEntity.badRequest().body(response);
         }
         
-        RescueTask task = rescueTaskService.updateTaskStatus(id, status, notes);
-        
-        if (task != null) {
-            response.put("status", "success");
-            response.put("message", "Task status updated");
-            response.put("task", task);
-            return ResponseEntity.ok(response);
-        } else {
+        try {
+            RescueTask task = rescueTaskService.updateTaskStatus(id, status, notes);
+            
+            if (task != null) {
+                response.put("status", "success");
+                response.put("message", "Task status updated");
+                response.put("task", task);
+                return ResponseEntity.ok(response);
+            } else {
+                response.put("status", "error");
+                response.put("message", "Task not found");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
+        } catch (IllegalArgumentException e) {
             response.put("status", "error");
-            response.put("message", "Task not found");
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("message", "Failed to update task status: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 
@@ -242,10 +272,20 @@ public class RescueTaskController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
         }
         
-        rescueTaskService.deleteTask(id);
-        response.put("status", "success");
-        response.put("message", "Task deleted successfully");
-        return ResponseEntity.ok(response);
+        try {
+            rescueTaskService.deleteTask(id);
+            response.put("status", "success");
+            response.put("message", "Task deleted successfully");
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            response.put("status", "error");
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("message", "Failed to delete task: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
     }
 
     // Get all responders (Admin only)

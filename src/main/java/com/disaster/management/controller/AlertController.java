@@ -1,11 +1,14 @@
 package com.disaster.management.controller;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,6 +28,7 @@ import com.disaster.management.service.RescueTaskService;
 
 @RestController
 @RequestMapping("/api/alerts")
+@CrossOrigin(origins = {"http://localhost:8080", "http://localhost:8081"})
 public class AlertController {
 
     @Autowired
@@ -58,41 +62,21 @@ public class AlertController {
             
             // Automatically create tasks for responders in the matching zone
             if (alert.getRegion() != null && !alert.getRegion().isEmpty()) {
-                List<User> responders = userRepository.findByRoleAndAssignedZone("Responder", alert.getRegion());
+                Set<String> taskAssignedEmails = new HashSet<>();
                 
-                for (User responder : responders) {
-                    RescueTask task = new RescueTask();
-                    task.setTitle("Alert Response: " + alert.getTitle());
-                    task.setDescription("Respond to alert in " + alert.getRegion() + ". " + alert.getMessage());
-                    task.setZone(alert.getRegion());
-                    task.setPriority(alert.getSeverity() != null ? alert.getSeverity() : "Medium");
-                    task.setCreatedBy(email);
-                    task.setAssignedTo(responder.getEmail());
-                    task.setAssignedResponderName(responder.getName());
-                    task.setLatitude(alert.getLatitude());
-                    task.setLongitude(alert.getLongitude());
-                    task.setLocationName(alert.getRegion());
-                    task.setStatus("Pending");
-                    rescueTaskService.createTask(task);
+                // First: Create tasks for responders in the matching zone
+                List<User> zoneResponders = userRepository.findByRoleAndAssignedZone("Responder", alert.getRegion());
+                for (User responder : zoneResponders) {
+                    taskAssignedEmails.add(responder.getEmail());
+                    createTaskForResponder(alert, responder, email, rescueTaskService);
                 }
                 
-                // Also create unassigned tasks for general responders (no specific zone)
-                List<User> allResponders = userRepository.findByRole("Responder");
-                for (User responder : allResponders) {
-                    if (responder.getAssignedZone() == null || responder.getAssignedZone().isEmpty()) {
-                        RescueTask task = new RescueTask();
-                        task.setTitle("Alert Response: " + alert.getTitle());
-                        task.setDescription("Respond to alert in " + alert.getRegion() + ". " + alert.getMessage());
-                        task.setZone(alert.getRegion());
-                        task.setPriority(alert.getSeverity() != null ? alert.getSeverity() : "Medium");
-                        task.setCreatedBy(email);
-                        task.setAssignedTo(responder.getEmail());
-                        task.setAssignedResponderName(responder.getName());
-                        task.setLatitude(alert.getLatitude());
-                        task.setLongitude(alert.getLongitude());
-                        task.setLocationName(alert.getRegion());
-                        task.setStatus("Pending");
-                        rescueTaskService.createTask(task);
+                // Second: Create tasks for general responders (no specific zone), excluding those already assigned
+                List<User> generalResponders = userRepository.findByRole("Responder");
+                for (User responder : generalResponders) {
+                    if (!taskAssignedEmails.contains(responder.getEmail()) && 
+                        (responder.getAssignedZone() == null || responder.getAssignedZone().isEmpty())) {
+                        createTaskForResponder(alert, responder, email, rescueTaskService);
                     }
                 }
             }
@@ -221,5 +205,21 @@ public class AlertController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error resolving alert: " + e.getMessage());
         }
+    }
+    
+    private void createTaskForResponder(Alert alert, User responder, String createdBy, RescueTaskService rescueTaskService) {
+        RescueTask task = new RescueTask();
+        task.setTitle("Alert Response: " + alert.getTitle());
+        task.setDescription("Respond to alert in " + alert.getRegion() + ". " + alert.getMessage());
+        task.setZone(alert.getRegion());
+        task.setPriority(alert.getSeverity() != null ? alert.getSeverity() : "Medium");
+        task.setCreatedBy(createdBy);
+        task.setAssignedTo(responder.getEmail());
+        task.setAssignedResponderName(responder.getName());
+        task.setLatitude(alert.getLatitude());
+        task.setLongitude(alert.getLongitude());
+        task.setLocationName(alert.getRegion());
+        task.setStatus("Pending");
+        rescueTaskService.createTask(task);
     }
 }

@@ -1,6 +1,9 @@
 package com.disaster.management.controller;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -9,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -211,7 +215,7 @@ public class AuthController {
 
         Long userId;
         try {
-            userId = Long.parseLong(userIdStr);
+            userId = Long.valueOf(userIdStr);
         } catch (NumberFormatException e) {
             response.put("status", "error");
             response.put("message", "Invalid user ID format");
@@ -267,6 +271,156 @@ public class AuthController {
             response.put("status", "error");
             response.put("message", "User not found");
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
+    }
+
+    // Public: Register a new responder
+    @PostMapping("/register-responder")
+    public ResponseEntity<Map<String, Object>> registerResponder(@RequestBody Map<String, String> request) {
+        Map<String, Object> response = new HashMap<>();
+        
+        String name = request.get("name");
+        String email = request.get("email");
+        String password = request.get("password");
+        String phone = request.get("phone");
+        String location = request.get("location");
+        String groupClassification = request.get("groupClassification");
+        String additionalDetails = request.get("additionalDetails");
+        
+        if (name == null || email == null || password == null || phone == null || location == null) {
+            response.put("status", "error");
+            response.put("message", "Name, email, password, phone, and location are required");
+            return ResponseEntity.badRequest().body(response);
+        }
+        
+        Optional<User> existing = userRepository.findByEmail(email);
+        if (existing.isPresent()) {
+            response.put("status", "error");
+            response.put("message", "Email already registered");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+        }
+        
+        try {
+            User user = new User();
+            user.setName(name);
+            user.setEmail(email);
+            user.setPassword(passwordEncoder.encode(password));
+            user.setPhone(phone);
+            user.setLocation(location);
+            user.setAssignedZone(location);
+            user.setRole("Responder");
+            user.setGroupClassification(groupClassification);
+            user.setAdditionalDetails(additionalDetails);
+            
+            userRepository.save(user);
+            response.put("status", "success");
+            response.put("message", "Responder registered successfully!");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("message", "Registration failed: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+    
+    // Admin: Get responder count by zone
+    @GetMapping("/responders/by-zone")
+    public ResponseEntity<Map<String, Object>> getRespondersByZone(@RequestHeader("Authorization") String authHeader) {
+        Map<String, Object> response = new HashMap<>();
+        
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            response.put("status", "error");
+            response.put("message", "Authorization token required");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+        
+        String token = authHeader.substring(7);
+        if (!jwtUtil.validateToken(token)) {
+            response.put("status", "error");
+            response.put("message", "Invalid or expired token");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+        
+        String role = jwtUtil.extractRole(token);
+        if (!"Admin".equals(role)) {
+            response.put("status", "error");
+            response.put("message", "Access denied. Admin only.");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        }
+        
+        try {
+            List<User> responders = userRepository.findByRole("Responder");
+            Map<String, Integer> zoneCounts = new LinkedHashMap<>();
+            
+            for (User responder : responders) {
+                String zone = responder.getAssignedZone();
+                if (zone == null || zone.isEmpty()) {
+                    zone = "Unassigned";
+                }
+                zoneCounts.put(zone, zoneCounts.getOrDefault(zone, 0) + 1);
+            }
+            
+            response.put("status", "success");
+            response.put("zoneCounts", zoneCounts);
+            response.put("totalResponders", responders.size());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("message", "Failed to get responder counts: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+    
+    // Admin: Get all responders with details
+    @GetMapping("/responders/all")
+    public ResponseEntity<Map<String, Object>> getAllResponders(@RequestHeader("Authorization") String authHeader) {
+        Map<String, Object> response = new HashMap<>();
+        
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            response.put("status", "error");
+            response.put("message", "Authorization token required");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+        
+        String token = authHeader.substring(7);
+        if (!jwtUtil.validateToken(token)) {
+            response.put("status", "error");
+            response.put("message", "Invalid or expired token");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+        
+        String role = jwtUtil.extractRole(token);
+        if (!"Admin".equals(role)) {
+            response.put("status", "error");
+            response.put("message", "Access denied. Admin only.");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        }
+        
+        try {
+            List<User> responders = userRepository.findByRole("Responder");
+            List<Map<String, Object>> responderList = new ArrayList<>();
+            
+            for (User responder : responders) {
+                Map<String, Object> r = new HashMap<>();
+                r.put("id", responder.getId());
+                r.put("name", responder.getName());
+                r.put("email", responder.getEmail());
+                r.put("phone", responder.getPhone());
+                r.put("location", responder.getLocation());
+                r.put("assignedZone", responder.getAssignedZone());
+                r.put("groupClassification", responder.getGroupClassification());
+                r.put("additionalDetails", responder.getAdditionalDetails());
+                responderList.add(r);
+            }
+            
+            response.put("status", "success");
+            response.put("responders", responderList);
+            response.put("totalCount", responderList.size());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("message", "Failed to get responders: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 

@@ -14,5 +14,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByRoleAndAssignedZone(String role, String assignedZone);
     
     List<User> findByRole(String role);
+    
+    List<User> findByRoleAndAssignedZoneIsNullOrAssignedZoneEmpty(String role);
 
 }
