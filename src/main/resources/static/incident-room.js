@@ -18,12 +18,20 @@
             this.pollTimer = null;
             this.currentEmail = null;
 
-            this.injectModal();
-            this.bindEvents();
+            if (document.body) {
+                this.injectModal();
+                this.bindEvents();
+            } else if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => {
+                    this.injectModal();
+                    this.bindEvents();
+                });
+            }
         }
 
         injectModal() {
             if (document.getElementById('incident-room-modal-backdrop')) return;
+            if (!document.body) return;
 
             const html = `
             <div id="incident-room-modal-backdrop" class="room-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="room-title-heading">

@@ -28,20 +28,20 @@
     <!-- Design System & Interaction Engine -->
     <link rel="stylesheet" href="toast-manager.css?v=2" />
     <script src="toast-manager.js?v=2"></script>
-    <script src="/js/emergency-alert.js?v=3"></script>
+    <script src="/js/emergency-alert.js?v=4.1"></script>
     <link rel="stylesheet" href="command-center.css?v=3" />
     <script src="command-center.js?v=3"></script>
     <script src="pwa-manager.js"></script>
 
     <!-- Situational Media Capture, Live Responder Tracking, Incident Room & Smart Assignment -->
     <link rel="stylesheet" href="media-capture.css?v=1" />
-    <script src="media-capture.js?v=1"></script>
+    <script src="media-capture.js?v=2"></script>
     <link rel="stylesheet" href="responder-tracking.css?v=1" />
-    <script src="responder-tracking.js?v=1"></script>
+    <script src="responder-tracking.js?v=2"></script>
     <link rel="stylesheet" href="incident-room.css?v=1" />
-    <script src="incident-room.js?v=1"></script>
+    <script src="incident-room.js?v=2"></script>
     <link rel="stylesheet" href="smart-assignment.css?v=1" />
-    <script src="smart-assignment.js?v=1"></script>
+    <script src="smart-assignment.js?v=2"></script>
     
     <!-- Authentication Guard & Role Loading -->
     <link rel="stylesheet" href="role-loading.css?v=2" />
@@ -790,6 +790,13 @@
             }
         }
 
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/[&<>"']/g, function(m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+            });
+        }
+
         // Initialize Leaflet Map with CartoDB Dark Matter
         function initMap() {
             map = L.map('disasterMap', {
@@ -865,7 +872,7 @@
 
                     const marker = L.marker([lat, lon], { icon: incidentIcon }).addTo(incidentsLayerGroup);
 
-                    const timeFormatted = r.timestamp ? (window.CommandCenter ? CommandCenter.formatIst(r.timestamp) : r.timestamp) : 'Recent';
+                    const timeFormatted = r.timestamp ? (window.CommandCenter && typeof CommandCenter.formatIst === 'function' ? CommandCenter.formatIst(r.timestamp) : String(r.timestamp).replace('T', ' ').substring(0, 19)) : 'Recent';
                     const popupHtml = `
                         <div style="font-family:Inter,sans-serif;color:#fff;background:#091322;padding:12px;border-radius:8px;border:1px solid ${markerColor};min-width:240px;font-size:0.85rem;">
                             <div style="font-weight:700;color:${markerColor};font-size:0.95rem;margin-bottom:4px;display:flex;align-items:center;gap:6px;">

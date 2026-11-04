@@ -16,12 +16,20 @@
             this.activeTaskId = null;
             this.onAssignCallback = null;
 
-            this.injectModal();
-            this.bindEvents();
+            if (document.body) {
+                this.injectModal();
+                this.bindEvents();
+            } else if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => {
+                    this.injectModal();
+                    this.bindEvents();
+                });
+            }
         }
 
         injectModal() {
             if (document.getElementById('smart-assign-backdrop')) return;
+            if (!document.body) return;
 
             const html = `
             <div id="smart-assign-backdrop" class="smart-assign-backdrop" role="dialog" aria-modal="true" aria-labelledby="smart-assign-heading">

@@ -88,7 +88,8 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/api/auth/login",
                     "/api/auth/register",
-                    "/api/auth/register-responder"
+                    "/api/auth/register-responder",
+                    "/api/auth/sos-event"
                 ).permitAll()
 
                 // Public Disaster Information & Health

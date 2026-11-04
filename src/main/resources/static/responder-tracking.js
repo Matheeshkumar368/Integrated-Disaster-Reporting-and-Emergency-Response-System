@@ -22,12 +22,20 @@
             this.pollTimer = null;
             this.activeAssignmentId = null;
 
-            this.injectModal();
-            this.bindEvents();
+            if (document.body) {
+                this.injectModal();
+                this.bindEvents();
+            } else if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => {
+                    this.injectModal();
+                    this.bindEvents();
+                });
+            }
         }
 
         injectModal() {
             if (document.getElementById('tracking-modal-backdrop')) return;
+            if (!document.body) return;
 
             const html = `
             <div id="tracking-modal-backdrop" class="tracking-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="tracking-title-heading">

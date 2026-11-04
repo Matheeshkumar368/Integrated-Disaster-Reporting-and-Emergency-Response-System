@@ -482,6 +482,26 @@ const EmergencyAlertSystem = (function() {
     // ─────────────────────────────────────────────────────────────
     // Public Trigger & Stop Methods
     // ─────────────────────────────────────────────────────────────
+    async function broadcastSosEvent(action, status) {
+        try {
+            const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = 'Bearer ' + token;
+
+            await fetch('/api/auth/sos-event', {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({
+                    action: action,
+                    status: status,
+                    details: 'Emergency SOS siren toggled (Shortcut: ' + config.shortcut + ', Vol: ' + config.volume + '%)'
+                })
+            });
+        } catch (e) {
+            console.warn('[EmergencySOS] Telemetry broadcast notice:', e.message);
+        }
+    }
+
     function triggerAlarm() {
         if (isAlarmPlaying) return;
 
@@ -501,6 +521,9 @@ const EmergencyAlertSystem = (function() {
 
         // 2. Synthesize acoustic reinforcement oscillators
         playActiveCycle(false);
+
+        // 3. Dispatch persistent backend emergency telemetry
+        broadcastSosEvent('SOS_ALARM_ACTIVATED', 'ACTIVE');
 
         if (window.ToastManager) {
             ToastManager.warning('Emergency SOS alarm activated! Press STOP ALARM to silence.', 5000);
@@ -554,6 +577,9 @@ const EmergencyAlertSystem = (function() {
 
         hideVisualAlertOverlay();
         updateAllSettingsUIs();
+
+        // Dispatch persistent backend emergency telemetry
+        broadcastSosEvent('SOS_ALARM_SILENCED', 'SILENCED');
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -685,6 +711,11 @@ const EmergencyAlertSystem = (function() {
                     </p>
                 </div>
             `;
+            overlay.addEventListener('click', function(e) {
+                if (e.target === overlay) {
+                    EmergencyAlertSystem.stopAlarm();
+                }
+            });
             document.body.appendChild(overlay);
             injectStyles();
         }
@@ -718,13 +749,18 @@ const EmergencyAlertSystem = (function() {
         const style = document.createElement('style');
         style.id = 'emergency-sos-system-styles';
         style.textContent = `
+            /* Header stays accessible above overlay so header STOP button always works */
+            .cc-hud-header, .cc-header, #sosSoundBtn {
+                position: relative !important;
+                z-index: 1000001 !important;
+            }
             /* Overlay */
             #emergency-alert-indicator {
                 position: fixed;
                 inset: 0;
-                background: rgba(15, 23, 42, 0.92);
-                backdrop-filter: blur(8px);
-                -webkit-backdrop-filter: blur(8px);
+                background: rgba(15, 23, 42, 0.88);
+                backdrop-filter: blur(6px);
+                -webkit-backdrop-filter: blur(6px);
                 display: none;
                 align-items: center;
                 justify-content: center;
@@ -1405,10 +1441,6 @@ const EmergencyAlertSystem = (function() {
                 ToastManager.info(`Acoustic Profile switched to ${profile === 'SIREN' ? 'Industrial Emergency Siren' : 'Maritime Morse Code SOS'}.`, 3000);
             }
         }
-    }
-                testBtn.innerHTML = `<i class="fas ${isAlarmPlaying ? 'fa-stop-circle' : 'fa-volume-up'}"></i> ${isAlarmPlaying ? 'Stop Alarm' : 'Test Sound'}`;
-            }
-        });
     }
 
     // ─────────────────────────────────────────────────────────────

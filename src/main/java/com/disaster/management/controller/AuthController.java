@@ -785,6 +785,53 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/sos-event")
+    public ResponseEntity<Map<String, Object>> logSosEvent(
+            @RequestBody(required = false) Map<String, Object> request,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            HttpServletRequest httpRequest) {
+        Map<String, Object> response = new HashMap<>();
+        String token = extractBearerToken(authHeader);
+        String actorEmail = "anonymous@citizen";
+        String role = "Citizen";
+        Long userId = null;
+
+        if (token != null && jwtUtil.validateToken(token)) {
+            actorEmail = jwtUtil.extractEmail(token);
+            User user = userRepository.findByEmail(actorEmail).orElse(null);
+            if (user != null) {
+                role = user.getRole();
+                userId = user.getId();
+            }
+        }
+
+        String action = (request != null && request.containsKey("action") && request.get("action") != null) 
+            ? String.valueOf(request.get("action")) : "SOS_ALARM_ACTIVATED";
+        String status = (request != null && request.containsKey("status") && request.get("status") != null) 
+            ? String.valueOf(request.get("status")) : "ACTIVE";
+        String details = (request != null && request.containsKey("details") && request.get("details") != null) 
+            ? String.valueOf(request.get("details")) : "Audible emergency alarm triggered by user";
+
+        adminPinService.recordAudit(
+            actorEmail,
+            action,
+            "EMERGENCY_SOS_SOUND",
+            userId != null ? String.valueOf(userId) : "GUEST",
+            status,
+            details + " [Role: " + role + "]",
+            httpRequest != null ? httpRequest.getRemoteAddr() : "127.0.0.1"
+        );
+
+        response.put("status", "success");
+        response.put("message", "Emergency SOS event logged");
+        response.put("action", action);
+        response.put("actorEmail", actorEmail);
+        response.put("role", role);
+        response.put("timestamp", java.time.LocalDateTime.now().toString());
+
+        return ResponseEntity.ok(response);
+    }
+
     // ────────────────────────────────────────────────
     //                  LOGOUT ENDPOINT
     // ────────────────────────────────────────────────

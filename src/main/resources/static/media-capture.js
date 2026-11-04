@@ -25,12 +25,20 @@
             this.currentGps = null;
             this.activeOptions = null;
 
-            this.injectModal();
-            this.bindEvents();
+            if (document.body) {
+                this.injectModal();
+                this.bindEvents();
+            } else if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => {
+                    this.injectModal();
+                    this.bindEvents();
+                });
+            }
         }
 
         injectModal() {
             if (document.getElementById('media-capture-modal-backdrop')) return;
+            if (!document.body) return;
 
             const html = `
             <div id="media-capture-modal-backdrop" class="media-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="media-modal-heading">
