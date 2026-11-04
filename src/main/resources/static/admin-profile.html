@@ -292,6 +292,7 @@
                 <div class="cc-modal-title" style="color: var(--cc-accent-glow);">
                     <i class="fas fa-shield-halved"></i> 2FA Emergency Recovery Setup
                 </div>
+                <button type="button" class="cc-drawer-close" onclick="closeBackupCodeSetupModal()">&times;</button>
             </div>
 
             <div style="background: rgba(59, 130, 246, 0.1); border-left: 3px solid #3b82f6; padding: 10px 12px; border-radius: 4px; font-size: 0.82rem; color: #cbd5e1; margin: 1rem 0; line-height: 1.45;">
@@ -302,22 +303,31 @@
             <form id="backupCodeSetupForm" onsubmit="handleBackupCodeSetup(event)">
                 <div class="cc-form-group">
                     <label class="cc-label" for="setupBackupCodeInput">CREATE SECURE BACKUP CODE (MIN 8 CHARACTERS)</label>
-                    <input type="password" id="setupBackupCodeInput" class="cc-input" required minlength="8" placeholder="Enter secure backup code">
+                    <div style="position:relative;">
+                        <input type="password" id="setupBackupCodeInput" class="cc-input" required minlength="8" placeholder="Enter secure backup code" style="padding-right:40px;">
+                        <button type="button" onclick="togglePinVisibility('setupBackupCodeInput', 'eyeSetupCode')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:#94a3b8;cursor:pointer;"><i class="fas fa-eye" id="eyeSetupCode"></i></button>
+                    </div>
                 </div>
 
                 <div class="cc-form-group">
                     <label class="cc-label" for="confirmBackupCodeInput">CONFIRM SECURE BACKUP CODE</label>
-                    <input type="password" id="confirmBackupCodeInput" class="cc-input" required minlength="8" placeholder="Re-enter secure backup code">
+                    <div style="position:relative;">
+                        <input type="password" id="confirmBackupCodeInput" class="cc-input" required minlength="8" placeholder="Re-enter secure backup code" style="padding-right:40px;">
+                        <button type="button" onclick="togglePinVisibility('confirmBackupCodeInput', 'eyeConfSetupCode')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:#94a3b8;cursor:pointer;"><i class="fas fa-eye" id="eyeConfSetupCode"></i></button>
+                    </div>
                 </div>
 
                 <div id="setupBackupCodeError" style="color:#ef4444; font-size:0.85rem; margin-bottom:1rem; display:none;"></div>
 
                 <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 6px; padding: 10px 12px; margin-bottom: 1.25rem; font-size: 0.8rem; color: #fca5a5;">
-                    <i class="fas fa-triangle-exclamation"></i> <strong>Important:</strong> Store this backup code safely offline. It will be stored only as an encrypted hash and cannot be viewed again.
+                    <i class="fas fa-triangle-exclamation"></i> <strong>Important:</strong> Store this backup code safely offline. It will be stored only as an encrypted BCrypt hash and cannot be viewed again.
                 </div>
 
-                <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
-                    <button type="submit" id="btnSubmitBackupCodeSetup" class="cc-btn cc-btn-primary" style="width: 100%;">
+                <div style="display: flex; gap: 0.75rem;">
+                    <button type="button" class="cc-btn cc-btn-secondary" onclick="closeBackupCodeSetupModal()" style="flex: 1;">
+                        Setup Later
+                    </button>
+                    <button type="submit" id="btnSubmitBackupCodeSetup" class="cc-btn cc-btn-primary" style="flex: 2;">
                         <i class="fas fa-check-circle"></i> Save & Protect Account
                     </button>
                 </div>
@@ -327,7 +337,7 @@
 
     <!-- PIN Enrollment & Emergency Recovery Modal -->
     <div id="pinEnrollModal" class="cc-modal-backdrop" style="display: none; align-items: center; justify-content: center; z-index: 2000;" role="dialog" aria-modal="true">
-        <div class="cc-modal-card" style="max-width: 460px; width: 92%;">
+        <div class="cc-modal-card" style="max-width: 480px; width: 92%;">
             <div class="cc-modal-header">
                 <div class="cc-modal-title" style="color: var(--cc-accent-glow);">
                     <i class="fas fa-shield-halved"></i> 2FA Administrative Security PIN
@@ -341,7 +351,7 @@
                     <i class="fas fa-key"></i> Set / Change PIN
                 </button>
                 <button type="button" class="cc-sub-tab-btn" id="btnPinTabRecover" onclick="switchPinTab('recover')" style="flex:1;text-align:center;justify-content:center;">
-                    <i class="fas fa-life-ring"></i> Forgot / Emergency Reset
+                    <i class="fas fa-life-ring"></i> Forgot PIN / Recovery
                 </button>
             </div>
 
@@ -350,22 +360,31 @@
             <!-- TAB 1: STANDARD ENROLLMENT -->
             <form id="pinEnrollForm" onsubmit="handlePinEnrollment(event)">
                 <p style="font-size: 0.83rem; color: var(--cc-text-secondary); margin-bottom: 1rem; line-height: 1.4;">
-                    Configure your 6-digit numeric security PIN for 2FA alert authorizations.
+                    Configure or update your 6-digit numeric security PIN for 2FA alert authorizations.
                 </p>
 
                 <div class="cc-form-group">
                     <label class="cc-label" for="pinCurrentPass">CURRENT ACCOUNT PASSWORD</label>
-                    <input type="password" id="pinCurrentPass" class="cc-input" required placeholder="••••••••••••">
+                    <div style="position:relative;">
+                        <input type="password" id="pinCurrentPass" class="cc-input" required placeholder="••••••••••••" style="padding-right:40px;">
+                        <button type="button" onclick="togglePinVisibility('pinCurrentPass', 'eyeCurrentPass')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:#94a3b8;cursor:pointer;"><i class="fas fa-eye" id="eyeCurrentPass"></i></button>
+                    </div>
                 </div>
 
                 <div class="cc-form-group">
                     <label class="cc-label" for="pinNewValue">NEW SECURITY PIN (6 NUMERIC DIGITS)</label>
-                    <input type="password" id="pinNewValue" class="cc-input" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" required placeholder="••••••" style="font-family: var(--cc-font-mono); letter-spacing: 0.4em; text-align: center; font-size: 1.2rem;">
+                    <div style="position:relative;">
+                        <input type="password" id="pinNewValue" class="cc-input" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" required placeholder="••••••" style="font-family: var(--cc-font-mono); letter-spacing: 0.4em; text-align: center; font-size: 1.2rem; padding-right:40px;">
+                        <button type="button" onclick="togglePinVisibility('pinNewValue', 'eyeNewValue')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:#94a3b8;cursor:pointer;"><i class="fas fa-eye" id="eyeNewValue"></i></button>
+                    </div>
                 </div>
 
                 <div class="cc-form-group">
                     <label class="cc-label" for="pinConfirmValue">CONFIRM NEW SECURITY PIN</label>
-                    <input type="password" id="pinConfirmValue" class="cc-input" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" required placeholder="••••••" style="font-family: var(--cc-font-mono); letter-spacing: 0.4em; text-align: center; font-size: 1.2rem;">
+                    <div style="position:relative;">
+                        <input type="password" id="pinConfirmValue" class="cc-input" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" required placeholder="••••••" style="font-family: var(--cc-font-mono); letter-spacing: 0.4em; text-align: center; font-size: 1.2rem; padding-right:40px;">
+                        <button type="button" onclick="togglePinVisibility('pinConfirmValue', 'eyeConfirmValue')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:#94a3b8;cursor:pointer;"><i class="fas fa-eye" id="eyeConfirmValue"></i></button>
+                    </div>
                 </div>
 
                 <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
@@ -376,39 +395,50 @@
                 </div>
             </form>
 
-            <!-- TAB 2: EMERGENCY RECOVERY -->
+            <!-- TAB 2: EMERGENCY RECOVERY VIA BACKUP CODE -->
             <form id="pinRecoverForm" style="display:none;" onsubmit="handlePinRecovery(event)">
-                <p style="font-size: 0.83rem; color: var(--cc-text-secondary); margin-bottom: 1rem; line-height: 1.4;">
-                    Forgot your PIN? Recover and re-issue your security PIN using your account credentials or single-use Emergency Recovery Code.
-                </p>
-
-                <div class="cc-form-group">
-                    <label class="cc-label">RECOVERY METHOD</label>
-                    <select id="pinRecoveryType" class="cc-select" onchange="toggleRecoverySecretLabel()">
-                        <option value="ACCOUNT_PASSWORD">Account Password</option>
-                        <option value="RECOVERY_CODE">Emergency Recovery Code (REC-XXXX-XXXX-XXXX)</option>
-                    </select>
+                <div style="background: rgba(239, 68, 68, 0.1); border-left: 3px solid #ef4444; padding: 10px 12px; border-radius: 4px; font-size: 0.82rem; color: #fca5a5; margin-bottom: 1rem; line-height: 1.45;">
+                    <i class="fas fa-life-ring"></i>
+                    <strong>Emergency Recovery:</strong> Enter your secret emergency backup code to verify administrative authority and configure a new 6-digit Security PIN.
                 </div>
 
                 <div class="cc-form-group">
-                    <label class="cc-label" id="recoverySecretLabel" for="pinRecoverySecret">ACCOUNT PASSWORD</label>
-                    <input type="password" id="pinRecoverySecret" class="cc-input" required placeholder="Enter verification credential">
+                    <label class="cc-label" for="pinRecoveryBackupCode">EMERGENCY BACKUP CODE</label>
+                    <div style="position:relative;">
+                        <input type="password" id="pinRecoveryBackupCode" class="cc-input" required placeholder="Enter emergency backup code" style="padding-right:40px;">
+                        <button type="button" onclick="togglePinVisibility('pinRecoveryBackupCode', 'eyeRecoveryBackupCode')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:#94a3b8;cursor:pointer;"><i class="fas fa-eye" id="eyeRecoveryBackupCode"></i></button>
+                    </div>
                 </div>
 
                 <div class="cc-form-group">
                     <label class="cc-label" for="pinRecoverNew">NEW 6-DIGIT SECURITY PIN</label>
-                    <input type="password" id="pinRecoverNew" class="cc-input" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" required placeholder="••••••" style="font-family: var(--cc-font-mono); letter-spacing: 0.4em; text-align: center; font-size: 1.2rem;">
+                    <div style="position:relative;">
+                        <input type="password" id="pinRecoverNew" class="cc-input" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" required placeholder="••••••" style="font-family: var(--cc-font-mono); letter-spacing: 0.4em; text-align: center; font-size: 1.2rem; padding-right:40px;">
+                        <button type="button" onclick="togglePinVisibility('pinRecoverNew', 'eyeRecoverNew')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:#94a3b8;cursor:pointer;"><i class="fas fa-eye" id="eyeRecoverNew"></i></button>
+                    </div>
                 </div>
 
                 <div class="cc-form-group">
                     <label class="cc-label" for="pinRecoverConfirm">CONFIRM NEW 6-DIGIT PIN</label>
-                    <input type="password" id="pinRecoverConfirm" class="cc-input" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" required placeholder="••••••" style="font-family: var(--cc-font-mono); letter-spacing: 0.4em; text-align: center; font-size: 1.2rem;">
+                    <div style="position:relative;">
+                        <input type="password" id="pinRecoverConfirm" class="cc-input" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" required placeholder="••••••" style="font-family: var(--cc-font-mono); letter-spacing: 0.4em; text-align: center; font-size: 1.2rem; padding-right:40px;">
+                        <button type="button" onclick="togglePinVisibility('pinRecoverConfirm', 'eyeRecoverConfirm')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:#94a3b8;cursor:pointer;"><i class="fas fa-eye" id="eyeRecoverConfirm"></i></button>
+                    </div>
+                </div>
+
+                <div class="cc-form-group">
+                    <label class="cc-label" for="pinRecoverNewBackupCode">NEW REPLACEMENT BACKUP CODE (OPTIONAL)</label>
+                    <div style="position:relative;">
+                        <input type="password" id="pinRecoverNewBackupCode" class="cc-input" minlength="8" placeholder="Leave blank to auto-generate a fresh code" style="padding-right:40px;">
+                        <button type="button" onclick="togglePinVisibility('pinRecoverNewBackupCode', 'eyeNewBackupCode')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:#94a3b8;cursor:pointer;"><i class="fas fa-eye" id="eyeNewBackupCode"></i></button>
+                    </div>
+                    <div style="font-size:0.75rem; color:var(--cc-text-muted); margin-top:4px;">If left blank, a secure emergency backup code will be automatically issued below.</div>
                 </div>
 
                 <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
                     <button type="button" class="cc-btn cc-btn-secondary" onclick="closePinModal()" style="flex: 1;">Cancel</button>
-                    <button type="submit" class="cc-btn cc-btn-danger" id="recoverPinBtn" style="flex: 1;">
-                        <i class="fas fa-rotate-right"></i> Reset Security PIN
+                    <button type="submit" class="cc-btn cc-btn-danger" id="recoverPinBtn" style="flex: 2;">
+                        <i class="fas fa-rotate-right"></i> Verify Code & Reset PIN
                     </button>
                 </div>
             </form>
@@ -416,10 +446,10 @@
             <!-- EMERGENCY RECOVERY CODE SUCCESS BANNER -->
             <div id="recoveryCodeDisplayBox" style="display:none;margin-top:1.2rem;background:rgba(16,185,129,0.12);border:1px solid #10b981;border-radius:8px;padding:1rem;text-align:center;">
                 <div style="color:#10b981;font-weight:700;font-size:0.9rem;margin-bottom:0.4rem;">
-                    <i class="fas fa-key"></i> Emergency Recovery Code Generated
+                    <i class="fas fa-key"></i> New Emergency Recovery Code Generated
                 </div>
                 <div style="color:#cbd5e1;font-size:0.8rem;margin-bottom:0.75rem;">
-                    Save this code offline in a secure location. It can reset your PIN if forgotten:
+                    Save this code offline in a secure location. The previous backup code is permanently invalidated:
                 </div>
                 <div id="recoveryCodeText" style="font-family:var(--cc-font-mono);font-size:1.15rem;font-weight:700;color:#38bdf8;letter-spacing:2px;background:#050811;padding:0.6rem;border-radius:6px;border:1px dashed #38bdf8;user-select:all;margin-bottom:0.75rem;">
                     REC-XXXX-XXXX-XXXX
@@ -428,6 +458,42 @@
                     <i class="fas fa-copy"></i> Copy Code to Clipboard
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- Security PIN Verification Modal for Audit Trail / Clearance -->
+    <div id="adminAuditPinModal" class="cc-modal-backdrop" style="display: none; align-items: center; justify-content: center; z-index: 2000;" role="dialog" aria-modal="true">
+        <div class="cc-modal-card" style="max-width: 440px; width: 92%;">
+            <div class="cc-modal-header">
+                <div class="cc-modal-title" style="color: var(--cc-accent-glow);">
+                    <i class="fas fa-shield-halved"></i> Security Clearance Required
+                </div>
+                <button type="button" class="cc-drawer-close" onclick="closeAuditPinModal()">&times;</button>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--cc-text-secondary); margin: 0.5rem 0 1rem; line-height: 1.45;">
+                Enter your 6-digit Admin Security PIN to view and decrypt the cryptographic audit telemetry:
+            </p>
+            <form onsubmit="handleAuditPinVerification(event)">
+                <div class="cc-form-group">
+                    <label class="cc-label" for="auditPinInput">ADMIN SECURITY PIN (6 DIGITS)</label>
+                    <div style="position:relative;">
+                        <input type="password" id="auditPinInput" class="cc-input" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" required placeholder="••••••" style="font-family: var(--cc-font-mono); letter-spacing: 0.4em; text-align: center; font-size: 1.4rem; padding-right:40px;">
+                        <button type="button" onclick="togglePinVisibility('auditPinInput', 'eyeAuditPin')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:#94a3b8;cursor:pointer;"><i class="fas fa-eye" id="eyeAuditPin"></i></button>
+                    </div>
+                </div>
+                <div id="auditPinError" style="color: #ef4444; font-size: 0.82rem; margin-bottom: 0.8rem; display: none;"></div>
+                <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+                    <button type="button" class="cc-btn cc-btn-secondary" onclick="closeAuditPinModal()" style="flex: 1;">Cancel</button>
+                    <button type="submit" id="btnAuditPinVerify" class="cc-btn cc-btn-primary" style="flex: 1;">
+                        <i class="fas fa-key"></i> Verify Clearance
+                    </button>
+                </div>
+                <div style="margin-top: 1.25rem; text-align: center; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.85rem;">
+                    <button type="button" onclick="openForgotPinFromAudit()" style="background: none; border: none; color: #38bdf8; font-size: 0.85rem; cursor: pointer; text-decoration: underline;">
+                        <i class="fas fa-life-ring"></i> Forgotten Security PIN? Recover with Backup Code
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -487,7 +553,7 @@
         async function checkPinStatus() {
             const badge = document.getElementById('pinStatusBadge');
             try {
-                const res = await fetch('/api/auth/admin/pin/status', {
+                const res = await fetch('/api/auth/admin/security-pin/status', {
                     headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
                 });
                 if (res.ok) {
@@ -499,8 +565,13 @@
                         badge.className = 'cc-badge cc-badge-severe';
                         badge.innerText = 'NOT CONFIGURED';
                     }
-                    if (data.backupCodeConfigured === false || data.recoveryConfigured === false) {
-                        openBackupCodeSetupModal();
+                    if (data.backupCodeConfigured === true || data.recoveryConfigured === true) {
+                        localStorage.setItem('admin_backup_code_configured', 'true');
+                    } else {
+                        // One-time prompt: show only if not dismissed in this browser session
+                        if (sessionStorage.getItem('dismiss_backup_setup') !== 'true') {
+                            openBackupCodeSetupModal();
+                        }
                     }
                 }
             } catch (err) {
@@ -563,6 +634,7 @@
         function closeBackupCodeSetupModal() {
             const m = document.getElementById('adminBackupCodeSetupModal');
             if (m) m.style.display = 'none';
+            sessionStorage.setItem('dismiss_backup_setup', 'true');
         }
         async function handleBackupCodeSetup(event) {
             event.preventDefault();
@@ -596,7 +668,11 @@
                 const data = await res.json();
                 if (res.ok && (data.success === true || data.status === 'success')) {
                     closeBackupCodeSetupModal();
+                    localStorage.setItem('admin_backup_code_configured', 'true');
                     showAlert('Emergency backup code configured successfully! Keep it safe offline.', 'success');
+                    if (window.showToast) {
+                        window.showToast('Emergency backup code configured successfully.', 'success');
+                    }
                     checkPinStatus();
                 } else {
                     errEl.innerText = data.message || 'Failed to configure backup code.';
@@ -612,11 +688,11 @@
         }
 
         // PIN Enrollment & Recovery State
-        function openPinModal() {
+        function openPinModal(tab = 'enroll') {
             document.getElementById('pinEnrollModal').style.display = 'flex';
             document.getElementById('pinModalAlert').style.display = 'none';
             document.getElementById('recoveryCodeDisplayBox').style.display = 'none';
-            switchPinTab('enroll');
+            switchPinTab(tab);
         }
 
         function closePinModal() {
@@ -641,22 +717,6 @@
                 recoverForm.style.display = 'block';
                 btnEnroll.classList.remove('active');
                 btnRecover.classList.add('active');
-                toggleRecoverySecretLabel();
-            }
-        }
-
-        function toggleRecoverySecretLabel() {
-            const type = document.getElementById('pinRecoveryType').value;
-            const label = document.getElementById('recoverySecretLabel');
-            const input = document.getElementById('pinRecoverySecret');
-            if (type === 'RECOVERY_CODE') {
-                label.innerText = 'EMERGENCY RECOVERY CODE';
-                input.placeholder = 'REC-XXXX-XXXX-XXXX';
-                input.type = 'text';
-            } else {
-                label.innerText = 'CURRENT ACCOUNT PASSWORD';
-                input.placeholder = '••••••••••••';
-                input.type = 'password';
             }
         }
 
@@ -728,7 +788,7 @@
                         alertBox.style.color = '#86efac';
                         alertBox.innerText = 'PIN enrolled! Note your Emergency Recovery Code below.';
                     } else {
-                        closePinModal();
+                        setTimeout(() => { closePinModal(); }, 1000);
                     }
                 } else {
                     alertBox.style.display = 'block';
@@ -747,11 +807,19 @@
 
         async function handlePinRecovery(event) {
             event.preventDefault();
-            const recType = document.getElementById('pinRecoveryType').value;
-            const recSecret = document.getElementById('pinRecoverySecret').value.trim();
+            const backupCode = document.getElementById('pinRecoveryBackupCode').value.trim();
             const newPin = document.getElementById('pinRecoverNew').value.trim();
             const confPin = document.getElementById('pinRecoverConfirm').value.trim();
+            const newBackupCode = document.getElementById('pinRecoverNewBackupCode').value.trim();
             const alertBox = document.getElementById('pinModalAlert');
+
+            if (!backupCode) {
+                alertBox.style.display = 'block';
+                alertBox.style.background = 'rgba(239, 68, 68, 0.2)';
+                alertBox.style.color = '#fca5a5';
+                alertBox.innerText = 'Please enter your emergency backup code.';
+                return;
+            }
 
             if (!newPin.match(/^\d{6}$/)) {
                 alertBox.style.display = 'block';
@@ -769,132 +837,207 @@
                 return;
             }
 
+            if (newBackupCode && newBackupCode.length < 8) {
+                alertBox.style.display = 'block';
+                alertBox.style.background = 'rgba(239, 68, 68, 0.2)';
+                alertBox.style.color = '#fca5a5';
+                alertBox.innerText = 'Replacement backup code must be at least 8 characters long.';
+                return;
+            }
+
             const btn = document.getElementById('recoverPinBtn');
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Resetting...';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying & Resetting...';
 
             try {
-                const res = await fetch('/api/auth/admin/pin/recover', {
+                const res = await fetch('/api/auth/admin/security-pin/recover-with-backup-code', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': 'Bearer ' + localStorage.getItem('token')
                     },
                     body: JSON.stringify({
-                        recoveryType: recType,
-                        recoverySecret: recSecret,
-                        newPin: newPin
+                        backupCode: backupCode,
+                        newPin: newPin,
+                        confirmPin: confPin,
+                        newBackupCode: newBackupCode,
+                        confirmNewBackupCode: newBackupCode
                     })
                 });
 
                 const data = await res.json();
-                if (res.ok && data.success) {
+                if (res.ok && (data.success === true || data.status === 'success')) {
+                    if (data.stepUpToken) {
+                        sessionStorage.setItem('adminStepUpToken', data.stepUpToken);
+                    }
                     checkPinStatus();
-                    showAlert('Admin Security PIN reset successfully!', 'success');
-                    if (data.recoveryCode) {
-                        displayEmergencyRecoveryCode(data.recoveryCode);
+                    showAlert('Admin Security PIN recovered and reset successfully!', 'success');
+                    if (window.showToast) {
+                        window.showToast('Security PIN successfully reset and verified.', 'success');
+                    }
+                    if (data.newRecoveryCode || data.recoveryCode) {
+                        displayEmergencyRecoveryCode(data.newRecoveryCode || data.recoveryCode);
                         alertBox.style.display = 'block';
                         alertBox.style.background = 'rgba(16, 185, 129, 0.2)';
                         alertBox.style.color = '#86efac';
                         alertBox.innerText = 'PIN reset complete! A new single-use recovery code has been issued below.';
                     } else {
-                        closePinModal();
+                        setTimeout(() => { closePinModal(); }, 1200);
                     }
+                    // Automatically refresh and decrypt audit records
+                    setTimeout(() => { fetchAndDisplayAuditTrail(); }, 600);
                 } else {
                     alertBox.style.display = 'block';
                     alertBox.style.background = 'rgba(239, 68, 68, 0.2)';
                     alertBox.style.color = '#fca5a5';
-                    alertBox.innerText = data.message || 'Recovery failed.';
+                    alertBox.innerText = data.message || 'Recovery failed. Please check your backup code.';
                 }
             } catch (err) {
                 alertBox.style.display = 'block';
                 alertBox.innerText = 'Network error: ' + err.message;
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-rotate-right"></i> Reset Security PIN';
+                btn.innerHTML = '<i class="fas fa-rotate-right"></i> Verify Code & Reset PIN';
             }
         }
 
-        // Fetch Audit Trail
-        async function fetchAndDisplayAuditTrail() {
-            const tbody = document.getElementById('auditTrailTableBody');
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;"><i class="fas fa-spinner fa-spin"></i> Verifying clearance and decrypting audit records...</td></tr>';
+        // Security PIN Clearance Modal for Audit Trail
+        function openAuditPinModal() {
+            document.getElementById('adminAuditPinModal').style.display = 'flex';
+            document.getElementById('auditPinInput').value = '';
+            document.getElementById('auditPinError').style.display = 'none';
+            document.getElementById('auditPinInput').focus();
+        }
+        function closeAuditPinModal() {
+            document.getElementById('adminAuditPinModal').style.display = 'none';
+        }
+        function openForgotPinFromAudit() {
+            closeAuditPinModal();
+            openPinModal('recover');
+        }
+        async function handleAuditPinVerification(event) {
+            event.preventDefault();
+            const pin = document.getElementById('auditPinInput').value.trim();
+            const errEl = document.getElementById('auditPinError');
+            const btn = document.getElementById('btnAuditPinVerify');
 
-            let stepUpToken = sessionStorage.getItem('adminStepUpToken');
-            if (!stepUpToken) {
-                let pin = null;
-                if (window.showPrompt) {
-                    pin = await window.showPrompt({
-                        title: 'SECURITY CLEARANCE REQUIRED',
-                        message: 'Enter your 6-digit Admin Security PIN to view the immutable audit trail:',
-                        placeholder: '6-digit PIN',
-                        isPassword: true,
-                        confirmText: 'Verify & Decrypt'
-                    });
-                } else {
-                    pin = prompt('Enter 6-digit PIN to decrypt audit logs:');
-                }
-                if (!pin) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#ef4444;padding:1.5rem;">Access aborted: Security PIN required. Use "Configure / Reset Security PIN" if forgotten.</td></tr>';
-                    return;
-                }
+            if (!pin || pin.length < 6) {
+                errEl.innerText = 'Please enter your complete 6-digit PIN.';
+                errEl.style.display = 'block';
+                return;
+            }
 
-                const vRes = await fetch('/api/auth/admin/verify-pin', {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+            try {
+                const res = await fetch('/api/auth/admin/verify-pin', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': 'Bearer ' + localStorage.getItem('token')
                     },
-                    body: JSON.stringify({ pin: pin.trim() })
+                    body: JSON.stringify({ pin: pin })
                 });
-
-                const vData = await vRes.json();
-                if (vRes.ok && vData.stepUpToken) {
-                    stepUpToken = vData.stepUpToken;
-                    sessionStorage.setItem('adminStepUpToken', stepUpToken);
+                const data = await res.json();
+                if (res.ok && (data.success === true || data.status === 'success')) {
+                    if (data.stepUpToken) {
+                        sessionStorage.setItem('adminStepUpToken', data.stepUpToken);
+                    }
+                    closeAuditPinModal();
+                    if (window.showToast) {
+                        window.showToast('Security clearance verified.', 'success');
+                    }
+                    fetchAndDisplayAuditTrail();
                 } else {
-                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#ef4444;padding:1.5rem;">Clearance rejected: ${vData.message || 'Invalid PIN'}. Reset PIN if forgotten.</td></tr>`;
-                    return;
+                    errEl.innerText = data.message || 'Incorrect PIN. Clearance rejected.';
+                    errEl.style.display = 'block';
                 }
+            } catch (err) {
+                errEl.innerText = 'Verification error: ' + err.message;
+                errEl.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-key"></i> Verify Clearance';
+            }
+        }
+
+        // Fetch and Render Cryptographic Audit Trail
+        async function fetchAndDisplayAuditTrail() {
+            const tbody = document.getElementById('auditTrailTableBody');
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;"><i class="fas fa-spinner fa-spin"></i> Decrypting audit telemetry from secure database...</td></tr>';
+
+            const token = localStorage.getItem('token');
+            const stepUpToken = sessionStorage.getItem('adminStepUpToken');
+
+            const headers = { 'Authorization': 'Bearer ' + token };
+            if (stepUpToken) {
+                headers['X-Admin-Step-Up-Token'] = stepUpToken;
             }
 
             try {
-                const res = await fetch('/api/auth/admin/audit-logs', {
-                    headers: {
-                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
-                        'X-Admin-Step-Up-Token': stepUpToken
-                    }
-                });
+                const res = await fetch('/api/auth/admin/audit-logs', { headers: headers });
 
                 if (res.ok) {
                     const logs = await res.json();
                     tbody.innerHTML = '';
-                    if (logs.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:var(--cc-text-muted);">No administrative events recorded in audit log.</td></tr>';
+                    if (!logs || logs.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--cc-text-muted);"><i class="fas fa-clipboard-check" style="font-size:1.5rem;display:block;margin-bottom:0.5rem;opacity:0.4;"></i>No administrative events recorded in audit log.</td></tr>';
                         return;
                     }
 
                     logs.forEach(l => {
                         const tr = document.createElement('tr');
-                        const isSuccess = l.status === 'SUCCESS';
-                        const badge = isSuccess ? '<span class="cc-badge cc-badge-moderate">SUCCESS</span>' : '<span class="cc-badge cc-badge-extreme">FAILED</span>';
+                        const isSuccess = l.status === 'SUCCESS' || l.status === 'ACTIVE' || l.status === 'SILENCED';
+                        const isWarn = l.status === 'LOCKED';
+                        let badgeClass = 'cc-badge cc-badge-extreme';
+                        if (isSuccess) badgeClass = 'cc-badge cc-badge-moderate';
+                        else if (isWarn) badgeClass = 'cc-badge cc-badge-severe';
+
                         const formattedTime = (window.formatIndianDateTime ? window.formatIndianDateTime(l.timestamp) : new Date(l.timestamp).toLocaleString('en-IN'));
 
                         tr.innerHTML = `
                             <td style="font-family:var(--cc-font-mono);font-size:0.75rem;">${formattedTime}</td>
-                            <td style="font-weight:600;color:#ffffff;">${l.action}</td>
+                            <td style="font-weight:600;color:#ffffff;"><span style="color:#38bdf8;">[${l.action}]</span></td>
                             <td style="font-family:var(--cc-font-mono);">${l.actorEmail}</td>
-                            <td>${badge}</td>
+                            <td><span class="${badgeClass}">${l.status}</span></td>
                             <td style="font-size:0.8rem;color:var(--cc-text-secondary);">${l.details || '-'}</td>
                         `;
                         tbody.appendChild(tr);
                     });
+                } else if (res.status === 428) {
+                    // Precondition Required: Step-up PIN required
+                    openAuditPinModal();
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="5" style="text-align:center;padding:2rem;color:#94a3b8;">
+                                <i class="fas fa-lock" style="color:#f59e0b;font-size:1.4rem;display:block;margin-bottom:0.5rem;"></i>
+                                Security clearance required to view immutable audit records.
+                                <div style="margin-top:0.85rem;display:flex;justify-content:center;gap:0.75rem;flex-wrap:wrap;">
+                                    <button type="button" class="cc-btn cc-btn-primary" onclick="openAuditPinModal()" style="font-size:0.8rem;padding:0.4rem 0.9rem;"><i class="fas fa-key"></i> Enter Security PIN</button>
+                                    <button type="button" class="cc-btn cc-btn-danger" onclick="openPinModal('recover')" style="font-size:0.8rem;padding:0.4rem 0.9rem;"><i class="fas fa-life-ring"></i> Recover PIN with Backup Code</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
                 } else {
                     sessionStorage.removeItem('adminStepUpToken');
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#ef4444;padding:1.5rem;">Authorization expired. Please re-verify PIN.</td></tr>';
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#ef4444;padding:1.5rem;">Authorization rejected (HTTP ${res.status}). Please re-verify or refresh.</td></tr>`;
                 }
             } catch (err) {
                 tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#ef4444;padding:1.5rem;">Error loading audit logs: ${err.message}</td></tr>`;
+            }
+        }
+
+        function togglePinVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (!input || !icon) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fas fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fas fa-eye';
             }
         }
 

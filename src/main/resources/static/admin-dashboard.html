@@ -870,7 +870,8 @@
             }
 
             if (userRole !== 'Admin') {
-                if (window.showToast) {
+                if (data.stepUpToken) { sessionStorage.setItem('adminStepUpToken', data.stepUpToken); }
+                        if (window.showToast) {
                     window.showToast('Access Denied: Only Admin can access Mission Control', 'error');
                 }
                 setTimeout(() => {
