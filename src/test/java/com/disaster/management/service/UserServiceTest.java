@@ -127,3 +127,4 @@ class UserServiceTest {
         assertEquals("Available", responder.getAvailabilityStatus());
     }
 }
+

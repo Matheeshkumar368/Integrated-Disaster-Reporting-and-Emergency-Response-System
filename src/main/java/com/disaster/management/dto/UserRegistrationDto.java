@@ -41,3 +41,4 @@ public class UserRegistrationDto {
     public String getAdditionalDetails() { return additionalDetails; }
     public void setAdditionalDetails(String additionalDetails) { this.additionalDetails = additionalDetails; }
 }
+

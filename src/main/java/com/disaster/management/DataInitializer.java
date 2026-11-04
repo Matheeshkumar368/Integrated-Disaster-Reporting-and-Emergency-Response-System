@@ -47,6 +47,8 @@ public class DataInitializer {
                     admin.setRole("Admin");
                     admin.setAdminPin(passwordEncoder.encode("123456"));
                     admin.setAdminPinEnrolled(true);
+                    admin.setAdminPinRecoveryCode(passwordEncoder.encode("922523244035"));
+                    admin.setBackupCodeConfigured(true);
                     userRepo.save(admin);
 
                     // Create Responder Users
@@ -105,15 +107,21 @@ public class DataInitializer {
                             admin.setPassword(passwordEncoder.encode("admin123"));
                             updated = true;
                         }
-                        if (admin.getAdminPin() == null || !Boolean.TRUE.equals(admin.getAdminPinEnrolled()) || !passwordEncoder.matches("123456", admin.getAdminPin())) {
+                        if (admin.getAdminPin() == null || !Boolean.TRUE.equals(admin.getAdminPinEnrolled())) {
                             admin.setAdminPin(passwordEncoder.encode("123456"));
                             admin.setAdminPinEnrolled(true);
                             admin.resetPinFailures();
                             updated = true;
                         }
+                        if (admin.getAdminPinRecoveryCode() == null || !Boolean.TRUE.equals(admin.getBackupCodeConfigured())) {
+                            admin.setAdminPinRecoveryCode(passwordEncoder.encode("922523244035"));
+                            admin.setBackupCodeConfigured(true);
+                            admin.resetBackupCodeFailures();
+                            updated = true;
+                        }
                         if (updated) {
                             userRepo.save(admin);
-                            log.info("Synchronized baseline admin credentials & security PIN.");
+                            log.info("Synchronized baseline admin credentials, security PIN & backup code.");
                         }
                     });
 

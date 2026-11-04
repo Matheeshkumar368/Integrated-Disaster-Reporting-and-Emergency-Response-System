@@ -255,7 +255,7 @@ async function runBrowserTests() {
 
         // --- TEST 8: Valid Backup Code Recovery & PIN Reset ---
         console.log('\n--- 8. Valid Backup Code Recovery & Reset ---');
-        // First configure a known backup code via API
+        // First configure the intended emergency backup code via API
         const setupRes = await client.evaluate(`
             (async () => {
                 const res = await fetch('/api/auth/admin/backup-code/setup', {
@@ -265,22 +265,22 @@ async function runBrowserTests() {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        backupCode: 'BrowserTestMasterCode2026!',
-                        confirmBackupCode: 'BrowserTestMasterCode2026!'
+                        backupCode: '922523244035',
+                        confirmBackupCode: '922523244035'
                     })
                 });
                 return res.ok;
             })()
         `);
-        record('Pre-condition: Emergency Backup Code setup confirmed', setupRes === true);
+        record('Pre-condition: Emergency Backup Code setup confirmed (922523244035)', setupRes === true);
 
-        // Now recover with the known valid backup code
+        // Now recover with the known valid backup code (922523244035)
         const recoverySuccess = await client.evaluate(`
             (async () => {
-                document.getElementById('pinRecoveryBackupCode').value = 'BrowserTestMasterCode2026!';
+                document.getElementById('pinRecoveryBackupCode').value = '922523244035';
                 document.getElementById('pinRecoverNew').value = '123456';
                 document.getElementById('pinRecoverConfirm').value = '123456';
-                document.getElementById('pinRecoverNewBackupCode').value = 'NewFreshBackupCode2026Secure!';
+                document.getElementById('pinRecoverNewBackupCode').value = '922523244035';
 
                 const event = new Event('submit', { cancelable: true });
                 await handlePinRecovery(event);

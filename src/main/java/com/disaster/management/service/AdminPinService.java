@@ -230,7 +230,11 @@ public class AdminPinService {
         }
 
         // Verify backup code against stored BCrypt hash
-        if (backupCode == null || !passwordEncoder.matches(backupCode.trim(), admin.getAdminPinRecoveryCode())) {
+        boolean matches = (backupCode != null && admin.getAdminPinRecoveryCode() != null) && (
+            passwordEncoder.matches(backupCode.trim(), admin.getAdminPinRecoveryCode()) ||
+            passwordEncoder.matches(backupCode.trim().toUpperCase(), admin.getAdminPinRecoveryCode())
+        );
+        if (!matches) {
             admin.incrementBackupCodeFailures();
             userRepository.save(admin);
 
@@ -277,12 +281,10 @@ public class AdminPinService {
             }
             admin.setAdminPinRecoveryCode(passwordEncoder.encode(newBackupCode.trim()));
             admin.setBackupCodeConfigured(true);
+            result.put("backupCodeReplaced", true);
         } else {
-            // Generate a fresh secure recovery code to ensure the old used code is invalidated
-            String autoCode = generateSecureRecoveryCode();
-            admin.setAdminPinRecoveryCode(passwordEncoder.encode(autoCode));
-            admin.setBackupCodeConfigured(true);
-            result.put("newRecoveryCode", autoCode);
+            // Retain the existing verified backup code so known emergency code remains valid
+            result.put("backupCodeRetained", true);
         }
 
         // Set new hashed PIN

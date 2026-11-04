@@ -2,6 +2,7 @@ package com.disaster.management.dto;
 
 public class PinRecoveryDto {
 
+    private String email;
     private String backupCode;
     private String newPin;
     private String confirmPin;
@@ -9,6 +10,9 @@ public class PinRecoveryDto {
     private String confirmNewBackupCode;
 
     public PinRecoveryDto() {}
+
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
     public String getBackupCode() { return backupCode; }
     public void setBackupCode(String backupCode) { this.backupCode = backupCode; }
@@ -25,3 +29,4 @@ public class PinRecoveryDto {
     public String getConfirmNewBackupCode() { return confirmNewBackupCode; }
     public void setConfirmNewBackupCode(String confirmNewBackupCode) { this.confirmNewBackupCode = confirmNewBackupCode; }
 }
+

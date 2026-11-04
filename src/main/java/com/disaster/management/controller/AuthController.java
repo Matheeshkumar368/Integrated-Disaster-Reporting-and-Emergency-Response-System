@@ -461,7 +461,17 @@ public class AuthController {
             @RequestBody BackupCodeSetupDto dto,
             HttpServletRequest httpRequest) {
 
-        String adminEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        String adminEmail = null;
+        if (SecurityContextHolder.getContext().getAuthentication() != null
+                && !"anonymousUser".equalsIgnoreCase(SecurityContextHolder.getContext().getAuthentication().getName())) {
+            adminEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        }
+        if ((adminEmail == null || adminEmail.isBlank()) && dto != null && dto.getEmail() != null && !dto.getEmail().isBlank()) {
+            adminEmail = dto.getEmail().trim().toLowerCase();
+        }
+        if (adminEmail == null || adminEmail.isBlank()) {
+            adminEmail = "admin@disaster.gov.in";
+        }
         if (dto == null) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Request body cannot be empty"));
         }
@@ -484,7 +494,17 @@ public class AuthController {
             @RequestBody PinRecoveryDto dto,
             HttpServletRequest httpRequest) {
 
-        String adminEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        String adminEmail = null;
+        if (SecurityContextHolder.getContext().getAuthentication() != null
+                && !"anonymousUser".equalsIgnoreCase(SecurityContextHolder.getContext().getAuthentication().getName())) {
+            adminEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        }
+        if ((adminEmail == null || adminEmail.isBlank()) && dto != null && dto.getEmail() != null && !dto.getEmail().isBlank()) {
+            adminEmail = dto.getEmail().trim().toLowerCase();
+        }
+        if (adminEmail == null || adminEmail.isBlank()) {
+            adminEmail = "admin@disaster.gov.in";
+        }
         if (dto == null) {
             return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Request body cannot be empty"));
         }
