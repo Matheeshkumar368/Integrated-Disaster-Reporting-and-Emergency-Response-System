@@ -31,7 +31,11 @@ import com.disaster.management.entity.User;
 import com.disaster.management.repository.RescueTaskRepository;
 import com.disaster.management.repository.UserRepository;
 import com.disaster.management.security.JwtUtil;
+import com.disaster.management.dto.BackupCodeSetupDto;
+import com.disaster.management.dto.PinRecoveryDto;
+import com.disaster.management.dto.UserRegistrationDto;
 import com.disaster.management.service.AdminPinService;
+import com.disaster.management.service.UserService;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -57,6 +61,9 @@ public class AuthController {
     @Autowired
     private AdminPinService adminPinService;
 
+    @Autowired
+    private UserService userService;
+
     // In-memory login attempt tracker for rate-limiting
     private static class LoginAttempt {
         int attempts;
@@ -68,56 +75,26 @@ public class AuthController {
     //                  REGISTER ENDPOINT
     // ────────────────────────────────────────────────
     @PostMapping("/register")
-    public ResponseEntity<Map<String, String>> register(@RequestBody User user) {
+    public ResponseEntity<Map<String, String>> register(@RequestBody UserRegistrationDto userDto) {
         Map<String, String> response = new HashMap<>();
-
-        if (user.getEmail() == null || user.getEmail().trim().isEmpty() ||
-            user.getPassword() == null || user.getPassword().trim().isEmpty()) {
-            response.put("status", "error");
-            response.put("message", "Email and password are required");
-            return ResponseEntity.badRequest().body(response);
-        }
-
-        String email = user.getEmail().trim().toLowerCase();
-        if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-            response.put("status", "error");
-            response.put("message", "Please provide a valid email address");
-            return ResponseEntity.badRequest().body(response);
-        }
-
-        if (user.getPassword().length() < 6) {
-            response.put("status", "error");
-            response.put("message", "Password must be at least 6 characters long");
-            return ResponseEntity.badRequest().body(response);
-        }
-
-        // Prevent self-escalation to Admin
-        if ("Admin".equalsIgnoreCase(user.getRole())) {
-            response.put("status", "error");
-            response.put("message", "Administrative accounts cannot be self-registered");
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
-        }
-
-        // Check if user already exists
-        Optional<User> existing = userRepository.findByEmail(email);
-        if (existing.isPresent()) {
-            response.put("status", "error");
-            response.put("message", "Email already registered");
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
-        }
-
         try {
-            user.setEmail(email);
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
-            if (user.getRole() == null || user.getRole().trim().isEmpty()) {
-                user.setRole("Citizen");
-            }
-            user.setCreatedAt(LocalDateTime.now());
-            userRepository.save(user);
-
+            User user = userService.registerUser(userDto);
             response.put("status", "success");
             response.put("message", "User Registered Successfully!");
+            response.put("role", user.getRole());
             return ResponseEntity.ok(response);
+        } catch (SecurityException se) {
+            response.put("status", "error");
+            response.put("message", se.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        } catch (IllegalStateException ise) {
+            response.put("status", "error");
+            response.put("message", ise.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+        } catch (IllegalArgumentException iae) {
+            response.put("status", "error");
+            response.put("message", iae.getMessage());
+            return ResponseEntity.badRequest().body(response);
         } catch (Exception e) {
             log.error("Registration error: {}", e.getMessage());
             response.put("status", "error");
@@ -125,7 +102,6 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
-
     // ────────────────────────────────────────────────
     //                     LOGIN ENDPOINT
     // ────────────────────────────────────────────────
@@ -306,52 +282,42 @@ public class AuthController {
     @PostMapping("/register-responder")
     public ResponseEntity<Map<String, Object>> registerResponder(@RequestBody Map<String, String> request) {
         Map<String, Object> response = new HashMap<>();
-
-        String name = request.get("name");
-        String email = request.get("email");
-        String password = request.get("password");
-        String phone = request.get("phone");
-        String location = request.get("location");
-        String groupClassification = request.get("groupClassification");
-        String additionalDetails = request.get("additionalDetails");
-
-        if (name == null || email == null || password == null || phone == null || location == null) {
-            response.put("status", "error");
-            response.put("message", "Name, email, password, phone, and location are required");
-            return ResponseEntity.badRequest().body(response);
-        }
-
-        String normalizedEmail = email.trim().toLowerCase();
-        if (userRepository.findByEmail(normalizedEmail).isPresent()) {
-            response.put("status", "error");
-            response.put("message", "Email already registered");
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
-        }
+        UserRegistrationDto dto = new UserRegistrationDto();
+        dto.setName(request.get("name"));
+        dto.setEmail(request.get("email"));
+        dto.setPassword(request.get("password"));
+        dto.setPhone(request.get("phone"));
+        dto.setLocation(request.get("location"));
+        dto.setAssignedZone(request.get("assignedZone") != null ? request.get("assignedZone") : request.get("location"));
+        dto.setRole("Responder");
+        dto.setGroupClassification(request.get("groupClassification") != null ? request.get("groupClassification") : "Rescuer");
+        dto.setAdditionalDetails(request.get("additionalDetails"));
 
         try {
-            User user = new User();
-            user.setName(name.trim());
-            user.setEmail(normalizedEmail);
-            user.setPassword(passwordEncoder.encode(password));
-            user.setPhone(phone.trim());
-            user.setLocation(location.trim());
-            user.setAssignedZone(location.trim());
-            user.setRole("Responder");
-            user.setGroupClassification(groupClassification != null ? groupClassification : "Rescuer");
-            user.setAdditionalDetails(additionalDetails);
-            user.setCreatedAt(LocalDateTime.now());
-
-            userRepository.save(user);
+            User user = userService.registerUser(dto);
             response.put("status", "success");
             response.put("message", "Responder registered successfully!");
+            response.put("role", user.getRole());
             return ResponseEntity.ok(response);
-        } catch (Exception e) {
+        } catch (SecurityException se) {
             response.put("status", "error");
-            response.put("message", "Registration failed");
+            response.put("message", se.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        } catch (IllegalStateException ise) {
+            response.put("status", "error");
+            response.put("message", ise.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+        } catch (IllegalArgumentException iae) {
+            response.put("status", "error");
+            response.put("message", iae.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            log.error("Responder registration error: {}", e.getMessage());
+            response.put("status", "error");
+            response.put("message", "Registration failed due to a server error");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
-
     // ────────────────────────────────────────────────
     //          ADMIN: RESPONDERS BY ZONE
     // ────────────────────────────────────────────────
@@ -482,6 +448,60 @@ public class AuthController {
         Map<String, Object> result = adminPinService.enrollPin(adminEmail, currentPassword, pin, httpRequest.getRemoteAddr());
         if (Boolean.TRUE.equals(result.get("success"))) {
             return ResponseEntity.ok(result);
+        } else {
+            return ResponseEntity.badRequest().body(result);
+        }
+    }
+
+    // ────────────────────────────────────────────────
+    //        ADMIN BACKUP CODE: ONE-TIME SETUP
+    // ────────────────────────────────────────────────
+    @PostMapping({"/admin/backup-code/setup", "/admin/security-pin/backup-code/setup"})
+    public ResponseEntity<Map<String, Object>> setupAdminBackupCode(
+            @RequestBody BackupCodeSetupDto dto,
+            HttpServletRequest httpRequest) {
+
+        String adminEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        if (dto == null) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Request body cannot be empty"));
+        }
+
+        Map<String, Object> result = adminPinService.setupBackupCode(
+                adminEmail, dto.getBackupCode(), dto.getConfirmBackupCode(), httpRequest.getRemoteAddr());
+
+        if (Boolean.TRUE.equals(result.get("success"))) {
+            return ResponseEntity.ok(result);
+        } else {
+            return ResponseEntity.badRequest().body(result);
+        }
+    }
+
+    // ────────────────────────────────────────────────
+    //   ADMIN SECURITY PIN: RECOVER WITH BACKUP CODE
+    // ────────────────────────────────────────────────
+    @PostMapping({"/admin/security-pin/recover-with-backup-code", "/admin/pin/recover-with-backup-code"})
+    public ResponseEntity<Map<String, Object>> recoverAdminPinWithBackupCode(
+            @RequestBody PinRecoveryDto dto,
+            HttpServletRequest httpRequest) {
+
+        String adminEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        if (dto == null) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Request body cannot be empty"));
+        }
+
+        Map<String, Object> result = adminPinService.recoverPinWithBackupCode(
+                adminEmail,
+                dto.getBackupCode(),
+                dto.getNewPin(),
+                dto.getConfirmPin(),
+                dto.getNewBackupCode(),
+                dto.getConfirmNewBackupCode(),
+                httpRequest.getRemoteAddr());
+
+        if (Boolean.TRUE.equals(result.get("success"))) {
+            return ResponseEntity.ok(result);
+        } else if (Boolean.TRUE.equals(result.get("locked"))) {
+            return ResponseEntity.status(HttpStatus.LOCKED).body(result);
         } else {
             return ResponseEntity.badRequest().body(result);
         }

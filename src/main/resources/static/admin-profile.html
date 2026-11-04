@@ -285,6 +285,46 @@
 
     </main>
 
+    <!-- One-Time Emergency Backup Code Setup Modal -->
+    <div id="adminBackupCodeSetupModal" class="cc-modal-backdrop" style="display: none; align-items: center; justify-content: center; z-index: 2000;" role="dialog" aria-modal="true">
+        <div class="cc-modal-card" style="max-width: 480px; width: 92%;">
+            <div class="cc-modal-header">
+                <div class="cc-modal-title" style="color: var(--cc-accent-glow);">
+                    <i class="fas fa-shield-halved"></i> 2FA Emergency Recovery Setup
+                </div>
+            </div>
+
+            <div style="background: rgba(59, 130, 246, 0.1); border-left: 3px solid #3b82f6; padding: 10px 12px; border-radius: 4px; font-size: 0.82rem; color: #cbd5e1; margin: 1rem 0; line-height: 1.45;">
+                <i class="fas fa-key" style="color: #3b82f6;"></i>
+                <strong>Notice:</strong> Please configure an emergency backup code. If you ever forget your 6-digit Security PIN, this backup code will allow you to reset your PIN without knowing the old PIN.
+            </div>
+
+            <form id="backupCodeSetupForm" onsubmit="handleBackupCodeSetup(event)">
+                <div class="cc-form-group">
+                    <label class="cc-label" for="setupBackupCodeInput">CREATE SECURE BACKUP CODE (MIN 8 CHARACTERS)</label>
+                    <input type="password" id="setupBackupCodeInput" class="cc-input" required minlength="8" placeholder="Enter secure backup code">
+                </div>
+
+                <div class="cc-form-group">
+                    <label class="cc-label" for="confirmBackupCodeInput">CONFIRM SECURE BACKUP CODE</label>
+                    <input type="password" id="confirmBackupCodeInput" class="cc-input" required minlength="8" placeholder="Re-enter secure backup code">
+                </div>
+
+                <div id="setupBackupCodeError" style="color:#ef4444; font-size:0.85rem; margin-bottom:1rem; display:none;"></div>
+
+                <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 6px; padding: 10px 12px; margin-bottom: 1.25rem; font-size: 0.8rem; color: #fca5a5;">
+                    <i class="fas fa-triangle-exclamation"></i> <strong>Important:</strong> Store this backup code safely offline. It will be stored only as an encrypted hash and cannot be viewed again.
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                    <button type="submit" id="btnSubmitBackupCodeSetup" class="cc-btn cc-btn-primary" style="width: 100%;">
+                        <i class="fas fa-check-circle"></i> Save & Protect Account
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- PIN Enrollment & Emergency Recovery Modal -->
     <div id="pinEnrollModal" class="cc-modal-backdrop" style="display: none; align-items: center; justify-content: center; z-index: 2000;" role="dialog" aria-modal="true">
         <div class="cc-modal-card" style="max-width: 460px; width: 92%;">
@@ -459,6 +499,9 @@
                         badge.className = 'cc-badge cc-badge-severe';
                         badge.innerText = 'NOT CONFIGURED';
                     }
+                    if (data.backupCodeConfigured === false || data.recoveryConfigured === false) {
+                        openBackupCodeSetupModal();
+                    }
                 }
             } catch (err) {
                 badge.innerText = 'STATUS UNKNOWN';
@@ -509,6 +552,62 @@
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-floppy-disk"></i> Save Profile Updates';
+            }
+        }
+
+        // One-time backup code setup modal
+        function openBackupCodeSetupModal() {
+            const m = document.getElementById('adminBackupCodeSetupModal');
+            if (m) m.style.display = 'flex';
+        }
+        function closeBackupCodeSetupModal() {
+            const m = document.getElementById('adminBackupCodeSetupModal');
+            if (m) m.style.display = 'none';
+        }
+        async function handleBackupCodeSetup(event) {
+            event.preventDefault();
+            const code = document.getElementById('setupBackupCodeInput').value.trim();
+            const conf = document.getElementById('confirmBackupCodeInput').value.trim();
+            const errEl = document.getElementById('setupBackupCodeError');
+            const btn = document.getElementById('btnSubmitBackupCodeSetup');
+
+            if (code.length < 8) {
+                errEl.innerText = 'Backup code must be at least 8 characters long.';
+                errEl.style.display = 'block';
+                return;
+            }
+            if (code !== conf) {
+                errEl.innerText = 'Backup code and confirmation do not match.';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Securing Account...';
+            try {
+                const res = await fetch('/api/auth/admin/backup-code/setup', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ backupCode: code, confirmBackupCode: conf })
+                });
+                const data = await res.json();
+                if (res.ok && (data.success === true || data.status === 'success')) {
+                    closeBackupCodeSetupModal();
+                    showAlert('Emergency backup code configured successfully! Keep it safe offline.', 'success');
+                    checkPinStatus();
+                } else {
+                    errEl.innerText = data.message || 'Failed to configure backup code.';
+                    errEl.style.display = 'block';
+                }
+            } catch (err) {
+                errEl.innerText = 'Network error: ' + err.message;
+                errEl.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check-circle"></i> Save & Protect Account';
             }
         }
 

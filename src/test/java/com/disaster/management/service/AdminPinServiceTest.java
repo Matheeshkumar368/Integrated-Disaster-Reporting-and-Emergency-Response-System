@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -56,6 +55,8 @@ class AdminPinServiceTest {
         adminUser.setAdminPin("encodedPin");
         adminUser.setAdminPinEnrolled(true);
         adminUser.setPinFailedAttempts(0);
+        adminUser.setAdminPinRecoveryCode("encodedBackupCode");
+        adminUser.setBackupCodeConfigured(true);
     }
 
     @Test
@@ -110,5 +111,66 @@ class AdminPinServiceTest {
         assertTrue(adminUser.getAdminPinEnrolled());
         verify(userRepository).save(adminUser);
     }
-}
 
+    @Test
+    @DisplayName("Setup backup code succeeds and marks recovery configured")
+    void testSetupBackupCodeSuccess() {
+        when(userRepository.findByEmail("admin@disaster.gov.in")).thenReturn(Optional.of(adminUser));
+        when(passwordEncoder.encode("SecureBackupKey2026")).thenReturn("hashedBackup2026");
+
+        Map<String, Object> result = adminPinService.setupBackupCode(
+                "admin@disaster.gov.in", "SecureBackupKey2026", "SecureBackupKey2026", "127.0.0.1");
+
+        assertTrue((Boolean) result.get("success"));
+        assertEquals("hashedBackup2026", adminUser.getAdminPinRecoveryCode());
+        assertTrue(adminUser.getBackupCodeConfigured());
+        verify(userRepository).save(adminUser);
+    }
+
+    @Test
+    @DisplayName("Recover PIN via valid backup code updates PIN and returns step-up token")
+    void testRecoverPinWithBackupCodeSuccess() {
+        when(userRepository.findByEmail("admin@disaster.gov.in")).thenReturn(Optional.of(adminUser));
+        when(passwordEncoder.matches("ValidBackupCode123", "encodedBackupCode")).thenReturn(true);
+        when(passwordEncoder.encode("987654")).thenReturn("newHashedPin987654");
+        when(passwordEncoder.encode("NewBackupCode456")).thenReturn("newHashedBackup456");
+        when(jwtUtil.generateAdminStepUpToken("admin@disaster.gov.in")).thenReturn("newStepUpTokenABC");
+
+        Map<String, Object> result = adminPinService.recoverPinWithBackupCode(
+                "admin@disaster.gov.in",
+                "ValidBackupCode123",
+                "987654",
+                "987654",
+                "NewBackupCode456",
+                "NewBackupCode456",
+                "127.0.0.1");
+
+        assertTrue((Boolean) result.get("success"));
+        assertEquals("newHashedPin987654", adminUser.getAdminPin());
+        assertEquals("newHashedBackup456", adminUser.getAdminPinRecoveryCode());
+        assertEquals("newStepUpTokenABC", result.get("stepUpToken"));
+        verify(userRepository).save(adminUser);
+    }
+
+    @Test
+    @DisplayName("Recover PIN with invalid backup code applies rate limiting and lockout after 5 attempts")
+    void testRecoverPinWithInvalidBackupCodeLockout() {
+        when(userRepository.findByEmail("admin@disaster.gov.in")).thenReturn(Optional.of(adminUser));
+        when(passwordEncoder.matches("InvalidCode", "encodedBackupCode")).thenReturn(false);
+
+        for (int i = 1; i <= 4; i++) {
+            Map<String, Object> res = adminPinService.recoverPinWithBackupCode(
+                    "admin@disaster.gov.in", "InvalidCode", "112233", "112233", null, null, "127.0.0.1");
+            assertFalse((Boolean) res.get("success"));
+            assertFalse((Boolean) res.get("locked"));
+            assertEquals(i, adminUser.getBackupCodeFailedAttempts());
+        }
+
+        // 5th attempt locks backup code recovery
+        Map<String, Object> res5 = adminPinService.recoverPinWithBackupCode(
+                "admin@disaster.gov.in", "InvalidCode", "112233", "112233", null, null, "127.0.0.1");
+        assertFalse((Boolean) res5.get("success"));
+        assertTrue((Boolean) res5.get("locked"));
+        assertTrue(adminUser.isBackupCodeLocked());
+    }
+}

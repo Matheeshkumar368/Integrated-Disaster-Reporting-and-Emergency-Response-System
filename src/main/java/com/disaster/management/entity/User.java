@@ -64,6 +64,17 @@ public class User {
     @Column(name = "admin_pin_recovery_code")
     private String adminPinRecoveryCode; // BCrypt-hashed emergency recovery code
 
+    @Column(name = "backup_code_configured")
+    private Boolean backupCodeConfigured = false;
+
+    @JsonIgnore
+    @Column(name = "backup_code_failed_attempts")
+    private Integer backupCodeFailedAttempts = 0;
+
+    @JsonIgnore
+    @Column(name = "backup_code_locked_until")
+    private LocalDateTime backupCodeLockedUntil;
+
     @JsonIgnore
     private Integer pinFailedAttempts = 0;
 
@@ -114,6 +125,15 @@ public class User {
     public String getAdminPinRecoveryCode() { return adminPinRecoveryCode; }
     public void setAdminPinRecoveryCode(String adminPinRecoveryCode) { this.adminPinRecoveryCode = adminPinRecoveryCode; }
 
+    public Boolean getBackupCodeConfigured() { return backupCodeConfigured != null && backupCodeConfigured; }
+    public void setBackupCodeConfigured(Boolean backupCodeConfigured) { this.backupCodeConfigured = backupCodeConfigured; }
+
+    public Integer getBackupCodeFailedAttempts() { return backupCodeFailedAttempts != null ? backupCodeFailedAttempts : 0; }
+    public void setBackupCodeFailedAttempts(Integer backupCodeFailedAttempts) { this.backupCodeFailedAttempts = backupCodeFailedAttempts; }
+
+    public LocalDateTime getBackupCodeLockedUntil() { return backupCodeLockedUntil; }
+    public void setBackupCodeLockedUntil(LocalDateTime backupCodeLockedUntil) { this.backupCodeLockedUntil = backupCodeLockedUntil; }
+
     public Integer getPinFailedAttempts() { return pinFailedAttempts != null ? pinFailedAttempts : 0; }
     public void setPinFailedAttempts(Integer pinFailedAttempts) { this.pinFailedAttempts = pinFailedAttempts; }
 
@@ -152,6 +172,23 @@ public class User {
         this.pinFailedAttempts = current;
         if (current >= 3) {
             this.pinLockedUntil = LocalDateTime.now().plusMinutes(15);
+        }
+    }
+
+    public boolean isBackupCodeLocked() {
+        return backupCodeLockedUntil != null && backupCodeLockedUntil.isAfter(LocalDateTime.now());
+    }
+
+    public void resetBackupCodeFailures() {
+        this.backupCodeFailedAttempts = 0;
+        this.backupCodeLockedUntil = null;
+    }
+
+    public void incrementBackupCodeFailures() {
+        int current = getBackupCodeFailedAttempts() + 1;
+        this.backupCodeFailedAttempts = current;
+        if (current >= 5) {
+            this.backupCodeLockedUntil = LocalDateTime.now().plusMinutes(15);
         }
     }
 }

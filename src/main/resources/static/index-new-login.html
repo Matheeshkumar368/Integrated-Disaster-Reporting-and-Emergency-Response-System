@@ -788,7 +788,6 @@ button.loading::after {
 <input id="location" type="text" placeholder="City / District" autocomplete="address-level2">
 
 <div class="role-group">
-<label><input type="radio" name="role" value="Admin"> Admin</label>
 <label><input type="radio" name="role" value="Responder"> Responder</label>
 <label><input type="radio" name="role" value="Citizen" checked> Citizen</label>
 </div>
@@ -865,7 +864,7 @@ function register() {
         role: document.querySelector('input[name="role"]:checked').value
     };
 
-    fetch("http://localhost:8080/api/auth/register", {
+    fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data)
