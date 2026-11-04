@@ -65,3 +65,4 @@ app.media.upload-dir=${MEDIA_UPLOAD_DIR:uploads/incident-media}
 # Routing & Navigation Service
 app.routing.osrm-url=${OSRM_URL:https://router.project-osrm.org/route/v1/driving}
 app.routing.timeout-ms=${ROUTING_TIMEOUT_MS:3000}
+

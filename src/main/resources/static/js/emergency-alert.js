@@ -28,6 +28,7 @@ const EmergencyAlertSystem = (function() {
     let activeOscillators = [];
     let sosLoopTimeout = null;
     let audioUnlockNotified = false;
+    let htmlAudioElement = null;
 
     // Cache preferences in memory
     let config = {
@@ -188,16 +189,50 @@ const EmergencyAlertSystem = (function() {
         return audioContext;
     }
 
+    // HTML5 Audio Asset Engine (Dual Acoustic Architecture)
+    function playAudioFile(singleShot = false) {
+        try {
+            if (!htmlAudioElement) {
+                htmlAudioElement = new Audio('/audio/emergency-siren.wav');
+                htmlAudioElement.preload = 'auto';
+            }
+            htmlAudioElement.loop = !singleShot;
+            htmlAudioElement.volume = Math.max(0, Math.min(100, config.volume)) / 100;
+            htmlAudioElement.currentTime = 0;
+            const playPromise = htmlAudioElement.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(err => {
+                    console.warn('[EmergencySOS] HTML5 Audio play deferred by browser policy:', err);
+                    checkAudioUnlock();
+                });
+            }
+        } catch (e) {
+            console.warn('[EmergencySOS] HTML5 Audio playback error:', e);
+        }
+    }
+
+    function stopAudioFile() {
+        if (htmlAudioElement) {
+            try {
+                htmlAudioElement.pause();
+                htmlAudioElement.currentTime = 0;
+            } catch (e) {}
+        }
+    }
+
     // Ensures audio context is unlocked by a user gesture
     function checkAudioUnlock() {
-        if (audioContext && audioContext.state === 'suspended' && !audioUnlockNotified) {
+        if (!audioUnlockNotified) {
             audioUnlockNotified = true;
             if (window.ToastManager) {
-                ToastManager.info('Click anywhere on screen to unlock browser emergency audio.', 4000);
+                ToastManager.info('Click anywhere on screen to activate emergency sound siren.', 4000);
             }
             const unlockHandler = function() {
                 if (audioContext && audioContext.state === 'suspended') {
-                    audioContext.resume();
+                    audioContext.resume().catch(() => {});
+                }
+                if (isAlarmPlaying && htmlAudioElement && htmlAudioElement.paused) {
+                    htmlAudioElement.play().catch(() => {});
                 }
                 document.removeEventListener('click', unlockHandler);
                 document.removeEventListener('keydown', unlockHandler);
@@ -397,7 +432,8 @@ const EmergencyAlertSystem = (function() {
             horn1.frequency.setValueAtTime(330, now);
             horn2.frequency.setValueAtTime(495, now);
 
-            hornGain.gain.setValueAtTime(targetGain * 0.40, now);
+            const hornGainVal = Math.max(0.0001, targetGain * 0.40);
+            hornGain.gain.setValueAtTime(hornGainVal, now);
             hornGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.65);
 
             horn1.connect(hornGain);
@@ -449,13 +485,21 @@ const EmergencyAlertSystem = (function() {
     function triggerAlarm() {
         if (isAlarmPlaying) return;
 
-        initAudioContext();
         isAlarmPlaying = true;
         isTestMode = false;
+
+        const ctx = initAudioContext();
+        if (ctx && ctx.state === 'suspended') {
+            ctx.resume().catch(() => {});
+        }
 
         showVisualAlertOverlay(false);
         updateAllSettingsUIs();
 
+        // 1. Play high-definition continuous WAV siren asset
+        playAudioFile(false);
+
+        // 2. Synthesize acoustic reinforcement oscillators
         playActiveCycle(false);
 
         if (window.ToastManager) {
@@ -469,13 +513,18 @@ const EmergencyAlertSystem = (function() {
             return;
         }
 
-        initAudioContext();
         isAlarmPlaying = true;
         isTestMode = true;
+
+        const ctx = initAudioContext();
+        if (ctx && ctx.state === 'suspended') {
+            ctx.resume().catch(() => {});
+        }
 
         showVisualAlertOverlay(true);
         updateAllSettingsUIs();
 
+        playAudioFile(true);
         playActiveCycle(true); // single shot test
 
         if (window.ToastManager) {
@@ -486,6 +535,8 @@ const EmergencyAlertSystem = (function() {
     function stopAlarm() {
         isAlarmPlaying = false;
         isTestMode = false;
+
+        stopAudioFile();
 
         if (sosLoopTimeout) {
             clearTimeout(sosLoopTimeout);

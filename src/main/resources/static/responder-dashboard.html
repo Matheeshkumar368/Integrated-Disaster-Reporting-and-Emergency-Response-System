@@ -270,9 +270,15 @@
                 <i class="fas fa-satellite-dish" id="gpsIcon" style="color:#64748b;"></i>
                 <span id="gpsStatusText" style="color:#94a3b8;">GPS: STANDBY</span>
             </div>
-            <button type="button" class="cc-btn cc-btn-danger" onclick="EmergencyAlertSystem.openSettingsModal()" style="padding:0.4rem 0.85rem;font-size:0.8rem;border-radius:8px;" title="Emergency SOS Sound Settings">
-                <i class="fas fa-bullhorn"></i> SOS Sound <kbd style="background:rgba(0,0,0,0.3);padding:0.1rem 0.35rem;border-radius:4px;font-size:0.75rem;margin-left:0.25rem;">TAB</kbd>
-            </button>
+            <!-- Emergency SOS Sound Local Alarm Control & Settings -->
+            <div style="display:inline-flex;align-items:center;gap:0.3rem;">
+                <button type="button" id="sosSoundBtn" class="cc-btn cc-btn-danger" onclick="toggleLocalSosAlarm()" style="padding:0.4rem 0.85rem;font-size:0.8rem;border-radius:8px;transition:all 0.25s ease;" title="Sound audible SOS alert on this device (Shortcut: TAB)">
+                    <i class="fas fa-bullhorn" id="sosSoundBtnIcon"></i> <span id="sosSoundBtnText">SOS Sound</span> <kbd id="sosShortcutBadge" style="background:rgba(0,0,0,0.3);padding:0.1rem 0.35rem;border-radius:4px;font-size:0.75rem;margin-left:0.25rem;">TAB</kbd>
+                </button>
+                <button type="button" class="cc-btn cc-btn-secondary" onclick="if(window.EmergencyAlertSystem) EmergencyAlertSystem.openSettingsModal()" style="padding:0.4rem 0.6rem;font-size:0.8rem;border-radius:8px;" title="Emergency SOS Sound & Keyboard Shortcut Settings">
+                    <i class="fas fa-gear"></i>
+                </button>
+            </div>
             <button class="cc-btn cc-btn-danger" onclick="AuthHelper.logout()" style="padding:0.4rem 0.85rem;font-size:0.8rem;">
                 <i class="fas fa-power-off"></i> Off Duty
             </button>
@@ -1750,6 +1756,57 @@
             if (!str) return '';
             return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
         }
+
+
+        // Emergency SOS Sound Local Alarm Controls
+        function toggleLocalSosAlarm() {
+            if (window.EmergencyAlertSystem) {
+                if (EmergencyAlertSystem.isPlaying()) {
+                    EmergencyAlertSystem.stopAlarm();
+                    updateSosSoundButtonState(false);
+                } else {
+                    EmergencyAlertSystem.triggerAlarm();
+                    updateSosSoundButtonState(true);
+                }
+            } else {
+                console.warn('EmergencyAlertSystem not loaded');
+            }
+        }
+
+        function updateSosSoundButtonState(isPlaying) {
+            const btn = document.getElementById('sosSoundBtn');
+            if (!btn) return;
+            const shortcut = (window.EmergencyAlertSystem && EmergencyAlertSystem.getShortcut) ? EmergencyAlertSystem.getShortcut() : 'TAB';
+            if (isPlaying) {
+                btn.classList.add('sos-alarm-active-pulse');
+                btn.style.background = '#dc2626';
+                btn.style.borderColor = '#f87171';
+                btn.innerHTML = `<i class="fas fa-stop-circle fa-beat" style="--fa-animation-duration: 0.8s;color:#ffffff;"></i> <span style="font-weight:700;">STOP SOS SOUND</span>`;
+                btn.title = 'Local device audible alarm sounding! Click to silence.';
+            } else {
+                btn.classList.remove('sos-alarm-active-pulse');
+                btn.style.background = '';
+                btn.style.borderColor = '';
+                btn.innerHTML = `<i class="fas fa-bullhorn" id="sosSoundBtnIcon"></i> <span id="sosSoundBtnText">SOS Sound</span> <kbd id="sosShortcutBadge" style="background:rgba(0,0,0,0.3);padding:0.1rem 0.35rem;border-radius:4px;font-size:0.75rem;margin-left:0.25rem;">${shortcut}</kbd>`;
+                btn.title = `Sound audible SOS alert on this device (Shortcut: ${shortcut})`;
+            }
+        }
+
+        // Keep SOS Sound button synced with EmergencyAlertSystem state
+        setInterval(function() {
+            if (window.EmergencyAlertSystem) {
+                const playing = EmergencyAlertSystem.isPlaying();
+                const btn = document.getElementById('sosSoundBtn');
+                if (btn) {
+                    const hasPulse = btn.classList.contains('sos-alarm-active-pulse');
+                    if (playing && !hasPulse) {
+                        updateSosSoundButtonState(true);
+                    } else if (!playing && hasPulse) {
+                        updateSosSoundButtonState(false);
+                    }
+                }
+            }
+        }, 300);
 
         // Auto-refresh queue every 30 seconds
         setInterval(loadResponderQueue, 30000);

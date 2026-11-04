@@ -72,7 +72,8 @@ public class SecurityConfig {
                     "/loading-screen/**",
                     "/login-designs/**",
                     "/favicon.ico",
-                    "/uploads/**"
+                    "/uploads/**",
+                    "/audio/**"
                 ).permitAll()
 
                 // Public Media Streaming / Downloading (photos, videos rendered in browser)
