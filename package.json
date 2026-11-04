@@ -1,0 +1,16 @@
+{
+  "name": "disaster-management-command-center",
+  "version": "3.0.0",
+  "description": "National Disaster Management & Alert System - Multi-Platform Command Center (Web, PWA, Desktop)",
+  "scripts": {
+    "desktop:install": "cd desktop && npm install",
+    "desktop:start": "cd desktop && npm start",
+    "desktop:build": "cd desktop && npm run build:win",
+    "verify:pwa": "powershell -ExecutionPolicy Bypass -File scripts/pwa_verification.ps1",
+    "verify:roles": "powershell -ExecutionPolicy Bypass -File scripts/role_connectivity_verification.ps1",
+    "verify:ndma": "powershell -ExecutionPolicy Bypass -File scripts/ndma_feed_verification.ps1"
+  },
+  "author": "National Disaster Management Platform",
+  "license": "UNLICENSED"
+}
+

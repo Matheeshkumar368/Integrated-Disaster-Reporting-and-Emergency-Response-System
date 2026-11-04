@@ -1,0 +1,1758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover"/>
+    <meta name="theme-color" content="#050811"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+    <meta name="apple-mobile-web-app-title" content="NDMA Field Ops"/>
+    <link rel="manifest" href="/manifest.webmanifest"/>
+    <link rel="apple-touch-icon" href="/icons/icon-192.png"/>
+    <link rel="icon" type="image/png" href="/icons/icon-192.png"/>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+    <meta http-equiv="Pragma" content="no-cache"/>
+    <meta http-equiv="Expires" content="0"/>
+    <title>Field Operations — Emergency Responder Console</title>
+    
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    
+    <!-- Design System & Interaction Engine -->
+    <link rel="stylesheet" href="toast-manager.css?v=2" />
+    <script src="toast-manager.js?v=2"></script>
+    <script src="/js/emergency-alert.js?v=3"></script>
+    <link rel="stylesheet" href="command-center.css?v=3" />
+    <script src="command-center.js?v=3"></script>
+    <script src="pwa-manager.js"></script>
+    
+    <!-- Leaflet & Map Engine -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Situational Media Capture & Live Responder Tracking Components -->
+    <link rel="stylesheet" href="media-capture.css?v=1" />
+    <script src="media-capture.js?v=1"></script>
+    <link rel="stylesheet" href="responder-tracking.css?v=1" />
+    <script src="responder-tracking.js?v=1"></script>
+    <link rel="stylesheet" href="incident-room.css?v=1" />
+    <script src="incident-room.js?v=1"></script>
+    
+    <!-- Role Loading & Authentication Helper -->
+    <link rel="stylesheet" href="role-loading.css?v=2" />
+    <script src="role-loading.js?v=2"></script>
+    <script src="auth-helper.js?v=2"></script>
+
+    <style>
+        .cc-responder-container {
+            max-width: 1540px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+
+        .cc-mission-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(460px, 1fr));
+            gap: 1.4rem;
+        }
+
+        @media (max-width: 768px) {
+            .cc-mission-grid {
+                grid-template-columns: 1fr;
+            }
+            .cc-responder-container {
+                padding: 0.85rem;
+            }
+        }
+
+        /* 5-Stage Tactical Lifecycle Stepper */
+        .cc-stage-stepper {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(10, 16, 30, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 0.75rem 0.9rem;
+            margin: 1rem 0;
+            position: relative;
+        }
+
+        .cc-stage-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            z-index: 2;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex: 1;
+        }
+
+        .cc-stage-step .cc-step-bubble {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #1e293b;
+            border: 2px solid #475569;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-bottom: 0.35rem;
+            transition: all 0.25s ease;
+        }
+
+        .cc-stage-step .cc-step-title {
+            font-size: 0.72rem;
+            font-family: var(--cc-font-mono);
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        /* Completed Step */
+        .cc-stage-step.completed .cc-step-bubble {
+            background: #0284c7;
+            border-color: #38bdf8;
+            color: #ffffff;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+        }
+        .cc-stage-step.completed .cc-step-title {
+            color: #38bdf8;
+        }
+
+        /* Active / Current Step */
+        .cc-stage-step.active .cc-step-bubble {
+            background: #00e5ff;
+            border-color: #ffffff;
+            color: #030a16;
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.8);
+            transform: scale(1.15);
+            animation: pulse-ring 2s infinite;
+        }
+        .cc-stage-step.active .cc-step-title {
+            color: #00e5ff;
+            font-weight: 700;
+        }
+
+        /* Stage Connecting Line */
+        .cc-stage-line {
+            position: absolute;
+            top: 22px;
+            left: 5%;
+            right: 5%;
+            height: 3px;
+            background: #334155;
+            z-index: 1;
+        }
+
+        .cc-stage-line-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #0284c7, #00e5ff);
+            transition: width 0.3s ease;
+        }
+
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 229, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0); }
+        }
+
+        /* Tactical Action Bar */
+        .cc-action-cluster {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.9rem;
+            padding-top: 0.9rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .cc-sub-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--cc-border-medium);
+            padding-bottom: 0.75rem;
+        }
+
+        .cc-sub-tab-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            color: #94a3b8;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .cc-sub-tab-btn:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .cc-sub-tab-btn.active {
+            color: var(--cc-cyan);
+            background: rgba(0, 229, 255, 0.1);
+            border-color: rgba(0, 229, 255, 0.3);
+        }
+
+        .cc-sub-tab-badge {
+            background: #334155;
+            color: #ffffff;
+            padding: 0.15rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.72rem;
+            font-family: var(--cc-font-mono);
+        }
+
+        .cc-sub-tab-btn.active .cc-sub-tab-badge {
+            background: var(--cc-cyan);
+            color: #030a16;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- =========================================================================
+         TACTICAL HUD HEADER
+         ========================================================================= -->
+    <header class="cc-hud-header">
+        <div class="cc-hud-branding">
+            <div class="cc-hud-badge-icon" style="background:linear-gradient(135deg,rgba(168,85,247,0.2),rgba(59,130,246,0.2));border-color:rgba(168,85,247,0.4);">
+                <i class="fas fa-truck-fast" style="color:var(--cc-purple);"></i>
+            </div>
+            <div class="cc-hud-title-group">
+                <h1>
+                    FIELD OPERATIONS CONSOLE
+                    <span class="cc-badge severity-moderate" id="unitStatusBadge"><i class="fas fa-circle cc-pulse-dot"></i> UNIT DEPLOYED</span>
+                </h1>
+                <div class="cc-hud-subtitle">TACTICAL RESCUE QUEUE &bull; 5-STAGE LIFECYCLE &bull; LIVE SITUATION CAPTURE</div>
+            </div>
+        </div>
+
+        <div class="cc-hud-telemetry">
+            <div class="cc-telemetry-pill" id="hudClockDisplay">
+                <!-- Clock auto-populated -->
+            </div>
+            <div class="cc-telemetry-pill" style="border-color:rgba(168,85,247,0.4);">
+                <i class="fas fa-id-badge" style="color:var(--cc-purple);"></i>
+                <span id="responderName">Emergency Responder</span>
+            </div>
+            <!-- Availability Status Dropdown Pill -->
+            <div class="cc-telemetry-pill" style="border-color:rgba(16,185,129,0.4);display:flex;align-items:center;gap:0.4rem;">
+                <i class="fas fa-circle-dot" id="availabilityDot" style="color:var(--cc-safe-green);"></i>
+                <select id="responderAvailabilitySelector" onchange="changeAvailabilityStatus(this.value)" style="background:transparent;border:none;color:#ffffff;font-size:0.8rem;font-weight:600;outline:none;cursor:pointer;">
+                    <option value="Available" style="background:#090e1a;color:#ffffff;">Status: Available</option>
+                    <option value="On Duty" style="background:#090e1a;color:#ffffff;">Status: On Duty</option>
+                    <option value="Unavailable" style="background:#090e1a;color:#ffffff;">Status: Unavailable</option>
+                </select>
+            </div>
+            <div class="cc-telemetry-pill live">
+                <i class="fas fa-location-crosshairs"></i>
+                <span id="assignedZoneBadge">Zone: Assigned</span>
+            </div>
+            <div class="cc-telemetry-pill" id="gpsTelemetryPill" style="cursor:pointer;" onclick="toggleManualGps()" title="Click to toggle GPS broadcasting">
+                <i class="fas fa-satellite-dish" id="gpsIcon" style="color:#64748b;"></i>
+                <span id="gpsStatusText" style="color:#94a3b8;">GPS: STANDBY</span>
+            </div>
+            <button type="button" class="cc-btn cc-btn-danger" onclick="EmergencyAlertSystem.openSettingsModal()" style="padding:0.4rem 0.85rem;font-size:0.8rem;border-radius:8px;" title="Emergency SOS Sound Settings">
+                <i class="fas fa-bullhorn"></i> SOS Sound <kbd style="background:rgba(0,0,0,0.3);padding:0.1rem 0.35rem;border-radius:4px;font-size:0.75rem;margin-left:0.25rem;">TAB</kbd>
+            </button>
+            <button class="cc-btn cc-btn-danger" onclick="AuthHelper.logout()" style="padding:0.4rem 0.85rem;font-size:0.8rem;">
+                <i class="fas fa-power-off"></i> Off Duty
+            </button>
+        </div>
+    </header>
+
+    <!-- =========================================================================
+         NAVIGATION BAR
+         ========================================================================= -->
+    <nav class="cc-nav-bar">
+        <ul class="cc-nav-links">
+            <li><a href="/responder-dashboard.html" class="cc-nav-link active"><i class="fas fa-list-check"></i> Tactical Incident Queue</a></li>
+            <li><a href="/responder-rescue.html" class="cc-nav-link"><i class="fas fa-map-location"></i> Live Rescue Operations</a></li>
+            <li><a href="/responder-tasks.html" class="cc-nav-link"><i class="fas fa-clipboard-check"></i> Assigned Field Tasks</a></li>
+            <li><a href="/emergency-videos.html" class="cc-nav-link"><i class="fas fa-film"></i> Survival Videos</a></li>
+            <li><a href="/responder-profile.html" class="cc-nav-link"><i class="fas fa-user-gear"></i> Unit Profile & Zone</a></li>
+        </ul>
+        <div class="cc-nav-user-actions">
+            <button class="cc-btn cc-btn-secondary" onclick="loadResponderQueue()" style="font-size:0.82rem;padding:0.4rem 0.85rem;">
+                <i class="fas fa-rotate"></i> Refresh Queue
+            </button>
+        </div>
+    </nav>
+
+    <!-- =========================================================================
+         MAIN TACTICAL QUEUE
+         ========================================================================= -->
+    <main class="cc-responder-container">
+
+        <!-- KEY STATS HUD -->
+        <section class="cc-stats-grid">
+            <div class="cc-stat-card critical">
+                <div class="cc-stat-header">
+                    <span class="cc-stat-label">Assigned Field Tasks</span>
+                    <i class="fas fa-clipboard-list cc-stat-icon" style="color:var(--cc-critical-red);"></i>
+                </div>
+                <div class="cc-stat-number" id="assignedTasksCount">0</div>
+                <div class="cc-stat-meta"><span class="cc-pulse-dot critical"></span> Formal rescue assignments</div>
+            </div>
+
+            <div class="cc-stat-card warning">
+                <div class="cc-stat-header">
+                    <span class="cc-stat-label">En Route / Arrived</span>
+                    <i class="fas fa-truck-fast cc-stat-icon" style="color:var(--cc-warning-amber);"></i>
+                </div>
+                <div class="cc-stat-number" id="inActionCount">0</div>
+                <div class="cc-stat-meta">Active units in theatre</div>
+            </div>
+
+            <div class="cc-stat-card safe">
+                <div class="cc-stat-header">
+                    <span class="cc-stat-label">Missions Completed</span>
+                    <i class="fas fa-circle-check cc-stat-icon" style="color:var(--cc-safe-green);"></i>
+                </div>
+                <div class="cc-stat-number" id="completedCount">0</div>
+                <div class="cc-stat-meta">Safely extracted & resolved</div>
+            </div>
+
+            <div class="cc-stat-card info">
+                <div class="cc-stat-header">
+                    <span class="cc-stat-label">Distress Calls & Alerts</span>
+                    <i class="fas fa-bell cc-stat-icon" style="color:var(--cc-cyan);"></i>
+                </div>
+                <div class="cc-stat-number" id="distressCount">0</div>
+                <div class="cc-stat-meta">Citizen SOS & NDMA feeds</div>
+            </div>
+        </section>
+
+        <!-- =========================================================================
+             LIVE TACTICAL GPS TELEMETRY & FIELD NAVIGATOR (TASK 1)
+             ========================================================================= -->
+        <section class="cc-gps-console" style="background:#091322;border:1px solid #1e293b;border-radius:12px;padding:1.25rem;margin-bottom:1.5rem;box-shadow:0 8px 30px rgba(0,0,0,0.5);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.8rem;">
+                <div style="display:flex;align-items:center;gap:0.75rem;">
+                    <span style="font-size:1.7rem;color:#00e5ff;filter:drop-shadow(0 0 8px rgba(0,229,255,0.4));"><i class="fas fa-satellite-dish"></i></span>
+                    <div>
+                        <h2 style="font-size:1.15rem;font-weight:700;color:#ffffff;margin:0;display:flex;align-items:center;gap:0.5rem;">
+                            Live Tactical GPS Telemetry & Field Navigator
+                            <span id="gpsPermissionBadge" class="cc-badge" style="background:rgba(100,116,139,0.2);color:#94a3b8;border:1px solid #475569;font-size:0.72rem;">GPS: STANDBY</span>
+                        </h2>
+                        <p style="font-size:0.8rem;color:#94a3b8;margin:0.2rem 0 0 0;">
+                            Continuous hardware location broadcast via <code>navigator.geolocation.watchPosition()</code> to Central Command & Civilian Safety Maps.
+                        </p>
+                    </div>
+                </div>
+                <div style="display:flex;gap:0.6rem;align-items:center;flex-wrap:wrap;">
+                    <div style="display:flex;align-items:center;gap:0.4rem;">
+                        <label for="gpsActiveTaskSelector" style="font-size:0.78rem;color:#94a3b8;font-weight:600;">Mission Target:</label>
+                        <select id="gpsActiveTaskSelector" onchange="onGpsTaskSelected(this.value)" style="background:#050c18;border:1px solid #334155;color:#38bdf8;padding:0.4rem 0.75rem;border-radius:6px;font-size:0.8rem;outline:none;">
+                            <option value="">-- No Mission Target Selected --</option>
+                        </select>
+                    </div>
+                    <button type="button" id="btnStartLiveGps" class="cc-btn" style="background:linear-gradient(135deg,#0284c7,#00e5ff);color:#030a16;font-weight:700;padding:0.45rem 1rem;font-size:0.82rem;" onclick="startDashboardLiveGps()">
+                        <i class="fas fa-location-crosshairs"></i> Start Live GPS
+                    </button>
+                    <button type="button" id="btnStopLiveGps" class="cc-btn cc-btn-danger" style="display:none;padding:0.45rem 1rem;font-size:0.82rem;" onclick="stopDashboardLiveGps()">
+                        <i class="fas fa-stop"></i> Stop Live GPS
+                    </button>
+                    <button type="button" class="cc-btn cc-btn-secondary" style="padding:0.45rem 0.8rem;font-size:0.82rem;" onclick="recenterDashboardGpsMap()" title="Recenter on current device position">
+                        <i class="fas fa-arrows-to-dot"></i> Recenter
+                    </button>
+                </div>
+            </div>
+
+            <!-- Real-time Status Notice Banner -->
+            <div id="gpsStatusNoticeBanner" style="background:rgba(15,23,42,0.7);border-left:4px solid #64748b;padding:0.6rem 1rem;border-radius:6px;font-size:0.82rem;color:#cbd5e1;margin-bottom:1rem;display:flex;align-items:center;gap:0.6rem;">
+                <i class="fas fa-info-circle" id="gpsStatusNoticeIcon" style="color:#94a3b8;"></i>
+                <span id="gpsStatusNoticeText">Live location sharing is stopped. Click "Start Live GPS" to begin continuous telemetry broadcast.</span>
+            </div>
+
+            <!-- Telemetry Readout Grid -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));gap:0.75rem;margin-bottom:1rem;">
+                <div style="background:#050c18;border:1px solid #1e293b;border-radius:8px;padding:0.6rem 0.8rem;">
+                    <div style="font-size:0.7rem;color:#94a3b8;text-transform:uppercase;font-weight:600;">Hardware Lat / Lng</div>
+                    <div id="telemetryCoordsDisplay" style="font-size:0.85rem;color:#00e5ff;font-family:var(--cc-font-mono);font-weight:700;margin-top:0.25rem;">Waiting for device GPS</div>
+                </div>
+                <div style="background:#050c18;border:1px solid #1e293b;border-radius:8px;padding:0.6rem 0.8rem;">
+                    <div style="font-size:0.7rem;color:#94a3b8;text-transform:uppercase;font-weight:600;">Device Accuracy</div>
+                    <div id="telemetryAccuracyDisplay" style="font-size:0.85rem;color:#10b981;font-family:var(--cc-font-mono);font-weight:700;margin-top:0.25rem;">--</div>
+                </div>
+                <div style="background:#050c18;border:1px solid #1e293b;border-radius:8px;padding:0.6rem 0.8rem;">
+                    <div style="font-size:0.7rem;color:#94a3b8;text-transform:uppercase;font-weight:600;">Last Update Time</div>
+                    <div id="telemetryUpdateTimeDisplay" style="font-size:0.85rem;color:#e2e8f0;font-family:var(--cc-font-mono);font-weight:600;margin-top:0.25rem;">Not yet updated</div>
+                </div>
+                <div style="background:#050c18;border:1px solid #1e293b;border-radius:8px;padding:0.6rem 0.8rem;">
+                    <div style="font-size:0.7rem;color:#94a3b8;text-transform:uppercase;font-weight:600;">Distance to Mission</div>
+                    <div id="telemetryDistanceDisplay" style="font-size:0.85rem;color:#f59e0b;font-family:var(--cc-font-mono);font-weight:700;margin-top:0.25rem;">--</div>
+                </div>
+                <div style="background:#050c18;border:1px solid #1e293b;border-radius:8px;padding:0.6rem 0.8rem;">
+                    <div style="font-size:0.7rem;color:#94a3b8;text-transform:uppercase;font-weight:600;">Estimated Road ETA</div>
+                    <div id="telemetryEtaDisplay" style="font-size:0.85rem;color:#a855f7;font-family:var(--cc-font-mono);font-weight:700;margin-top:0.25rem;">--</div>
+                </div>
+            </div>
+
+            <!-- Leaflet Map Container -->
+            <div id="responderLiveMapContainer" style="height:360px;width:100%;border-radius:8px;overflow:hidden;border:1px solid #1e293b;position:relative;">
+                <div id="responderDashboardMap" style="height:100%;width:100%;"></div>
+            </div>
+        </section>
+
+        <!-- SUB TABS -->
+        <div class="cc-sub-tabs">
+            <button class="cc-sub-tab-btn active" id="tabBtnAssigned" onclick="switchQueueSubTab('assigned')">
+                <i class="fas fa-tasks"></i> My Assigned Rescue Tasks
+                <span class="cc-sub-tab-badge" id="badgeAssignedTasks">0</span>
+            </button>
+            <button class="cc-sub-tab-btn" id="tabBtnDistress" onclick="switchQueueSubTab('distress')">
+                <i class="fas fa-triangle-exclamation"></i> Citizen SOS Calls
+                <span class="cc-sub-tab-badge" id="badgeCitizenSos">0</span>
+            </button>
+            <button class="cc-sub-tab-btn" id="tabBtnWarnings" onclick="switchQueueSubTab('warnings')">
+                <i class="fas fa-tower-broadcast"></i> Active Warning Broadcasts
+                <span class="cc-sub-tab-badge" id="badgeActiveAlerts">0</span>
+            </button>
+        </div>
+
+        <!-- =========================================================================
+             PANEL 1: ASSIGNED RESCUE TASKS (5-STAGE LIFECYCLE)
+             ========================================================================= -->
+        <section id="panelAssignedTasks">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem;flex-wrap:wrap;gap:0.8rem;">
+                <div>
+                    <h2 style="font-size:1.25rem;font-weight:700;color:#ffffff;display:flex;align-items:center;gap:0.6rem;">
+                        <i class="fas fa-crosshairs" style="color:var(--cc-cyan);"></i>
+                        Operational Missions Assigned to Unit
+                    </h2>
+                    <p style="font-size:0.85rem;color:var(--cc-text-muted);">
+                        5-Stage Response: Assigned &rarr; Acknowledged &rarr; En Route &rarr; Arrived &rarr; Completed. Advancing to En Route initiates live telemetry.
+                    </p>
+                </div>
+                <div>
+                    <select id="taskStatusFilter" onchange="filterAssignedTasks(this.value)" style="background:#090e1a;border:1px solid #334155;color:#f8fafc;padding:0.4rem 0.8rem;border-radius:6px;font-size:0.82rem;">
+                        <option value="ALL">All Mission Stages</option>
+                        <option value="ACTIVE">In-Progress (Assigned, Ack, En Route, Arrived)</option>
+                        <option value="Completed">Completed Only</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="assignedTasksGrid" class="cc-mission-grid">
+                <!-- Dynamically populated -->
+            </div>
+
+            <div id="emptyAssignedTasks" style="display:none;text-align:center;padding:4rem;color:#64748b;">
+                <i class="fas fa-clipboard-check" style="font-size:3.5rem;color:var(--cc-safe-green);opacity:0.6;margin-bottom:1rem;"></i>
+                <h3 style="color:#ffffff;font-size:1.2rem;">No Rescue Tasks Assigned Currently</h3>
+                <p style="font-size:0.88rem;color:#94a3b8;margin-top:0.3rem;">Central Command has not assigned specific tasks to your responder ID. Check Citizen SOS calls to self-deploy.</p>
+            </div>
+        </section>
+
+        <!-- =========================================================================
+             PANEL 2: CITIZEN DISTRESS SOS CALLS
+             ========================================================================= -->
+        <section id="panelCitizenSos" style="display:none;">
+            <div style="margin-bottom:1.2rem;">
+                <h2 style="font-size:1.25rem;font-weight:700;color:#ffffff;display:flex;align-items:center;gap:0.6rem;">
+                    <i class="fas fa-hand-holding-hand" style="color:var(--cc-critical-red);"></i>
+                    Citizen Emergency Distress Reports (SOS)
+                </h2>
+                <p style="font-size:0.85rem;color:var(--cc-text-muted);">
+                    Unassigned emergency distress signals submitted by citizens in sector with coordinates and photo evidence.
+                </p>
+            </div>
+
+            <div id="citizenSosGrid" class="cc-mission-grid">
+                <!-- Dynamically populated -->
+            </div>
+
+            <div id="emptyCitizenSos" style="display:none;text-align:center;padding:4rem;color:#64748b;">
+                <i class="fas fa-shield-heart" style="font-size:3.5rem;color:var(--cc-safe-green);opacity:0.6;margin-bottom:1rem;"></i>
+                <h3 style="color:#ffffff;font-size:1.2rem;">Zero Unresolved Citizen Distress Calls</h3>
+                <p style="font-size:0.88rem;color:#94a3b8;margin-top:0.3rem;">All citizen emergency reports in your sector have been acknowledged or resolved.</p>
+            </div>
+        </section>
+
+        <!-- =========================================================================
+             PANEL 3: ACTIVE NDMA / BROADCAST WARNINGS
+             ========================================================================= -->
+        <section id="panelWarnings" style="display:none;">
+            <div style="margin-bottom:1.2rem;">
+                <h2 style="font-size:1.25rem;font-weight:700;color:#ffffff;display:flex;align-items:center;gap:0.6rem;">
+                    <i class="fas fa-tower-broadcast" style="color:var(--cc-warning-amber);"></i>
+                    Official Disaster Warnings & Admin Broadcasts
+                </h2>
+                <p style="font-size:0.85rem;color:var(--cc-text-muted);">
+                    NDMA SACHET disaster alerts and regional emergency broadcasts.
+                </p>
+            </div>
+
+            <div id="warningsGrid" class="cc-mission-grid">
+                <!-- Dynamically populated -->
+            </div>
+
+            <div id="emptyWarnings" style="display:none;text-align:center;padding:4rem;color:#64748b;">
+                <i class="fas fa-cloud-sun" style="font-size:3.5rem;color:var(--cc-safe-green);opacity:0.6;margin-bottom:1rem;"></i>
+                <h3 style="color:#ffffff;font-size:1.2rem;">No Active Warnings</h3>
+                <p style="font-size:0.88rem;color:#94a3b8;margin-top:0.3rem;">No high severity disaster alerts active currently.</p>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Loading Screen
+        RoleLoadingScreen.initOnLoad('Responder');
+
+        // Global State
+        let cachedTasks = [];
+        let cachedCitizenReports = [];
+        let cachedAlerts = [];
+        let currentSubTab = 'assigned';
+        let activeGpsTaskId = null;
+
+        // Initialize Clock
+        CommandCenter.initHudClock('hudClockDisplay');
+
+        // Authentication & Role Check
+        (async function() {
+            const token = localStorage.getItem('token');
+            const userRole = localStorage.getItem('userRole');
+
+            RoleLoadingScreen.hide();
+
+            if (!token) {
+                window.location.href = '/index.html';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/profile', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+
+                if (!response.ok) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('userRole');
+                    window.location.href = '/index.html';
+                    return;
+                }
+
+                const userData = await response.json();
+                if (userData.assignedZone) {
+                    document.getElementById('assignedZoneBadge').innerText = `Zone: ${userData.assignedZone}`;
+                }
+            } catch (e) {
+                console.error('Validation error:', e);
+            }
+
+            if (userRole !== 'Responder' && userRole !== 'Admin') {
+                if (window.showToast) {
+                    window.showToast('Access Denied: Only Responders can access Field Operations', 'error');
+                }
+                setTimeout(() => {
+                    window.location.href = '/citizen-dashboard.html';
+                }, 1000);
+                return;
+            }
+
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                document.getElementById('responderName').innerText = payload.sub || 'Responder';
+            } catch (e) {}
+
+            loadResponderQueue();
+            loadResponderAvailability();
+        })();
+
+        // Sub Tab Switching
+        function switchQueueSubTab(tab) {
+            currentSubTab = tab;
+            document.querySelectorAll('.cc-sub-tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('panelAssignedTasks').style.display = 'none';
+            document.getElementById('panelCitizenSos').style.display = 'none';
+            document.getElementById('panelWarnings').style.display = 'none';
+
+            if (tab === 'assigned') {
+                document.getElementById('tabBtnAssigned').classList.add('active');
+                document.getElementById('panelAssignedTasks').style.display = 'block';
+            } else if (tab === 'distress') {
+                document.getElementById('tabBtnDistress').classList.add('active');
+                document.getElementById('panelCitizenSos').style.display = 'block';
+            } else if (tab === 'warnings') {
+                document.getElementById('tabBtnWarnings').classList.add('active');
+                document.getElementById('panelWarnings').style.display = 'block';
+            }
+        }
+
+        // Master Data Loader
+        async function loadResponderQueue() {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            try {
+                const [tasksRes, citizenRes, alertsRes] = await Promise.allSettled([
+                    fetch('/api/tasks/my-tasks', { headers: { 'Authorization': 'Bearer ' + token } }),
+                    fetch('/api/citizen-reports/pending', { headers: { 'Authorization': 'Bearer ' + token } }),
+                    fetch('/api/alerts', { headers: { 'Authorization': 'Bearer ' + token } })
+                ]);
+
+                let tasks = [];
+                if (tasksRes.status === 'fulfilled' && tasksRes.value.ok) {
+                    const data = await tasksRes.value.json();
+                    tasks = Array.isArray(data.tasks) ? data.tasks : (Array.isArray(data) ? data : []);
+                }
+
+                let citizenReports = [];
+                if (citizenRes.status === 'fulfilled' && citizenRes.value.ok) {
+                    citizenReports = await citizenRes.value.json();
+                }
+
+                let alerts = [];
+                if (alertsRes.status === 'fulfilled' && alertsRes.value.ok) {
+                    alerts = await alertsRes.value.json();
+                }
+
+                cachedTasks = tasks;
+                cachedCitizenReports = citizenReports;
+                cachedAlerts = alerts;
+
+                // Update Badges & Counters
+                const assignedCount = tasks.length;
+                const inActionCount = tasks.filter(t => t.status === 'En Route' || t.status === 'Arrived' || t.status === 'In Progress').length;
+                const completedCount = tasks.filter(t => t.status === 'Completed').length;
+                const distressCount = citizenReports.length + alerts.filter(a => a.status === 'Active').length;
+
+                document.getElementById('assignedTasksCount').innerText = assignedCount;
+                document.getElementById('inActionCount').innerText = inActionCount;
+                document.getElementById('completedCount').innerText = completedCount;
+                document.getElementById('distressCount').innerText = distressCount;
+
+                document.getElementById('badgeAssignedTasks').innerText = assignedCount;
+                document.getElementById('badgeCitizenSos').innerText = citizenReports.length;
+                document.getElementById('badgeActiveAlerts').innerText = alerts.filter(a => a.status === 'Active').length;
+
+                renderAssignedTasks(tasks);
+                renderCitizenSos(citizenReports);
+                renderWarnings(alerts);
+                populateGpsTaskSelector();
+                initDashboardLiveGpsMap();
+
+            } catch (err) {
+                console.error('Queue loading error:', err);
+                CommandCenter.showToast('Failed to load field operations queue', 'error');
+            }
+        }
+
+        // =========================================================================
+        // 5-STAGE LIFECYCLE ENGINE: Assigned -> Acknowledged -> En Route -> Arrived -> Completed
+        // =========================================================================
+        const STAGES = ['Assigned', 'Acknowledged', 'En Route', 'Arrived', 'Completed'];
+
+        function getNormalizedStageIndex(status) {
+            if (!status) return 0;
+            const s = status.trim().toLowerCase();
+            if (s === 'pending' || s === 'assigned') return 0;
+            if (s === 'acknowledged' || s === 'accepted') return 1;
+            if (s === 'en route' || s === 'in progress') return 2;
+            if (s === 'arrived') return 3;
+            if (s === 'completed' || s === 'resolved') return 4;
+            return 0;
+        }
+
+        function renderAssignedTasks(tasks) {
+            const grid = document.getElementById('assignedTasksGrid');
+            const emptyEl = document.getElementById('emptyAssignedTasks');
+
+            if (!tasks || tasks.length === 0) {
+                grid.innerHTML = '';
+                emptyEl.style.display = 'block';
+                return;
+            }
+
+            emptyEl.style.display = 'none';
+            grid.innerHTML = '';
+
+            tasks.forEach(task => {
+                const stageIndex = getNormalizedStageIndex(task.status);
+                const currentStageName = STAGES[stageIndex];
+                const prio = (task.priority || 'High').toLowerCase();
+                const progressPct = (stageIndex / (STAGES.length - 1)) * 100;
+                const isCompleted = stageIndex === 4;
+
+                const card = document.createElement('div');
+                card.className = 'cc-card';
+                card.style.borderLeft = `4px solid ${
+                    isCompleted ? 'var(--cc-safe-green)' :
+                    stageIndex >= 2 ? 'var(--cc-cyan)' : 'var(--cc-warning-amber)'
+                }`;
+
+                // Build 5-Stage Stepper HTML
+                let stepperHtml = `
+                    <div class="cc-stage-stepper">
+                        <div class="cc-stage-line">
+                            <div class="cc-stage-line-progress" style="width: ${progressPct}%;"></div>
+                        </div>
+                `;
+
+                STAGES.forEach((stg, idx) => {
+                    let stepClass = '';
+                    let iconHtml = `${idx + 1}`;
+                    if (idx < stageIndex) {
+                        stepClass = 'completed';
+                        iconHtml = '<i class="fas fa-check"></i>';
+                    } else if (idx === stageIndex) {
+                        stepClass = 'active';
+                        iconHtml = '<i class="fas fa-circle-dot"></i>';
+                    }
+
+                    stepperHtml += `
+                        <div class="cc-stage-step ${stepClass}" onclick="promptDirectStatus(${task.taskId}, '${stg}')" title="Click to transition to ${stg}">
+                            <div class="cc-step-bubble">${iconHtml}</div>
+                            <div class="cc-step-title">${stg}</div>
+                        </div>
+                    `;
+                });
+                stepperHtml += `</div>`;
+
+                // Next Action Button
+                let nextActionHtml = '';
+                if (stageIndex === 0) {
+                    nextActionHtml = `
+                        <button class="cc-btn cc-btn-primary" style="flex:1;" onclick="updateTaskStatus(${task.taskId}, 'Acknowledged')">
+                            <i class="fas fa-check"></i> 1. Acknowledge Mission
+                        </button>`;
+                } else if (stageIndex === 1) {
+                    nextActionHtml = `
+                        <button class="cc-btn" style="flex:1;background:linear-gradient(135deg, #0284c7, #00e5ff);color:#030a16;font-weight:700;" onclick="updateTaskStatus(${task.taskId}, 'En Route')">
+                            <i class="fas fa-person-running"></i> 2. Deploy En Route & Stream GPS
+                        </button>`;
+                } else if (stageIndex === 2) {
+                    nextActionHtml = `
+                        <button class="cc-btn" style="flex:1;background:linear-gradient(135deg, #f59e0b, #eab308);color:#030a16;font-weight:700;" onclick="updateTaskStatus(${task.taskId}, 'Arrived')">
+                            <i class="fas fa-location-crosshairs"></i> 3. Report Arrived On Scene
+                        </button>`;
+                } else if (stageIndex === 3) {
+                    nextActionHtml = `
+                        <button class="cc-btn cc-btn-success" style="flex:1;" onclick="updateTaskStatus(${task.taskId}, 'Completed')">
+                            <i class="fas fa-circle-check"></i> 4. Complete Rescue Mission
+                        </button>`;
+                } else {
+                    nextActionHtml = `
+                        <div style="flex:1;text-align:center;padding:0.4rem;background:rgba(16,185,129,0.15);border:1px solid #10b981;border-radius:6px;color:#10b981;font-weight:600;font-size:0.85rem;">
+                            <i class="fas fa-shield-check"></i> Mission Successfully Resolved
+                        </div>`;
+                }
+
+                // Coordinates or location for Maps navigation
+                const locQuery = (task.latitude && task.longitude) ? 
+                    `${task.latitude},${task.longitude}` : encodeURIComponent(task.locationName || 'Coimbatore');
+
+                card.innerHTML = `
+                    <div class="cc-card-header" style="padding-bottom:0.5rem;margin-bottom:0.6rem;">
+                        <div style="display:flex;align-items:center;gap:0.5rem;">
+                            <span class="cc-badge severity-${prio}">${task.priority || 'High'} Priority</span>
+                            <span class="cc-badge" style="background:#1e293b;border-color:#475569;color:#94a3b8;">
+                                <i class="fas fa-tag"></i> ${task.disasterType || 'Rescue'}
+                            </span>
+                        </div>
+                        <span style="font-family:var(--cc-font-mono);font-size:0.75rem;color:#94a3b8;">
+                            #TASK-${task.taskId} &bull; ${(window.formatIndianTime ? window.formatIndianTime(task.createdAt || Date.now()) : new Date(task.createdAt || Date.now()).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }))}
+                        </span>
+                    </div>
+
+                    <h3 style="font-size:1.15rem;font-weight:700;color:#f8fafc;margin-bottom:0.4rem;">
+                        ${task.title}
+                    </h3>
+
+                    <p style="color:#cbd5e1;font-size:0.88rem;line-height:1.45;margin-bottom:0.8rem;">
+                        ${task.description || 'Immediate emergency deployment requested.'}
+                    </p>
+
+                    <div style="font-size:0.85rem;color:#94a3b8;margin-bottom:0.6rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.4rem;">
+                        <span><i class="fas fa-location-dot" style="color:var(--cc-cyan);"></i> ${task.locationName || 'Location Not Specified'}</span>
+                        <a href="https://www.google.com/maps/dir/?api=1&destination=${locQuery}" target="_blank" 
+                           style="color:var(--cc-cyan);font-size:0.8rem;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:0.3rem;">
+                            <i class="fas fa-diamond-turn-right"></i> Navigate (Google Maps)
+                        </a>
+                    </div>
+
+                    <!-- 5-Stage Stepper -->
+                    ${stepperHtml}
+
+                    ${task.notes ? `
+                    <div style="background:rgba(15,23,42,0.6);border:1px solid rgba(255,255,255,0.06);border-radius:6px;padding:0.5rem 0.75rem;margin-bottom:0.8rem;font-size:0.78rem;color:#94a3b8;font-family:var(--cc-font-mono);">
+                        <strong style="color:var(--cc-cyan);"><i class="fas fa-file-waveform"></i> Field Notes / SitRep:</strong>
+                        <div style="white-space:pre-wrap;margin-top:0.2rem;">${task.notes}</div>
+                    </div>` : ''}
+
+                    <!-- Tactical Operational Controls -->
+                    <div class="cc-action-cluster">
+                        <button type="button" class="cc-btn cc-btn-secondary" style="font-size:0.8rem;padding:0.4rem 0.75rem;" onclick="window.IncidentRoom.open(${task.taskId}, 'TASK', '${escapeJs(task.locationName || '')}')">
+                            <i class="fas fa-comments" style="color:#10b981;"></i> Room & Chat
+                        </button>
+                        <button type="button" class="cc-btn cc-btn-secondary" style="font-size:0.8rem;padding:0.4rem 0.75rem;" onclick="window.MediaCapture.open({ incidentId: ${task.taskId}, incidentType: 'TASK', onSuccess: () => loadResponderQueue() })">
+                            <i class="fas fa-camera" style="color:#38bdf8;"></i> Upload Field Evidence
+                        </button>
+                        <button type="button" class="cc-btn cc-btn-secondary" style="font-size:0.8rem;padding:0.4rem 0.75rem;" onclick="window.ResponderTracking.open(${task.taskId})">
+                            <i class="fas fa-crosshairs" style="color:#a855f7;"></i> Tactical Radar
+                        </button>
+                        <button type="button" class="cc-btn ${isGpsBroadcasting && activeGpsTaskId == task.taskId ? 'cc-btn-primary live-gps-active' : 'cc-btn-secondary'}" id="btn-gps-${task.taskId}" style="font-size:0.8rem;padding:0.4rem 0.75rem;${isGpsBroadcasting && activeGpsTaskId == task.taskId ? 'border-color:#00e5ff;color:#00e5ff;background:rgba(0,229,255,0.15);' : ''}" onclick="toggleGpsStream(${task.taskId})">
+                            <i class="fas fa-satellite-dish ${isGpsBroadcasting && activeGpsTaskId == task.taskId ? 'fa-spin' : ''}" style="color:#00e5ff;"></i> ${isGpsBroadcasting && activeGpsTaskId == task.taskId ? 'Broadcasting GPS' : 'Share Live GPS'}
+                        </button>
+                    </div>
+
+                    <div style="display:flex;gap:0.6rem;margin-top:0.8rem;align-items:center;">
+                        ${nextActionHtml}
+                        <button class="cc-btn cc-btn-secondary" style="font-size:0.8rem;padding:0.45rem 0.65rem;" onclick="promptCustomNotes(${task.taskId}, '${task.status}')" title="Add SITREP notes">
+                            <i class="fas fa-pencil"></i> Note
+                        </button>
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        // Update Task Status via PUT /api/tasks/{id}/status
+        async function updateTaskStatus(taskId, newStatus, notes = '') {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            try {
+                const body = { status: newStatus };
+                if (notes) body.notes = notes;
+
+                const res = await fetch(`/api/tasks/${taskId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                if (res.ok) {
+                    if (newStatus === 'En Route' || newStatus === 'In Progress') {
+                        CommandCenter.showToast('Dispatch accepted — Unit is now En Route.', 'success');
+                    } else {
+                        CommandCenter.showToast(`Task #${taskId} updated to "${newStatus}"`, 'success');
+                    }
+
+                    // If moved to "En Route", trigger Live GPS Telemetry sharing
+                    if (newStatus === 'En Route' && window.ResponderTransmitter) {
+                        try {
+                            activeGpsTaskId = taskId;
+                            const consented = await window.ResponderTransmitter.requestPermissionAndStart(taskId);
+                            if (consented) {
+                                updateGpsPill(true);
+                                CommandCenter.showToast('En route: live GPS streaming started to Central Command', 'info');
+                            }
+                        } catch (gpsErr) {
+                            console.warn('Auto GPS start:', gpsErr);
+                        }
+                    } else if (newStatus === 'Completed' && window.ResponderTransmitter) {
+                        window.ResponderTransmitter.stop();
+                        updateGpsPill(false);
+                    }
+
+                    loadResponderQueue();
+                    loadResponderAvailability();
+                } else {
+                    const err = await res.json().catch(() => ({}));
+                    CommandCenter.showToast(err.message || 'Failed to update task status', 'error');
+                }
+            } catch (e) {
+                CommandCenter.showToast('Network error: ' + e.message, 'error');
+            }
+        }
+
+        // Direct status jump prompt
+        async function promptDirectStatus(taskId, targetStage) {
+            let notes = '';
+            if (window.showPrompt) {
+                notes = await window.showPrompt({
+                    title: `Transition Task #${taskId} to "${targetStage}"`,
+                    message: 'Add Situation Report (SitRep) notes for Mission Control (optional):',
+                    placeholder: 'Enter field notes...',
+                    confirmText: 'Confirm Status Change'
+                });
+            } else {
+                notes = null;
+            }
+            if (notes === null) return; // User cancelled
+            updateTaskStatus(taskId, targetStage, notes);
+        }
+
+        // Add SitRep note prompt
+        async function promptCustomNotes(taskId, currentStatus) {
+            let notes = '';
+            if (window.showPrompt) {
+                notes = await window.showPrompt({
+                    title: `Add Field SitRep Note`,
+                    message: `Incident Task #${taskId} (Status: ${currentStatus}):`,
+                    placeholder: 'Enter situation update...',
+                    confirmText: 'Submit Note'
+                });
+            } else {
+                notes = null;
+            }
+            if (!notes) return;
+            updateTaskStatus(taskId, currentStatus, notes);
+        }
+
+        // Filter assigned tasks
+        function filterAssignedTasks(filterVal) {
+            if (filterVal === 'ALL') {
+                renderAssignedTasks(cachedTasks);
+            } else if (filterVal === 'ACTIVE') {
+                renderAssignedTasks(cachedTasks.filter(t => t.status !== 'Completed'));
+            } else if (filterVal === 'Completed') {
+                renderAssignedTasks(cachedTasks.filter(t => t.status === 'Completed'));
+            }
+        }
+
+        // Responder Availability Handlers
+        async function loadResponderAvailability() {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            try {
+                const res = await fetch('/api/auth/responder/availability', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    const selector = document.getElementById('responderAvailabilitySelector');
+                    const dot = document.getElementById('availabilityDot');
+                    const unitBadge = document.getElementById('unitStatusBadge');
+
+                    if (selector) selector.value = data.availability || 'Available';
+
+                    if (data.availability === 'Unavailable') {
+                        if (dot) dot.style.color = 'var(--cc-critical-red)';
+                        if (unitBadge) {
+                            unitBadge.className = 'cc-badge severity-critical';
+                            unitBadge.innerHTML = '<i class="fas fa-circle cc-pulse-dot"></i> UNIT UNAVAILABLE';
+                        }
+                    } else if (data.availability === 'Assigned') {
+                        if (dot) dot.style.color = 'var(--cc-cyan)';
+                        if (unitBadge) {
+                            unitBadge.className = 'cc-badge severity-high';
+                            unitBadge.innerHTML = '<i class="fas fa-circle cc-pulse-dot"></i> UNIT DEPLOYED (ASSIGNED)';
+                        }
+                    } else {
+                        if (dot) dot.style.color = 'var(--cc-safe-green)';
+                        if (unitBadge) {
+                            unitBadge.className = 'cc-badge severity-moderate';
+                            unitBadge.innerHTML = `<i class="fas fa-circle cc-pulse-dot"></i> UNIT ${data.availability.toUpperCase()}`;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn('Availability fetch error:', e);
+            }
+        }
+
+        async function changeAvailabilityStatus(newVal) {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            try {
+                const res = await fetch('/api/auth/responder/availability', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ availability: newVal })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    CommandCenter.showToast(`Unit operational status set to: ${newVal}`, 'success');
+                    loadResponderAvailability();
+                } else {
+                    CommandCenter.showToast(data.message || 'Could not update availability', 'error');
+                    loadResponderAvailability();
+                }
+            } catch (e) {
+                CommandCenter.showToast('Network error: ' + e.message, 'error');
+                loadResponderAvailability();
+            }
+        }
+
+        // =========================================================================
+        // REAL DEVICE GPS & FIELD MAP ENGINE (TASK 1)
+        // =========================================================================
+        let dashboardWatchId = null;
+        let dashboardGpsMap = null;
+        let dashboardDeviceMarker = null;
+        let dashboardAccuracyCircle = null;
+        let dashboardTaskMarker = null;
+        let dashboardRoutePolyline = null;
+        let currentDeviceCoords = null;
+        let lastGpsTransmissionTime = 0;
+        let isGpsBroadcasting = false;
+        let lastValidServerTimestamp = null;
+        let staleCheckInterval = null;
+
+        function initDashboardLiveGpsMap() {
+            if (dashboardGpsMap) {
+                dashboardGpsMap.invalidateSize();
+                return;
+            }
+            const mapContainer = document.getElementById('responderDashboardMap');
+            if (!mapContainer || typeof L === 'undefined') return;
+
+            dashboardGpsMap = L.map('responderDashboardMap', {
+                zoomControl: true,
+                attributionControl: false
+            }).setView([20.5937, 78.9629], 5);
+
+            if (window.CommandCenter && typeof window.CommandCenter.getTacticalTileLayer === 'function') {
+                window.CommandCenter.getTacticalTileLayer().addTo(dashboardGpsMap);
+            } else {
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+                    maxZoom: 16,
+                    attribution: '&copy; Esri &copy; OpenStreetMap'
+                }).addTo(dashboardGpsMap);
+            }
+
+            // Check existing GPS status from backend
+            checkExistingGpsStatus();
+
+            // Setup stale timer (runs every 10 seconds)
+            if (staleCheckInterval) clearInterval(staleCheckInterval);
+            staleCheckInterval = setInterval(checkTelemetryStaleness, 10000);
+        }
+
+        async function checkExistingGpsStatus() {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            try {
+                const res = await fetch('/api/responder/location/me', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.status === 'success' && data.latitude && data.longitude) {
+                        currentDeviceCoords = {
+                            lat: data.latitude,
+                            lng: data.longitude,
+                            accuracy: data.accuracy || 10,
+                            heading: data.heading || 0,
+                            speed: data.speed || 0
+                        };
+                        lastValidServerTimestamp = data.recordedAt ? new Date(data.recordedAt).getTime() : Date.now();
+
+                        if (data.taskId) {
+                            activeGpsTaskId = data.taskId;
+                            const selector = document.getElementById('gpsActiveTaskSelector');
+                            if (selector) selector.value = data.taskId;
+                        }
+
+                        updateGpsTelemetryUi(
+                            data.latitude,
+                            data.longitude,
+                            data.accuracy,
+                            data.recordedAt,
+                            data.displayNotice,
+                            data.isStale
+                        );
+
+                        updateDashboardMapMarkers(data.latitude, data.longitude, data.accuracy);
+
+                        if (data.sharingStatus === 'ACTIVE' && !data.isStale) {
+                            setGpsBroadcastingState(true);
+                        } else {
+                            setGpsBroadcastingState(false);
+                            if (data.sharingStatus === 'STOPPED') {
+                                setGpsNotice('Live location sharing is stopped.', 'info');
+                            } else if (data.isStale) {
+                                setGpsNotice('Location update is outdated.', 'warning');
+                            }
+                        }
+                    } else {
+                        setGpsNotice('Live location sharing is stopped. Click "Start Live GPS" to begin.', 'info');
+                    }
+                }
+            } catch (err) {
+                console.warn('Could not query current GPS status:', err);
+            }
+        }
+
+        function setGpsNotice(msg, type = 'info') {
+            const banner = document.getElementById('gpsStatusNoticeBanner');
+            const icon = document.getElementById('gpsStatusNoticeIcon');
+            const text = document.getElementById('gpsStatusNoticeText');
+            if (!banner || !text) return;
+
+            text.innerText = msg;
+            if (type === 'warning' || msg.includes('outdated')) {
+                banner.style.borderLeftColor = '#f59e0b';
+                banner.style.background = 'rgba(245, 158, 11, 0.1)';
+                if (icon) { icon.className = 'fas fa-triangle-exclamation'; icon.style.color = '#f59e0b'; }
+            } else if (type === 'error' || msg.includes('denied') || msg.includes('unavailable')) {
+                banner.style.borderLeftColor = '#ef4444';
+                banner.style.background = 'rgba(239, 68, 68, 0.1)';
+                if (icon) { icon.className = 'fas fa-circle-exclamation'; icon.style.color = '#ef4444'; }
+            } else if (type === 'success' || msg.includes('broadcasting')) {
+                banner.style.borderLeftColor = '#10b981';
+                banner.style.background = 'rgba(16, 185, 129, 0.1)';
+                if (icon) { icon.className = 'fas fa-satellite-dish'; icon.style.color = '#10b981'; }
+            } else {
+                banner.style.borderLeftColor = '#64748b';
+                banner.style.background = 'rgba(15, 23, 42, 0.7)';
+                if (icon) { icon.className = 'fas fa-info-circle'; icon.style.color = '#94a3b8'; }
+            }
+        }
+
+        function updateGpsTelemetryUi(lat, lng, accuracy, recordedAt, displayNotice, isStale) {
+            const coordsEl = document.getElementById('telemetryCoordsDisplay');
+            const accEl = document.getElementById('telemetryAccuracyDisplay');
+            const timeEl = document.getElementById('telemetryUpdateTimeDisplay');
+
+            if (coordsEl && lat != null && lng != null) {
+                coordsEl.innerText = `${lat.toFixed(5)}° N, ${lng.toFixed(5)}° E`;
+            }
+            if (accEl && accuracy != null) {
+                accEl.innerText = `±${Math.round(accuracy)}m (${accuracy <= 15 ? 'High' : 'Moderate'} Precision)`;
+            }
+            if (timeEl && recordedAt) {
+                try {
+                    const d = new Date(recordedAt);
+                    timeEl.innerText = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                } catch (e) {
+                    timeEl.innerText = recordedAt;
+                }
+            }
+
+            if (displayNotice) {
+                setGpsNotice(displayNotice, isStale ? 'warning' : 'info');
+            }
+        }
+
+        function checkTelemetryStaleness() {
+            if (isGpsBroadcasting && lastValidServerTimestamp) {
+                const elapsedSeconds = Math.round((Date.now() - lastValidServerTimestamp) / 1000);
+                if (elapsedSeconds > 60) {
+                    setGpsNotice('Location update is outdated. Last update was over ' + elapsedSeconds + 's ago.', 'warning');
+                    const badge = document.getElementById('gpsPermissionBadge');
+                    if (badge) {
+                        badge.className = 'cc-badge cc-badge-warning';
+                        badge.innerText = 'SIGNAL STALE';
+                    }
+                }
+            }
+        }
+
+        function setGpsBroadcastingState(broadcasting) {
+            isGpsBroadcasting = broadcasting;
+            const btnStart = document.getElementById('btnStartLiveGps');
+            const btnStop = document.getElementById('btnStopLiveGps');
+            const badge = document.getElementById('gpsPermissionBadge');
+
+            if (broadcasting) {
+                if (btnStart) btnStart.style.display = 'none';
+                if (btnStop) btnStop.style.display = 'inline-flex';
+                if (badge) {
+                    badge.className = 'cc-badge cc-badge-safe';
+                    badge.style.background = 'rgba(16, 185, 129, 0.2)';
+                    badge.style.color = '#10b981';
+                    badge.style.borderColor = '#10b981';
+                    badge.innerText = 'GPS: BROADCASTING';
+                }
+                updateGpsPill(true);
+            } else {
+                if (btnStart) btnStart.style.display = 'inline-flex';
+                if (btnStop) btnStop.style.display = 'none';
+                if (badge) {
+                    badge.className = 'cc-badge';
+                    badge.style.background = 'rgba(100, 116, 139, 0.2)';
+                    badge.style.color = '#94a3b8';
+                    badge.style.borderColor = '#475569';
+                    badge.innerText = 'GPS: STANDBY';
+                }
+                updateGpsPill(false);
+            }
+
+            // Update task card buttons
+            if (cachedTasks && cachedTasks.length > 0) {
+                cachedTasks.forEach(t => {
+                    const btn = document.getElementById(`btn-gps-${t.taskId}`);
+                    if (btn) {
+                        if (broadcasting && activeGpsTaskId == t.taskId) {
+                            btn.className = 'cc-btn cc-btn-primary live-gps-active';
+                            btn.style.borderColor = '#00e5ff';
+                            btn.style.color = '#00e5ff';
+                            btn.style.background = 'rgba(0, 229, 255, 0.15)';
+                            btn.innerHTML = '<i class="fas fa-satellite-dish fa-spin"></i> Broadcasting GPS';
+                        } else {
+                            btn.className = 'cc-btn cc-btn-secondary';
+                            btn.style.borderColor = '';
+                            btn.style.color = '';
+                            btn.style.background = '';
+                            btn.innerHTML = '<i class="fas fa-satellite-dish" style="color:#00e5ff;"></i> Share Live GPS';
+                        }
+                    }
+                });
+            }
+        }
+
+        function populateGpsTaskSelector() {
+            const selector = document.getElementById('gpsActiveTaskSelector');
+            if (!selector) return;
+
+            const curVal = selector.value;
+            selector.innerHTML = '<option value="">-- No Mission Target Selected --</option>';
+
+            if (cachedTasks && cachedTasks.length > 0) {
+                cachedTasks.forEach(t => {
+                    if (t.status !== 'Completed' && t.status !== 'Resolved') {
+                        const opt = document.createElement('option');
+                        opt.value = t.taskId;
+                        opt.textContent = `Task #${t.taskId} - ${t.title || 'Rescue Mission'} (${t.status})`;
+                        selector.appendChild(opt);
+                    }
+                });
+            }
+
+            if (curVal) selector.value = curVal;
+        }
+
+        function onGpsTaskSelected(taskId) {
+            if (!taskId) {
+                activeGpsTaskId = null;
+                if (dashboardTaskMarker && dashboardGpsMap) {
+                    dashboardGpsMap.removeLayer(dashboardTaskMarker);
+                    dashboardTaskMarker = null;
+                }
+                if (dashboardRoutePolyline && dashboardGpsMap) {
+                    dashboardGpsMap.removeLayer(dashboardRoutePolyline);
+                    dashboardRoutePolyline = null;
+                }
+                document.getElementById('telemetryDistanceDisplay').innerText = '--';
+                document.getElementById('telemetryEtaDisplay').innerText = '--';
+                return;
+            }
+
+            activeGpsTaskId = parseInt(taskId);
+            if (currentDeviceCoords) {
+                updateRouteToActiveTask(currentDeviceCoords.lat, currentDeviceCoords.lng);
+            }
+        }
+
+        function recenterDashboardGpsMap() {
+            if (!dashboardGpsMap) return;
+            if (currentDeviceCoords) {
+                dashboardGpsMap.setView([currentDeviceCoords.lat, currentDeviceCoords.lng], 15);
+            } else if (dashboardTaskMarker) {
+                dashboardGpsMap.setView(dashboardTaskMarker.getLatLng(), 15);
+            }
+        }
+
+        function updateDashboardMapMarkers(lat, lng, accuracy) {
+            if (!dashboardGpsMap) return;
+
+            if (dashboardDeviceMarker) dashboardGpsMap.removeLayer(dashboardDeviceMarker);
+            if (dashboardAccuracyCircle) dashboardGpsMap.removeLayer(dashboardAccuracyCircle);
+
+            // Pulsing Green Marker for Real Responder GPS
+            dashboardDeviceMarker = L.marker([lat, lng], {
+                icon: L.divIcon({
+                    className: 'responder-real-gps-icon',
+                    html: `
+                        <div style="position:relative;width:36px;height:36px;background:radial-gradient(circle,#10b981 0%,#047857 100%);border:2px solid #ffffff;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(16,185,129,0.9);">
+                            <i class="fas fa-truck-medical" style="color:#ffffff;font-size:15px;"></i>
+                            <span style="position:absolute;top:-4px;right:-4px;width:12px;height:12px;background:#10b981;border:2px solid #fff;border-radius:50%;animation:pulse 1.5s infinite;"></span>
+                        </div>
+                    `,
+                    iconSize: [36, 36],
+                    iconAnchor: [18, 18]
+                })
+            }).addTo(dashboardGpsMap);
+
+            dashboardDeviceMarker.bindPopup(`
+                <div style="font-family:inherit;font-size:0.85rem;">
+                    <strong style="color:#10b981;"><i class="fas fa-satellite-dish"></i> Your Verified Hardware GPS</strong><br/>
+                    Coordinates: ${lat.toFixed(5)}° N, ${lng.toFixed(5)}° E<br/>
+                    Accuracy: ±${Math.round(accuracy)}m
+                </div>
+            `);
+
+            if (accuracy && accuracy <= 1000) {
+                dashboardAccuracyCircle = L.circle([lat, lng], {
+                    radius: accuracy,
+                    color: '#10b981',
+                    weight: 1,
+                    fillColor: '#10b981',
+                    fillOpacity: 0.1
+                }).addTo(dashboardGpsMap);
+            }
+
+            if (!dashboardTaskMarker) {
+                dashboardGpsMap.setView([lat, lng], 14);
+            }
+        }
+
+        async function updateRouteToActiveTask(responderLat, responderLng) {
+            if (!activeGpsTaskId || !cachedTasks || !dashboardGpsMap) return;
+            const task = cachedTasks.find(t => t.taskId == activeGpsTaskId);
+            if (!task || !task.latitude || !task.longitude) {
+                document.getElementById('telemetryDistanceDisplay').innerText = '--';
+                document.getElementById('telemetryEtaDisplay').innerText = '--';
+                return;
+            }
+
+            const destLat = task.latitude;
+            const destLng = task.longitude;
+
+            // Draw Red Target Marker
+            if (!dashboardTaskMarker) {
+                dashboardTaskMarker = L.marker([destLat, destLng], {
+                    icon: L.divIcon({
+                        className: 'task-target-pin',
+                        html: `
+                            <div style="position:relative;width:34px;height:34px;background:radial-gradient(circle,#ef4444 0%,#991b1b 100%);border:2px solid #ffffff;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(239,68,68,0.9);">
+                                <i class="fas fa-location-dot" style="color:#ffffff;font-size:16px;"></i>
+                            </div>
+                        `,
+                        iconSize: [34, 34],
+                        iconAnchor: [17, 17]
+                    })
+                }).addTo(dashboardGpsMap);
+
+                dashboardTaskMarker.bindPopup(`<b>Incident Target #${task.taskId}</b><br>${task.title || 'Disaster Site'}<br>${task.locationName || ''}`);
+            } else {
+                dashboardTaskMarker.setLatLng([destLat, destLng]);
+            }
+
+            // OSRM Road Route
+            try {
+                const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${responderLng},${responderLat};${destLng},${destLat}?overview=full&geometries=geojson`;
+                const res = await fetch(osrmUrl);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.routes && data.routes.length > 0) {
+                        const route = data.routes[0];
+                        const distM = route.distance;
+                        const durS = route.duration;
+
+                        const distKm = (distM / 1000).toFixed(1);
+                        const durMin = Math.ceil(durS / 60);
+
+                        document.getElementById('telemetryDistanceDisplay').innerText = `${distKm} km`;
+                        document.getElementById('telemetryEtaDisplay').innerText = `${durMin} mins`;
+
+                        const latLngs = route.geometry.coordinates.map(c => [c[1], c[0]]);
+                        if (!dashboardRoutePolyline) {
+                            dashboardRoutePolyline = L.polyline(latLngs, {
+                                color: '#00e5ff',
+                                weight: 4,
+                                opacity: 0.85,
+                                dashArray: '8, 8'
+                            }).addTo(dashboardGpsMap);
+                        } else {
+                            dashboardRoutePolyline.setLatLngs(latLngs);
+                        }
+
+                        // Fit bounds to show both device and destination
+                        const bounds = L.latLngBounds([[responderLat, responderLng], [destLat, destLng]]);
+                        dashboardGpsMap.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+                    }
+                }
+            } catch (err) {
+                // Fallback straight line
+                const straight = [[responderLat, responderLng], [destLat, destLng]];
+                if (!dashboardRoutePolyline) {
+                    dashboardRoutePolyline = L.polyline(straight, { color: '#00e5ff', weight: 3, dashArray: '5, 5' }).addTo(dashboardGpsMap);
+                } else {
+                    dashboardRoutePolyline.setLatLngs(straight);
+                }
+            }
+        }
+
+        async function startDashboardLiveGps(taskIdOptional) {
+            if (!navigator.geolocation) {
+                CommandCenter.showToast('Geolocation is not supported by your browser.', 'error');
+                setGpsNotice('Geolocation is not supported by your browser hardware.', 'error');
+                return;
+            }
+
+            const token = localStorage.getItem('token');
+            if (!token) {
+                CommandCenter.showToast('Session expired. Please log in again.', 'error');
+                return;
+            }
+
+            if (taskIdOptional) {
+                activeGpsTaskId = taskIdOptional;
+                const selector = document.getElementById('gpsActiveTaskSelector');
+                if (selector) selector.value = taskIdOptional;
+            } else {
+                const selector = document.getElementById('gpsActiveTaskSelector');
+                if (selector && selector.value) {
+                    activeGpsTaskId = parseInt(selector.value);
+                } else if (cachedTasks.length > 0) {
+                    activeGpsTaskId = cachedTasks[0].taskId;
+                    if (selector) selector.value = activeGpsTaskId;
+                }
+            }
+
+            setGpsNotice('Waiting for device GPS fix...', 'info');
+
+            const badge = document.getElementById('gpsPermissionBadge');
+            if (badge) {
+                badge.className = 'cc-badge cc-badge-warning';
+                badge.innerText = 'ACQUIRING FIX...';
+            }
+
+            let initialFixSent = false;
+
+            dashboardWatchId = navigator.geolocation.watchPosition(
+                async (pos) => {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    const accuracy = pos.coords.accuracy;
+                    const heading = pos.coords.heading || 0;
+                    const speed = pos.coords.speed || 0;
+
+                    currentDeviceCoords = { lat, lng, accuracy, heading, speed };
+                    lastValidServerTimestamp = Date.now();
+
+                    updateDashboardMapMarkers(lat, lng, accuracy);
+
+                    const now = Date.now();
+                    // First position: send START request to backend
+                    if (!initialFixSent) {
+                        initialFixSent = true;
+                        try {
+                            const res = await fetch('/api/responder/location/start', {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': 'Bearer ' + token,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    taskId: activeGpsTaskId,
+                                    latitude: lat,
+                                    longitude: lng,
+                                    accuracy: accuracy
+                                })
+                            });
+
+                            const data = await res.json();
+                            if (res.ok && data.status === 'success') {
+                                setGpsBroadcastingState(true);
+                                setGpsNotice('Live GPS actively broadcasting to Command Center and Citizen map.', 'success');
+                                CommandCenter.showToast('Live GPS telemetry broadcasting for Task #' + (activeGpsTaskId || 'Field Unit'), 'success');
+                                updateGpsTelemetryUi(lat, lng, accuracy, new Date().toISOString(), 'Live GPS actively broadcasting.', false);
+                                lastGpsTransmissionTime = now;
+                            } else {
+                                CommandCenter.showToast(data.message || 'GPS registration failed', 'error');
+                                setGpsNotice('Backend error: ' + (data.message || 'Registration rejected'), 'error');
+                            }
+                        } catch (err) {
+                            console.error('Failed to start GPS with backend:', err);
+                            setGpsNotice('Network error: Unable to contact GPS backend API.', 'error');
+                        }
+                    } else {
+                        // Throttled updates (at least 3.5s interval)
+                        if (now - lastGpsTransmissionTime >= 3500) {
+                            lastGpsTransmissionTime = now;
+                            try {
+                                const res = await fetch('/api/responder/location/update', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Authorization': 'Bearer ' + token,
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        taskId: activeGpsTaskId,
+                                        latitude: lat,
+                                        longitude: lng,
+                                        accuracy: accuracy,
+                                        heading: heading,
+                                        speed: speed
+                                    })
+                                });
+                                if (res.ok) {
+                                    updateGpsTelemetryUi(lat, lng, accuracy, new Date().toISOString(), 'Live GPS actively broadcasting.', false);
+                                }
+                            } catch (err) {
+                                console.warn('Telemetry update transmission error:', err);
+                            }
+                        }
+                    }
+
+                    // Update route to active task if target destination exists
+                    updateRouteToActiveTask(lat, lng);
+                },
+                (err) => {
+                    console.warn('Geolocation error:', err);
+                    if (err.code === 1) { // PERMISSION_DENIED
+                        setGpsNotice('GPS permission denied by browser. Please enable location permissions in browser settings.', 'error');
+                        if (badge) {
+                            badge.className = 'cc-badge cc-badge-extreme';
+                            badge.innerText = 'GPS PERMISSION DENIED';
+                        }
+                        CommandCenter.showToast('Location permission denied. Real GPS coordinates cannot be acquired.', 'error');
+                    } else if (err.code === 2) { // POSITION_UNAVAILABLE
+                        setGpsNotice('Waiting for device GPS. Hardware position unavailable.', 'error');
+                    } else if (err.code === 3) { // TIMEOUT
+                        setGpsNotice('GPS location request timed out. Retrying device fix...', 'warning');
+                    }
+                    setGpsBroadcastingState(false);
+                },
+                { enableHighAccuracy: true, timeout: 12000, maximumAge: 3000 }
+            );
+        }
+
+        async function stopDashboardLiveGps() {
+            if (dashboardWatchId !== null) {
+                navigator.geolocation.clearWatch(dashboardWatchId);
+                dashboardWatchId = null;
+            }
+
+            const token = localStorage.getItem('token');
+            if (token) {
+                try {
+                    await fetch('/api/responder/location/stop', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Bearer ' + token,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ taskId: activeGpsTaskId })
+                    });
+                } catch (e) {
+                    console.warn('Backend stop call failed:', e);
+                }
+            }
+
+            setGpsBroadcastingState(false);
+            setGpsNotice('Live location sharing is stopped.', 'info');
+            CommandCenter.showToast('Live GPS telemetry stopped', 'info');
+        }
+
+        async function toggleGpsStream(taskId) {
+            if (isGpsBroadcasting && activeGpsTaskId == taskId) {
+                await stopDashboardLiveGps();
+            } else {
+                activeGpsTaskId = taskId;
+                const selector = document.getElementById('gpsActiveTaskSelector');
+                if (selector) selector.value = taskId;
+                await startDashboardLiveGps(taskId);
+            }
+        }
+
+        function toggleManualGps() {
+            if (isGpsBroadcasting) {
+                stopDashboardLiveGps();
+            } else {
+                startDashboardLiveGps();
+            }
+        }
+
+        function updateGpsPill(isActive) {
+            const pill = document.getElementById('gpsTelemetryPill');
+            const icon = document.getElementById('gpsIcon');
+            const text = document.getElementById('gpsStatusText');
+
+            if (isActive) {
+                if (pill) pill.classList.add('live');
+                if (icon) icon.style.color = '#00e5ff';
+                if (text) {
+                    text.style.color = '#00e5ff';
+                    text.innerText = 'GPS: BROADCASTING';
+                }
+            } else {
+                if (pill) pill.classList.remove('live');
+                if (icon) icon.style.color = '#64748b';
+                if (text) {
+                    text.style.color = '#94a3b8';
+                    text.innerText = 'GPS: STANDBY';
+                }
+            }
+        }
+
+        // =========================================================================
+        // CITIZEN DISTRESS SOS CALLS
+        // =========================================================================
+        function renderCitizenSos(reports) {
+            const grid = document.getElementById('citizenSosGrid');
+            const emptyEl = document.getElementById('emptyCitizenSos');
+
+            if (!reports || reports.length === 0) {
+                grid.innerHTML = '';
+                emptyEl.style.display = 'block';
+                return;
+            }
+
+            emptyEl.style.display = 'none';
+            grid.innerHTML = '';
+
+            reports.forEach(cr => {
+                const card = document.createElement('div');
+                card.className = 'cc-card';
+                card.style.borderLeft = `4px solid var(--cc-critical-red)`;
+
+                card.innerHTML = `
+                    <div class="cc-card-header" style="padding-bottom:0.5rem;margin-bottom:0.6rem;">
+                        <div style="display:flex;align-items:center;gap:0.5rem;">
+                            <span class="cc-badge citizen"><i class="fas fa-hand-holding-hand"></i> Citizen SOS</span>
+                            <span class="cc-badge severity-critical">Urgent</span>
+                        </div>
+                        <span style="font-family:var(--cc-font-mono);font-size:0.75rem;color:#94a3b8;">
+                            #SOS-${cr.reportId} &bull; ${(window.formatIndianTime ? window.formatIndianTime(cr.timestamp) : new Date(cr.timestamp).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }))}
+                        </span>
+                    </div>
+
+                    <h3 style="font-size:1.1rem;font-weight:700;color:#f8fafc;margin-bottom:0.4rem;">
+                        Emergency Call #${cr.reportId}
+                    </h3>
+
+                    <p style="color:#cbd5e1;font-size:0.88rem;line-height:1.45;margin-bottom:0.8rem;">
+                        ${cr.message}
+                    </p>
+
+                    <div style="font-size:0.85rem;color:#94a3b8;margin-bottom:0.6rem;display:flex;justify-content:space-between;align-items:center;">
+                        <span><i class="fas fa-location-dot" style="color:var(--cc-cyan);"></i> ${cr.location}</span>
+                        <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cr.location)}" target="_blank" 
+                           style="color:var(--cc-cyan);font-size:0.8rem;font-weight:600;text-decoration:none;">
+                            <i class="fas fa-diamond-turn-right"></i> Navigate
+                        </a>
+                    </div>
+
+                    ${cr.photoData ? `
+                    <div style="margin-bottom:0.8rem;">
+                        <img src="${cr.photoData}" alt="Distress Evidence" style="width:100%;max-height:160px;object-fit:cover;border-radius:6px;border:1px solid var(--cc-border-medium);" />
+                    </div>` : ''}
+
+                    <div class="cc-action-cluster">
+                        <button type="button" class="cc-btn cc-btn-secondary" style="font-size:0.8rem;padding:0.4rem 0.8rem;" onclick="window.IncidentRoom.open(${cr.reportId}, 'CITIZEN_REPORT', '${escapeJs(cr.location || '')}')">
+                            <i class="fas fa-comments"></i> Room & Chat
+                        </button>
+                        <button type="button" class="cc-btn cc-btn-secondary" style="font-size:0.8rem;padding:0.4rem 0.8rem;" onclick="window.MediaCapture.open({ incidentId: ${cr.reportId}, incidentType: 'CITIZEN_REPORT', onSuccess: () => loadResponderQueue() })">
+                            <i class="fas fa-camera"></i> Field Proof
+                        </button>
+                    </div>
+
+                    <div style="display:flex;gap:0.6rem;margin-top:0.8rem;">
+                        <button class="cc-btn cc-btn-primary" onclick="acknowledgeCitizenReport(${cr.reportId})" style="flex:1;">
+                            <i class="fas fa-check"></i> Claim & Acknowledge Distress Call
+                        </button>
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        async function acknowledgeCitizenReport(reportId) {
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch(`/api/citizen-reports/${reportId}/acknowledge`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (res.ok) {
+                    CommandCenter.showToast(`Distress Call #${reportId} claimed and acknowledged!`, 'success');
+                    loadResponderQueue();
+                } else {
+                    CommandCenter.showToast('Failed to acknowledge distress call', 'error');
+                }
+            } catch (e) {
+                CommandCenter.showToast('Network error: ' + e.message, 'error');
+            }
+        }
+
+        // =========================================================================
+        // ACTIVE WARNINGS & BROADCASTS
+        // =========================================================================
+        function renderWarnings(alerts) {
+            const grid = document.getElementById('warningsGrid');
+            const emptyEl = document.getElementById('emptyWarnings');
+            const activeAlerts = alerts.filter(a => a.status === 'Active' || a.status === 'Acknowledged');
+
+            if (activeAlerts.length === 0) {
+                grid.innerHTML = '';
+                emptyEl.style.display = 'block';
+                return;
+            }
+
+            emptyEl.style.display = 'none';
+            grid.innerHTML = '';
+
+            activeAlerts.forEach(al => {
+                const sev = (al.severity || 'Moderate').toLowerCase();
+                const card = document.createElement('div');
+                card.className = 'cc-card';
+                card.style.borderLeft = `4px solid ${sev === 'critical' ? 'var(--cc-critical-red)' : 'var(--cc-warning-amber)'}`;
+
+                card.innerHTML = `
+                    <div class="cc-card-header" style="padding-bottom:0.5rem;margin-bottom:0.6rem;">
+                        <div style="display:flex;align-items:center;gap:0.5rem;">
+                            <span class="cc-badge broadcast"><i class="fas fa-tower-broadcast"></i> Official Broadcast</span>
+                            <span class="cc-badge severity-${sev}">${al.severity}</span>
+                        </div>
+                        <span style="font-family:var(--cc-font-mono);font-size:0.75rem;color:#94a3b8;">
+                            ${(window.formatIndianTime ? window.formatIndianTime(al.createdAt) : new Date(al.createdAt).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }))}
+                        </span>
+                    </div>
+
+                    <h3 style="font-size:1.1rem;font-weight:700;color:#f8fafc;margin-bottom:0.4rem;">
+                        ${al.title}
+                    </h3>
+
+                    <p style="color:#cbd5e1;font-size:0.88rem;line-height:1.45;margin-bottom:0.8rem;">
+                        ${al.message}
+                    </p>
+
+                    <div style="font-size:0.85rem;color:#94a3b8;margin-bottom:0.6rem;display:flex;justify-content:space-between;align-items:center;">
+                        <span><i class="fas fa-location-dot" style="color:var(--cc-cyan);"></i> Sector: ${al.region}</span>
+                        <span style="color:#94a3b8;font-size:0.8rem;"><i class="fas fa-biohazard"></i> ${al.disasterType}</span>
+                    </div>
+
+                    <div class="cc-action-cluster">
+                        <button type="button" class="cc-btn cc-btn-secondary" style="font-size:0.8rem;padding:0.4rem 0.8rem;" onclick="window.IncidentRoom.open(${al.alertId}, 'ALERT', '${escapeJs(al.region || '')}')">
+                            <i class="fas fa-comments"></i> Room & Comms
+                        </button>
+                        <button type="button" class="cc-btn cc-btn-secondary" style="font-size:0.8rem;padding:0.4rem 0.8rem;" onclick="window.MediaCapture.open({ incidentId: al.alertId, incidentType: 'ALERT', onSuccess: () => loadResponderQueue() })">
+                            <i class="fas fa-camera"></i> Broadcast Evidence
+                        </button>
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        function escapeJs(str) {
+            if (!str) return '';
+            return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
+        }
+
+        // Auto-refresh queue every 30 seconds
+        setInterval(loadResponderQueue, 30000);
+    </script>
+</body>
+</html>

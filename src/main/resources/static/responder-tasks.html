@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Assigned Field Tasks | NDMA Tactical Field Operations</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="command-center.css?v=3">
+    <link rel="stylesheet" href="role-loading.css?v=2">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <!-- Toast and Dialog Manager -->
+    <script src="toast-manager.js?v=2"></script>
+    <link rel="stylesheet" href="media-capture.css?v=1" />
+    <link rel="stylesheet" href="responder-tracking.css?v=1" />
+    <link rel="stylesheet" href="incident-room.css?v=1" />
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="auth-helper.js?v=2"></script>
+    <script src="role-loading.js?v=2"></script>
+    <script src="command-center.js?v=3"></script>
+    <script src="media-capture.js?v=1"></script>
+    <script src="responder-tracking.js?v=1"></script>
+    <script src="incident-room.js?v=1"></script>
+    <script src="/js/emergency-alert.js?v=3"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #050811;
+            min-height: 100vh;
+            color: #fff;
+        }
+        
+        .header {
+            background: rgba(0,0,0,0.3);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        .header h1 {
+            font-size: 1.5rem;
+            color: #60a5fa;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .btn-primary:hover { background: #2563eb; }
+        
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .btn-danger:hover { background: #dc2626; }
+        
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-success:hover { background: #059669; }
+        
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .container {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 1.2rem;
+            text-align: center;
+        }
+        
+        .stat-card h3 {
+            font-size: 1.8rem;
+            margin-bottom: 0.3rem;
+        }
+        
+        .stat-card p {
+            color: #94a3b8;
+            font-size: 0.85rem;
+        }
+        
+        .stat-card.pending h3 { color: #f59e0b; }
+        .stat-card.in-progress h3 { color: #3b82f6; }
+        .stat-card.completed h3 { color: #10b981; }
+        
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 0.5rem;
+        }
+        
+        .tab {
+            padding: 0.8rem 1.5rem;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 1rem;
+            border-radius: 8px 8px 0 0;
+            transition: 0.3s;
+        }
+        
+        .tab:hover { background: rgba(255,255,255,0.05); }
+        
+        .tab.active {
+            background: rgba(59,130,246,0.2);
+            color: #60a5fa;
+            border-bottom: 2px solid #60a5fa;
+        }
+        
+        .section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            display: none;
+        }
+        
+        .section.active { display: block; }
+        
+        .section h2 {
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+            color: #60a5fa;
+        }
+        
+        .form-group select option {
+            background: #1e293b;
+            color: white;
+            padding: 10px;
+        }
+        
+        .task-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            margin-bottom: 0.3rem;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+        
+        .form-group input, .form-group select, .form-group textarea {
+            padding: 0.7rem;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 0.9rem;
+        }
+        
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #60a5fa;
+        }
+        
+        .tasks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1rem;
+        }
+        
+        .task-card {
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 1.2rem;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .task-card.high { border-left-color: #ef4444; }
+        .task-card.medium { border-left-color: #f59e0b; }
+        .task-card.low { border-left-color: #10b981; }
+        
+        .task-card h3 {
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+        
+        .task-card .meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            margin: 0.8rem 0;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+        
+        .task-card .meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        
+        .task-card p {
+            font-size: 0.9rem;
+            color: #cbd5e1;
+            margin: 0.5rem 0;
+        }
+        
+        .task-card .status {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-right: 0.5rem;
+        }
+        
+        .status.pending { background: #f59e0b; color: white; }
+        .status.in-progress { background: #3b82f6; color: white; }
+        .status.completed { background: #10b981; color: white; }
+        
+        .task-card .actions {
+            margin-top: 1rem;
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .task-card .actions .btn {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+        }
+        
+        .notes-section {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .notes-section textarea {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+            color: white;
+            font-size: 0.9rem;
+            min-height: 60px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .notes-list {
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            padding: 0.8rem;
+            font-size: 0.85rem;
+            color: #94a3b8;
+            white-space: pre-wrap;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        
+        .reports-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+        
+        .report-card {
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 1.2rem;
+        }
+        
+        .report-card h3 {
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+        
+        .report-card .meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            margin: 0.5rem 0;
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+        
+        .report-card p {
+            font-size: 0.9rem;
+            color: #cbd5e1;
+            margin: 0.5rem 0;
+        }
+        
+        .report-card .status {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 15px;
+            font-size: 0.75rem;
+        }
+        
+        .status.submitted { background: #f59e0b; color: white; }
+        .status.under-review { background: #3b82f6; color: white; }
+        .status.approved { background: #10b981; color: white; }
+        .status.archived { background: #6b7280; color: white; }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #94a3b8;
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #475569;
+        }
+        
+        #notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 2000;
+            transform: translateX(150%);
+            transition: transform 0.3s;
+        }
+        
+        #notification.show { transform: translateX(0); }
+        #notification.success { background: #10b981; }
+        #notification.error { background: #ef4444; }
+        
+        .location-btn {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 0.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .location-btn:hover { background: #059669; }
+        
+        .task-card.accepted { border-left-color: #10b981; }
+        .task-card.rejected { border-left-color: #ef4444; opacity: 0.7; }
+        
+        .victim-info {
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.3);
+            border-radius: 8px;
+            padding: 0.8rem;
+            margin: 0.8rem 0;
+        }
+        
+        .victim-info h4 {
+            color: #ef4444;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .victim-info p {
+            font-size: 0.85rem;
+            color: #cbd5e1;
+            margin: 0.3rem 0;
+        }
+        
+        .accept-reject-btns {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .btn-accept {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        
+        .btn-accept:hover { background: #059669; }
+        
+        .btn-reject {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        
+        .btn-reject:hover { background: #dc2626; }
+        
+        .availability-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            background: rgba(255,255,255,0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+        }
+        
+        .availability-toggle input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        .availability-toggle label {
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        .availability-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .availability-status.available {
+            background: rgba(16,185,129,0.2);
+            color: #10b981;
+        }
+        
+        .availability-status.unavailable {
+            background: rgba(239,68,68,0.2);
+            color: #ef4444;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        .status-dot.available { background: #10b981; animation: pulse 2s infinite; }
+        .status-dot.unavailable { background: #ef4444; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        @media (max-width: 768px) {
+            .tasks-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .header-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="notification"></div>
+    <!-- =========================================================================
+         TACTICAL HUD HEADER
+         ========================================================================= -->
+    <header class="cc-hud-header">
+        <div class="cc-hud-branding">
+            <div class="cc-hud-badge-icon" style="background:linear-gradient(135deg,rgba(168,85,247,0.2),rgba(59,130,246,0.2));border-color:rgba(168,85,247,0.4);">
+                <i class="fas fa-truck-fast" style="color:var(--cc-purple);"></i>
+            </div>
+            <div class="cc-hud-title-group">
+                <h1>
+                    ASSIGNED FIELD RESCUE TASKS
+                    <span class="cc-badge severity-moderate"><i class="fas fa-circle cc-pulse-dot"></i> UNIT DEPLOYED</span>
+                </h1>
+                <div class="cc-hud-subtitle">TACTICAL RESCUE QUEUE &bull; ASSIGNED DISPATCH DIRECTIVES</div>
+            </div>
+        </div>
+
+        <div class="cc-hud-telemetry">
+            <div class="availability-toggle" style="background: rgba(14, 23, 38, 0.8); border: 1px solid var(--cc-border); padding: 0.35rem 0.75rem; border-radius: var(--cc-radius-pill); display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" id="availabilityToggle" checked onchange="toggleAvailability()">
+                <label for="availabilityToggle" style="font-size: 0.8rem; cursor: pointer; color: var(--cc-text-primary);">Field Ready</label>
+                <span id="availabilityStatus" class="availability-status available" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">
+                    <span class="status-dot available"></span> Active
+                </span>
+            </div>
+            <div class="cc-telemetry-pill" id="hudClockDisplay"></div>
+            <div class="cc-telemetry-pill" style="border-color:rgba(168,85,247,0.4);">
+                <i class="fas fa-id-badge" style="color:var(--cc-purple);"></i>
+                <span id="responderName">Emergency Responder</span>
+            </div>
+            <div class="cc-telemetry-pill live">
+                <i class="fas fa-location-crosshairs"></i>
+                <span id="assignedZoneBadge">Zone: Active</span>
+            </div>
+            <button class="cc-btn cc-btn-danger" onclick="AuthHelper.logout()" style="padding:0.4rem 0.85rem;font-size:0.8rem;">
+                <i class="fas fa-power-off"></i> Off Duty
+            </button>
+        </div>
+    </header>
+
+    <!-- =========================================================================
+         NAVIGATION BAR
+         ========================================================================= -->
+    <nav class="cc-nav-bar">
+        <ul class="cc-nav-links">
+            <li><a href="/responder-dashboard.html" class="cc-nav-link"><i class="fas fa-list-check"></i> Tactical Incident Queue</a></li>
+            <li><a href="/responder-rescue.html" class="cc-nav-link"><i class="fas fa-map-location"></i> Live Rescue Operations</a></li>
+            <li><a href="/responder-tasks.html" class="cc-nav-link active"><i class="fas fa-clipboard-check"></i> Assigned Field Tasks</a></li>
+            <li><a href="/emergency-videos.html" class="cc-nav-link"><i class="fas fa-film"></i> Survival Videos</a></li>
+            <li><a href="/responder-profile.html" class="cc-nav-link"><i class="fas fa-user-gear"></i> Unit Profile & Zone</a></li>
+        </ul>
+        <div class="cc-nav-user-actions">
+            <button class="cc-btn cc-btn-secondary" onclick="loadTasks()" style="font-size:0.82rem;padding:0.4rem 0.85rem;">
+                <i class="fas fa-rotate"></i> Refresh Tasks
+            </button>
+        </div>
+    </nav>
+    
+    <main class="cc-main-container">
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card pending">
+                <h3 id="pendingCount">0</h3>
+                <p>Pending</p>
+            </div>
+            <div class="stat-card in-progress">
+                <h3 id="inProgressCount">0</h3>
+                <p>In Progress</p>
+            </div>
+            <div class="stat-card completed">
+                <h3 id="completedCount">0</h3>
+                <p>Completed</p>
+            </div>
+        </div>
+        
+        <!-- Team Rescue Section -->
+        <div class="section" style="background: linear-gradient(135deg, rgba(59,130,246,0.2) 0%, rgba(16,185,129,0.2) 100%);">
+            <h2><i class="fas fa-users"></i> Team Rescue</h2>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+                <div class="form-group" style="flex: 1; min-width: 200px;">
+                    <label>Your Assigned Zone</label>
+                    <input type="text" id="myZone" readonly style="background: rgba(16,185,129,0.2); border-color: #10b981;">
+                </div>
+                <div class="form-group" style="flex: 2; min-width: 300px;">
+                    <label>Select Rescue Team (Same Zone)</label>
+                    <select id="teamSelect" onchange="selectTeam()">
+                        <option value="">-- Select a Team --</option>
+                    </select>
+                </div>
+                <div style="margin-top: 20px;">
+                    <button class="btn btn-primary" onclick="loadTeamTasks()">
+                        <i class="fas fa-search"></i> Load Team Tasks
+                    </button>
+                </div>
+            </div>
+            <div id="teamInfo" style="margin-top: 1rem; padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 8px; display: none;">
+                <p><strong><i class="fas fa-user-friends"></i> Selected Team:</strong> <span id="selectedTeamName">-</span></p>
+                <p><strong><i class="fas fa-map-marker-alt"></i> Zone:</strong> <span id="selectedTeamZone">-</span></p>
+                <p><strong><i class="fas fa-envelope"></i> Email:</strong> <span id="selectedTeamEmail">-</span></p>
+            </div>
+        </div>
+        
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('tasks')">
+                <i class="fas fa-tasks"></i> My Tasks
+            </button>
+            <button class="tab" onclick="switchTab('reports')">
+                <i class="fas fa-file-alt"></i> Incident Reports
+            </button>
+        </div>
+        
+        <!-- Tasks Section -->
+        <div id="tasksSection" class="section active">
+            <h2><i class="fas fa-tasks"></i> Assigned Tasks</h2>
+            <div id="tasksContainer" class="tasks-grid">
+                <div class="empty-state">
+                    <i class="fas fa-clipboard-list"></i>
+                    <p>No tasks assigned to you yet.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Reports Section -->
+        <div id="reportsSection" class="section">
+            <h2><i class="fas fa-file-medical"></i> Submit Incident Report</h2>
+            <div class="task-form">
+                <div class="form-group">
+                    <label>Report Title *</label>
+                    <input type="text" id="reportTitle" placeholder="Enter report title">
+                </div>
+                <div class="form-group">
+                    <label>Report Type *</label>
+                    <select id="reportType">
+                        <option value="Status Update">Status Update</option>
+                        <option value="Emergency">Emergency</option>
+                        <option value="Situation Report">Situation Report</option>
+                        <option value="Resource Request">Resource Request</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Zone *</label>
+                    <select id="reportZone">
+                        <option value="Chennai">Chennai</option>
+                        <option value="Coimbatore">Coimbatore</option>
+                        <option value="Madurai">Madurai</option>
+                        <option value="Tiruchirappalli">Tiruchirappalli</option>
+                        <option value="Salem">Salem</option>
+                        <option value="Tirunelveli">Tirunelveli</option>
+                        <option value="Erode">Erode</option>
+                        <option value="Vellore">Vellore</option>
+                        <option value="Thoothukudi">Thoothukudi</option>
+                        <option value="Dindigul">Dindigul</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Latitude</label>
+                    <input type="number" step="any" id="reportLat" placeholder="Click 'Get Location'">
+                </div>
+                <div class="form-group">
+                    <label>Longitude</label>
+                    <input type="number" step="any" id="reportLng" placeholder="Click 'Get Location'">
+                </div>
+                <div class="form-group">
+                    <label>Location Name</label>
+                    <input type="text" id="reportLocation" placeholder="Location description">
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label>Description *</label>
+                <textarea id="reportDescription" placeholder="Describe the incident in detail..."></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="getLocation()" style="margin-bottom: 1rem;">
+                <i class="fas fa-map-marker-alt"></i> Get Current Location
+            </button>
+            <button class="btn btn-success" onclick="submitReport()">
+                <i class="fas fa-paper-plane"></i> Submit Report
+            </button>
+            
+            <h3 style="margin: 2rem 0 1rem; color: #60a5fa;">My Submitted Reports</h3>
+            <div id="reportsContainer" class="reports-grid">
+                <div class="empty-state">
+                    <i class="fas fa-file-alt"></i>
+                    <p>No reports submitted yet.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+        let tasks = [];
+        let reports = [];
+        let myResponderInfo = null;
+        let zoneResponders = [];
+        let selectedTeamEmail = null;
+        
+        // Check authentication and load data
+        (function() {
+            if (window.AuthHelper && window.AuthHelper.initUrlAuth) {
+                window.AuthHelper.initUrlAuth();
+            }
+            const token = localStorage.getItem('token');
+            const storedRole = localStorage.getItem('userRole');
+            
+            if (!token) {
+                window.location.href = '/index.html';
+                return;
+            }
+            
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                const role = storedRole || payload.role;
+                
+                if (role !== 'Responder') {
+                    if (window.showToast) window.showToast('Access denied. Responder privileges required.', 'error');
+                    setTimeout(() => { window.location.href = '/index.html'; }, 600);
+                    return;
+                }
+                
+                // Get responder info
+                myResponderInfo = {
+                    email: payload.sub,
+                    role: role
+                };
+            } catch(e) {
+                console.error('Error decoding token:', e);
+                localStorage.removeItem('token');
+                localStorage.removeItem('userRole');
+                window.location.href = '/index.html';
+            }
+            
+            loadTasks();
+            loadReports();
+            loadMyInfo();
+            loadAvailability();
+            if (window.CommandCenter && CommandCenter.initHudClock) {
+                CommandCenter.initHudClock('hudClockDisplay');
+            }
+            const respName = localStorage.getItem('userName') || 'Emergency Responder';
+            const nameEl = document.getElementById('responderName');
+            if (nameEl) nameEl.textContent = respName;
+            if (window.RoleLoadingScreen) {
+                RoleLoadingScreen.hide();
+            }
+        })();
+        
+        async function loadMyInfo() {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch('/api/auth/profile', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token 
+                    }
+                });
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    document.getElementById('myZone').value = data.location || data.role || 'Not Assigned';
+                    const zoneBadge = document.getElementById('assignedZoneBadge');
+                    if (zoneBadge && data.location) zoneBadge.textContent = 'Zone: ' + data.location;
+                    loadZoneResponders(data.location || '');
+                }
+            } catch(e) {
+                console.error('Error loading my info:', e);
+            }
+        }
+        
+        async function loadZoneResponders(myZone) {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch('/api/tasks/responders', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    // Filter responders in the same zone or no zone assigned
+                    zoneResponders = data.responders.filter(r => 
+                        r.assignedZone === myZone || 
+                        !r.assignedZone || 
+                        r.assignedZone === ''
+                    );
+                    
+                    const select = document.getElementById('teamSelect');
+                    select.innerHTML = '<option value="">-- Select a Team --</option>';
+                    
+                    zoneResponders.forEach(r => {
+                        const option = document.createElement('option');
+                        option.value = r.email;
+                        option.textContent = `${r.name} - ${r.assignedZone || 'General'} Zone`;
+                        select.appendChild(option);
+                    });
+                }
+            } catch(e) {
+                console.error('Error loading responders:', e);
+            }
+        }
+        
+        function selectTeam() {
+            const select = document.getElementById('teamSelect');
+            selectedTeamEmail = select.value;
+            
+            const infoDiv = document.getElementById('teamInfo');
+            if (selectedTeamEmail) {
+                const responder = zoneResponders.find(r => r.email === selectedTeamEmail);
+                if (responder) {
+                    document.getElementById('selectedTeamName').textContent = responder.name;
+                    document.getElementById('selectedTeamZone').textContent = responder.assignedZone || 'General';
+                    document.getElementById('selectedTeamEmail').textContent = responder.email;
+                    infoDiv.style.display = 'block';
+                }
+            } else {
+                infoDiv.style.display = 'none';
+            }
+        }
+        
+        async function loadTeamTasks() {
+            if (!selectedTeamEmail) {
+                showNotification('Please select a team first', 'error');
+                return;
+            }
+            
+            try {
+                const token = localStorage.getItem('token');
+                // Load tasks for selected team
+                const res = await fetch('/api/tasks', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    // Filter tasks assigned to selected team
+                    const teamTasks = data.tasks.filter(t => t.assignedTo === selectedTeamEmail);
+                    tasks = teamTasks;
+                    updateStats();
+                    renderTasks();
+                    showNotification(`Loaded ${teamTasks.length} tasks for selected team`, 'success');
+                }
+            } catch(e) {
+                console.error('Error loading team tasks:', e);
+                showNotification('Error loading team tasks', 'error');
+            }
+        }
+        
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            
+            if (tab === 'tasks') {
+                document.querySelector('.tab:nth-child(1)').classList.add('active');
+                document.getElementById('tasksSection').classList.add('active');
+            } else {
+                document.querySelector('.tab:nth-child(2)').classList.add('active');
+                document.getElementById('reportsSection').classList.add('active');
+            }
+        }
+        
+        function showNotification(message, type) {
+            if (window.showToast) {
+                window.showToast(message, type || 'info');
+                return;
+            }
+            const notif = document.getElementById('notification');
+            if (notif) {
+                notif.textContent = message;
+                notif.className = type + ' show';
+                setTimeout(() => notif.classList.remove('show'), 3000);
+            }
+        }
+        
+        async function loadTasks() {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch('/api/tasks/my-tasks', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    tasks = data.tasks;
+                    updateStats();
+                    renderTasks();
+                }
+            } catch(e) {
+                console.error('Error loading tasks:', e);
+            }
+        }
+        
+        async function loadReports() {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch('/api/reports/my-reports', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    reports = data.reports;
+                    renderReports();
+                }
+            } catch(e) {
+                console.error('Error loading reports:', e);
+            }
+        }
+        
+        function updateStats() {
+            document.getElementById('pendingCount').textContent = tasks.filter(t => t.status === 'Pending').length;
+            document.getElementById('inProgressCount').textContent = tasks.filter(t => t.status === 'In Progress').length;
+            document.getElementById('completedCount').textContent = tasks.filter(t => t.status === 'Completed').length;
+        }
+        
+        function renderTasks() {
+            const container = document.getElementById('tasksContainer');
+            
+            if (tasks.length === 0) {
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-clipboard-list" style="font-size:2.5rem;opacity:0.5;margin-bottom:0.8rem;"></i><p>No tasks assigned to you currently.</p></div>';
+                return;
+            }
+            
+            container.innerHTML = tasks.map(task => {
+                const prio = (task.priority || 'High').toLowerCase();
+                const st = (task.status || 'Pending');
+                const locQuery = (task.latitude && task.longitude) ? 
+                    `${task.latitude},${task.longitude}` : encodeURIComponent(task.locationName || task.zone || 'Coimbatore');
+                
+                // State-driven Action Controls
+                let actionsHtml = '';
+                if (st === 'Pending' || st === 'Assigned') {
+                    actionsHtml = `
+                        <button class="btn btn-primary" onclick="updateStatus(${task.taskId}, 'Acknowledged', 'Task acknowledged by unit')">
+                            <i class="fas fa-check"></i> Acknowledge
+                        </button>
+                        <button class="btn btn-success" onclick="acceptTask(${task.taskId})">
+                            <i class="fas fa-thumbs-up"></i> Accept
+                        </button>
+                    `;
+                } else if (st === 'Acknowledged' || st === 'Accepted') {
+                    actionsHtml = `
+                        <button class="btn" style="background:linear-gradient(135deg, #0284c7, #00e5ff);color:#030a16;font-weight:700;" onclick="startResponseWithGps(${task.taskId})">
+                            <i class="fas fa-person-running"></i> Start Response (En Route)
+                        </button>
+                    `;
+                } else if (st === 'En Route') {
+                    actionsHtml = `
+                        <button class="btn btn-warning" onclick="updateStatus(${task.taskId}, 'Arrived', 'Unit arrived on scene')">
+                            <i class="fas fa-location-crosshairs"></i> Mark Arrived On Scene
+                        </button>
+                    `;
+                } else if (st === 'Arrived' || st === 'In Progress') {
+                    actionsHtml = `
+                        <button class="btn btn-success" onclick="updateStatus(${task.taskId}, 'Completed', 'Rescue operation successfully completed')">
+                            <i class="fas fa-check-double"></i> Resolve Incident
+                        </button>
+                    `;
+                } else if (st === 'Completed' || st === 'Resolved') {
+                    actionsHtml = `
+                        <span style="background:rgba(16,185,129,0.2);color:#10b981;border:1px solid #10b981;padding:5px 10px;border-radius:6px;font-size:0.8rem;font-weight:600;">
+                            <i class="fas fa-shield-check"></i> Mission Resolved & Cleared
+                        </span>
+                    `;
+                }
+                
+                return `
+                <div class="task-card ${prio}" style="position:relative;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;">
+                        <span style="font-family:var(--cc-font-mono);font-size:0.8rem;color:#00e5ff;font-weight:700;">#TASK-${task.taskId}</span>
+                        <span class="status ${st.toLowerCase().replace(' ', '-')}">${st}</span>
+                    </div>
+
+                    <h3 style="font-size:1.15rem;margin-bottom:0.4rem;color:#f8fafc;">${task.title}</h3>
+                    <p style="color:#cbd5e1;font-size:0.88rem;line-height:1.45;margin-bottom:0.6rem;">${task.description || 'No description provided.'}</p>
+                    
+                    <div class="meta" style="font-size:0.8rem;color:#94a3b8;margin-bottom:0.6rem;">
+                        <span><i class="fas fa-location-dot" style="color:var(--cc-cyan);"></i> ${task.locationName || task.zone || 'Zone N/A'}</span>
+                        <span><i class="fas fa-flag" style="color:#f59e0b;"></i> ${task.priority || 'High'} Priority</span>
+                        <span><i class="fas fa-user-shield" style="color:#a855f7;"></i> By: ${task.createdBy || 'Central Dispatch'}</span>
+                        <span><i class="fas fa-clock" style="color:#64748b;"></i> ${(window.formatIndianDateTime ? window.formatIndianDateTime(task.createdAt || Date.now()) : new Date(task.createdAt || Date.now()).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }))}</span>
+                    </div>
+
+                    ${task.latitude && task.longitude ? `
+                    <div style="font-size:0.78rem;font-family:var(--cc-font-mono);color:#38bdf8;margin-bottom:0.6rem;">
+                        <i class="fas fa-crosshairs"></i> Target GPS: ${task.latitude}, ${task.longitude}
+                    </div>` : ''}
+
+                    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.8rem;padding-bottom:0.8rem;border-bottom:1px solid rgba(255,255,255,0.08);">
+                        <button type="button" class="btn" style="background:rgba(255,255,255,0.08);padding:0.35rem 0.65rem;font-size:0.78rem;" onclick="viewTaskDetails(${task.taskId})">
+                            <i class="fas fa-eye"></i> View Details
+                        </button>
+                        <button type="button" class="btn" style="background:rgba(255,255,255,0.08);padding:0.35rem 0.65rem;font-size:0.78rem;" onclick="window.IncidentRoom.open(${task.taskId}, 'TASK', '${escapeJs(task.locationName || '')}')">
+                            <i class="fas fa-comments" style="color:#10b981;"></i> Comms Chat
+                        </button>
+                        <button type="button" class="btn" style="background:rgba(255,255,255,0.08);padding:0.35rem 0.65rem;font-size:0.78rem;" onclick="window.MediaCapture.open({ incidentId: ${task.taskId}, incidentType: 'TASK', onSuccess: () => loadTasks() })">
+                            <i class="fas fa-camera" style="color:#38bdf8;"></i> Evidence
+                        </button>
+                        <button type="button" class="btn" style="background:rgba(255,255,255,0.08);padding:0.35rem 0.65rem;font-size:0.78rem;" onclick="window.ResponderTracking.open(${task.taskId})">
+                            <i class="fas fa-crosshairs" style="color:#a855f7;"></i> Radar
+                        </button>
+                        <a href="https://www.google.com/maps/dir/?api=1&destination=${locQuery}" target="_blank" class="btn" style="background:rgba(56,189,248,0.15);border:1px solid rgba(56,189,248,0.3);color:#38bdf8;padding:0.35rem 0.65rem;font-size:0.78rem;text-decoration:none;">
+                            <i class="fas fa-diamond-turn-right"></i> Navigate
+                        </a>
+                    </div>
+                    
+                    <div class="actions" style="margin-top:0.6rem;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+                        ${actionsHtml}
+                    </div>
+
+                    ${task.notes ? `
+                    <div class="notes-section" style="margin-top:0.8rem;padding-top:0.6rem;">
+                        <strong style="font-size:0.75rem;color:var(--cc-cyan);font-family:var(--cc-font-mono);"><i class="fas fa-file-waveform"></i> Field SitRep History:</strong>
+                        <div class="notes-list" style="margin-top:0.3rem;">${task.notes}</div>
+                    </div>` : ''}
+
+                    <div style="margin-top:0.6rem;display:flex;gap:0.5rem;">
+                        <input type="text" id="note-${task.taskId}" placeholder="Add SitRep progress note..." style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);padding:0.4rem 0.6rem;border-radius:6px;color:#fff;font-size:0.8rem;">
+                        <button class="btn btn-primary" onclick="addNote(${task.taskId})" style="padding:0.4rem 0.8rem;font-size:0.8rem;">
+                            <i class="fas fa-plus"></i> Post Note
+                        </button>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+        
+        function renderReports() {
+            const container = document.getElementById('reportsContainer');
+            
+            if (reports.length === 0) {
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-file-alt"></i><p>No reports submitted yet.</p></div>';
+                return;
+            }
+            
+            container.innerHTML = reports.map(report => `
+                <div class="report-card">
+                    <h3>${report.title}</h3>
+                    <span class="status ${report.status.toLowerCase().replace(' ', '-')}">${report.status}</span>
+                    <div class="meta">
+                        <span>${report.reportType}</span>
+                        <span>${report.zone}</span>
+                        <span>${(window.formatIndianDateTime ? window.formatIndianDateTime(report.timestamp) : new Date(report.timestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }))}</span>
+                    </div>
+                    <p>${report.description || 'No description'}</p>
+                    ${report.latitude && report.longitude ? `<p style="font-size:0.8rem;color:#60a5fa"><i class="fas fa-crosshairs"></i> ${report.latitude}, ${report.longitude}</p>` : ''}
+                </div>
+            `).join('');
+        }
+        
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        document.getElementById('reportLat').value = position.coords.latitude.toFixed(6);
+                        document.getElementById('reportLng').value = position.coords.longitude.toFixed(6);
+                        showNotification('Location obtained!', 'success');
+                    },
+                    (error) => {
+                        showNotification('Error getting location: ' + error.message, 'error');
+                    }
+                );
+            } else {
+                showNotification('Geolocation not supported', 'error');
+            }
+        }
+        
+        async function updateStatus(taskId, status) {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch(`/api/tasks/${taskId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ status })
+                });
+                
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    showNotification('Status updated to ' + status, 'success');
+                    loadTasks();
+                } else {
+                    showNotification(data.message || 'Error updating status', 'error');
+                }
+            } catch(e) {
+                console.error('Error updating status:', e);
+                showNotification('Error updating status', 'error');
+            }
+        }
+        
+        async function acceptTask(taskId) {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch(`/api/tasks/${taskId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ status: 'Accepted', notes: 'Task accepted by responder' })
+                });
+                
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    showNotification('Dispatch accepted — Unit is now En Route.', 'success');
+                    loadTasks();
+                } else {
+                    showNotification(data.message || 'Error accepting task', 'error');
+                }
+            } catch(e) {
+                console.error('Error accepting task:', e);
+                showNotification('Error accepting task: ' + e.message, 'error');
+            }
+        }
+        
+        async function rejectTask(taskId) {
+            const reason = await window.showPrompt({
+                title: 'Reject Task Directive',
+                message: 'Please provide an operational reason for rejecting this assignment:',
+                placeholder: 'Reason for rejection...'
+            });
+            if (reason === null) return;
+            
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch(`/api/tasks/${taskId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ 
+                        status: 'Rejected', 
+                        notes: reason || 'Task rejected by responder'
+                    })
+                });
+                
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    showNotification('Task rejected. Central Command notified.', 'warning');
+                    loadTasks();
+                } else {
+                    showNotification(data.message || 'Error rejecting task', 'error');
+                }
+            } catch(e) {
+                console.error('Error rejecting task:', e);
+                showNotification('Error rejecting task: ' + e.message, 'error');
+            }
+        }
+        
+        async function startResponseWithGps(taskId) {
+            await updateStatus(taskId, 'En Route', 'Unit is en route to scene');
+            showNotification('Dispatch accepted — Unit is now En Route.', 'success');
+            if (window.ResponderTransmitter) {
+                await window.ResponderTransmitter.requestPermissionAndStart(taskId);
+            }
+        }
+
+        function viewTaskDetails(taskId) {
+            const task = tasks.find(t => t.taskId === taskId);
+            if (!task) return;
+
+            let modal = document.getElementById('task-detail-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'task-detail-modal';
+                modal.style.cssText = `
+                    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+                    background: rgba(5, 8, 17, 0.85); backdrop-filter: blur(12px);
+                    display: flex; align-items: center; justify-content: center;
+                    z-index: 10000; font-family: inherit;
+                `;
+                document.body.appendChild(modal);
+            }
+
+            modal.innerHTML = `
+                <div style="background: #091322; border: 1px solid var(--cc-border); border-radius: 12px; padding: 24px; max-width: 560px; width: 92%; max-height: 85vh; overflow-y: auto; color: #fff;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:10px;">
+                        <span style="font-family:var(--cc-font-mono); font-size:0.85rem; color:#00e5ff; font-weight:700;">#TASK-${task.taskId}</span>
+                        <span class="status ${task.status.toLowerCase().replace(' ', '-')}">${task.status}</span>
+                        <button type="button" onclick="document.getElementById('task-detail-modal').style.display='none'" style="background:none; border:none; color:#94a3b8; font-size:1.5rem; cursor:pointer;">&times;</button>
+                    </div>
+
+                    <h3 style="font-size:1.25rem; color:#f8fafc; margin-bottom:8px;">${task.title}</h3>
+                    <p style="color:#cbd5e1; font-size:0.9rem; line-height:1.5; margin-bottom:14px;">${task.description || 'No description'}</p>
+
+                    <div style="background:rgba(255,255,255,0.03); border-radius:8px; padding:12px; font-size:0.85rem; color:#94a3b8; display:flex; flex-direction:column; gap:6px; margin-bottom:14px;">
+                        <div><strong style="color:#fff;">Disaster Type:</strong> ${task.disasterType || 'Rescue Operation'}</div>
+                        <div><strong style="color:#fff;">Priority:</strong> <span style="color:#f59e0b;">${task.priority || 'High'}</span></div>
+                        <div><strong style="color:#fff;">Operational Zone:</strong> ${task.zone || 'N/A'}</div>
+                        <div><strong style="color:#fff;">Location:</strong> ${task.locationName || 'N/A'}</div>
+                        ${task.latitude && task.longitude ? `<div><strong style="color:#fff;">GPS Coordinates:</strong> ${task.latitude}, ${task.longitude}</div>` : ''}
+                        <div><strong style="color:#fff;">Assigned Administrator:</strong> ${task.createdBy || 'Central Command'}</div>
+                        <div><strong style="color:#fff;">Assignment Date:</strong> ${(window.formatIndianDateTime ? window.formatIndianDateTime(task.createdAt || Date.now()) : new Date(task.createdAt || Date.now()).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }))}</div>
+                    </div>
+
+                    ${task.notes ? `
+                    <div style="margin-bottom:14px;">
+                        <strong style="font-size:0.85rem; color:#00e5ff;">Field SitRep Notes:</strong>
+                        <div style="background:rgba(0,0,0,0.3); border-radius:6px; padding:10px; font-size:0.82rem; color:#cbd5e1; margin-top:4px; max-height:120px; overflow-y:auto; white-space:pre-wrap;">${task.notes}</div>
+                    </div>` : ''}
+
+                    <div style="display:flex; justify-content:flex-end; gap:8px;">
+                        <button type="button" class="btn" onclick="document.getElementById('task-detail-modal').style.display='none'" style="background:rgba(255,255,255,0.1);">Close</button>
+                    </div>
+                </div>
+            `;
+            modal.style.display = 'flex';
+        }
+
+        function escapeJs(str) {
+            if (!str) return '';
+            return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
+        }
+
+        async function toggleAvailability() {
+            const isAvailable = document.getElementById('availabilityToggle').checked;
+            const targetStatus = isAvailable ? 'Available' : 'Unavailable';
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            try {
+                const res = await fetch('/api/auth/responder/availability', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ availability: targetStatus })
+                });
+
+                const data = await res.json();
+                const statusEl = document.getElementById('availabilityStatus');
+
+                if (res.ok) {
+                    if (isAvailable) {
+                        statusEl.className = 'availability-status available';
+                        statusEl.innerHTML = '<span class="status-dot available"></span> Available';
+                        showNotification('Status updated to Available', 'success');
+                    } else {
+                        statusEl.className = 'availability-status unavailable';
+                        statusEl.innerHTML = '<span class="status-dot unavailable"></span> Unavailable';
+                        showNotification('Status updated to Unavailable', 'error');
+                    }
+                } else {
+                    showNotification(data.message || 'Could not update availability', 'error');
+                    document.getElementById('availabilityToggle').checked = !isAvailable; // revert
+                }
+            } catch (e) {
+                showNotification('Network error: ' + e.message, 'error');
+                document.getElementById('availabilityToggle').checked = !isAvailable;
+            }
+        }
+        
+        async function loadAvailability() {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            try {
+                const res = await fetch('/api/auth/responder/availability', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    const toggle = document.getElementById('availabilityToggle');
+                    const statusEl = document.getElementById('availabilityStatus');
+                    const isAvail = data.availability !== 'Unavailable';
+                    if (toggle) toggle.checked = isAvail;
+                    if (statusEl) {
+                        statusEl.className = 'availability-status ' + (isAvail ? 'available' : 'unavailable');
+                        statusEl.innerHTML = `<span class="status-dot ${isAvail ? 'available' : 'unavailable'}"></span> ${data.availability || 'Available'}`;
+                    }
+                }
+            } catch (e) {}
+        }
+        
+        async function addNote(taskId) {
+            const note = document.getElementById(`note-${taskId}`).value.trim();
+            if (!note) {
+                showNotification('Please enter a note', 'error');
+                return;
+            }
+            
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch(`/api/tasks/${taskId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ status: 'In Progress', notes: note })
+                });
+                
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    showNotification('Note added', 'success');
+                    document.getElementById(`note-${taskId}`).value = '';
+                    loadTasks();
+                } else {
+                    showNotification(data.message || 'Error adding note', 'error');
+                }
+            } catch(e) {
+                console.error('Error adding note:', e);
+                showNotification('Error adding note', 'error');
+            }
+        }
+        
+        async function submitReport() {
+            const title = document.getElementById('reportTitle').value.trim();
+            const description = document.getElementById('reportDescription').value.trim();
+            const reportType = document.getElementById('reportType').value;
+            const zone = document.getElementById('reportZone').value;
+            const lat = document.getElementById('reportLat').value;
+            const lng = document.getElementById('reportLng').value;
+            const locationName = document.getElementById('reportLocation').value.trim();
+            
+            if (!title || !description) {
+                showNotification('Please fill in required fields', 'error');
+                return;
+            }
+            
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch('/api/reports', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({
+                        title, description, reportType, zone,
+                        latitude: lat ? parseFloat(lat) : null,
+                        longitude: lng ? parseFloat(lng) : null,
+                        locationName: locationName || null
+                    })
+                });
+                
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    showNotification('Report submitted successfully', 'success');
+                    document.getElementById('reportTitle').value = '';
+                    document.getElementById('reportDescription').value = '';
+                    document.getElementById('reportLat').value = '';
+                    document.getElementById('reportLng').value = '';
+                    document.getElementById('reportLocation').value = '';
+                    loadReports();
+                } else {
+                    showNotification(data.message || 'Error submitting report', 'error');
+                }
+            } catch(e) {
+                console.error('Error submitting report:', e);
+                showNotification('Error submitting report', 'error');
+            }
+        }
+        
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('userRole');
+            window.location.href = '/index.html';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+{
+  "name": "Disaster Management Design System",
+  "version": "1.0.0",
+  "description": "Design tokens for login page variants",
+  "colors": {
+    "primary": {
+      "red": "#dc2626",
+      "redLight": "#ef4444",
+      "blue": "#3b82f6",
+      "blueLight": "#60a5fa",
+      "green": "#10b981",
+      "greenLight": "#34d399"
+    },
+    "neutral": {
+      "bgDark": "#0a0f1a",
+      "bgDarker": "#060810",
+      "surface": "rgba(15, 23, 42, 0.95)",
+      "surfaceGlass": "rgba(30, 41, 59, 0.7)",
+      "border": "rgba(148, 163, 184, 0.15)",
+      "borderLight": "rgba(148, 163, 184, 0.25)"
+    },
+    "text": {
+      "primary": "#f1f5f9",
+      "secondary": "#94a3b8",
+      "muted": "#64748b"
+    },
+    "state": {
+      "error": "#f87171",
+      "success": "#34d399",
+      "warning": "#fbbf24"
+    }
+  },
+  "typography": {
+    "fontFamily": {
+      "primary": "'Segoe UI', system-ui, -apple-system, sans-serif",
+      "mono": "'Cascadia Code', 'Fira Code', monospace"
+    },
+    "fontSize": {
+      "xs": "0.75rem",
+      "sm": "0.875rem",
+      "base": "1rem",
+      "lg": "1.125rem",
+      "xl": "1.25rem",
+      "2xl": "1.5rem",
+      "3xl": "1.875rem"
+    },
+    "fontWeight": {
+      "normal": 400,
+      "medium": 500,
+      "semibold": 600,
+      "bold": 700
+    },
+    "lineHeight": {
+      "tight": 1.25,
+      "normal": 1.5,
+      "relaxed": 1.75
+    }
+  },
+  "spacing": {
+    "0": "0",
+    "1": "0.25rem",
+    "2": "0.5rem",
+    "3": "0.75rem",
+    "4": "1rem",
+    "5": "1.25rem",
+    "6": "1.5rem",
+    "8": "2rem",
+    "10": "2.5rem",
+    "12": "3rem",
+    "16": "4rem"
+  },
+  "borderRadius": {
+    "sm": "0.25rem",
+    "md": "0.5rem",
+    "lg": "0.75rem",
+    "xl": "1rem",
+    "2xl": "1.5rem",
+    "full": "9999px"
+  },
+  "shadows": {
+    "sm": "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+    "md": "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+    "lg": "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+    "xl": "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
+    "glow": {
+      "blue": "0 0 20px rgba(59, 130, 246, 0.3)",
+      "red": "0 0 20px rgba(220, 38, 38, 0.3)",
+      "green": "0 0 20px rgba(16, 185, 129, 0.3)"
+    }
+  },
+  "breakpoints": {
+    "sm": "640px",
+    "md": "768px",
+    "lg": "1024px",
+    "xl": "1280px"
+  },
+  "transitions": {
+    "fast": "150ms ease",
+    "normal": "300ms cubic-bezier(0.4, 0, 0.2, 1)",
+    "slow": "500ms cubic-bezier(0.4, 0, 0.2, 1)"
+  },
+  "zIndex": {
+    "background": "-3",
+    "overlay": "-2",
+    "surface": "1",
+    "content": "10",
+    "modal": "100",
+    "tooltip": "200"
+  }
+}

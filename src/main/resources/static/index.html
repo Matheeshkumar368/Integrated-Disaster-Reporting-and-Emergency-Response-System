@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+    <meta name="theme-color" content="#050811">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="NDMA Command">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" href="/icons/icon-192.png">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>NDMA Tactical Command Gateway | Disaster Management & Alert System</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    
+    <!-- Cinematic Command Center CSS & Loading Styles -->
+    <link rel="stylesheet" href="command-center.css?v=3"/>
+    <link rel="stylesheet" href="role-loading.css?v=2"/>
+
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            background: #030712;
+            color: var(--cc-text-primary);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        #tacticalCanvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .gateway-grid-overlay {
+            position: fixed;
+            inset: 0;
+            background-image: 
+                linear-gradient(rgba(14, 165, 233, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(14, 165, 233, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .gateway-vignette {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 50% 40%, rgba(3, 7, 18, 0.4) 0%, rgba(3, 7, 18, 0.95) 100%);
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        /* Top Bar */
+        .gateway-topbar {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background: rgba(14, 23, 38, 0.7);
+            border-bottom: 1px solid var(--cc-border);
+            backdrop-filter: blur(12px);
+        }
+
+        .gateway-brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .gateway-emblem {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--cc-radius-md);
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(14, 165, 233, 0.2));
+            border: 1px solid var(--cc-border-glow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--cc-accent-glow);
+            font-size: 1.4rem;
+            box-shadow: 0 0 15px rgba(14, 165, 233, 0.2);
+        }
+
+        .gateway-titles h1 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            color: #ffffff;
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        .gateway-titles p {
+            font-size: 0.75rem;
+            color: var(--cc-text-muted);
+            margin: 0;
+            letter-spacing: 0.08em;
+            font-family: var(--cc-font-mono);
+        }
+
+        .gateway-top-telemetry {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            font-family: var(--cc-font-mono);
+            font-size: 0.85rem;
+        }
+
+        .gateway-status-pill {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.35rem 0.85rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 9999px;
+            color: #10b981;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-dot-pulse {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 8px #10b981;
+            animation: cc-pulse-red 2s infinite;
+        }
+
+        /* Main Content Container */
+        .gateway-main {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1.5rem;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Evaluator Quick-Fill Banner */
+        .evaluator-banner {
+            width: 100%;
+            max-width: 900px;
+            margin-bottom: 2rem;
+            padding: 1rem 1.25rem;
+            background: rgba(20, 32, 52, 0.75);
+            border: 1px solid rgba(14, 165, 233, 0.3);
+            border-radius: var(--cc-radius-lg);
+            backdrop-filter: blur(12px);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .evaluator-label {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--cc-accent-glow);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .evaluator-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+        }
+
+        .evaluator-chip {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid var(--cc-border);
+            border-radius: var(--cc-radius-md);
+            padding: 0.4rem 0.85rem;
+            color: var(--cc-text-secondary);
+            font-family: var(--cc-font-mono);
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all var(--cc-transition-fast);
+        }
+
+        .evaluator-chip:hover {
+            transform: translateY(-1px);
+            border-color: var(--cc-accent-primary);
+            color: #ffffff;
+            box-shadow: 0 0 10px rgba(14, 165, 233, 0.3);
+        }
+
+        .evaluator-chip.admin-chip:hover {
+            border-color: var(--cc-alert-extreme);
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+        }
+
+        .evaluator-chip.responder-chip:hover {
+            border-color: var(--cc-accent-primary);
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+        }
+
+        .evaluator-chip.citizen-chip:hover {
+            border-color: var(--cc-status-success);
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+        }
+
+        /* Split Gateway Layout */
+        .gateway-card-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            width: 100%;
+            max-width: 520px;
+        }
+
+        .command-login-card {
+            background: rgba(14, 23, 38, 0.88);
+            border: 1px solid var(--cc-border);
+            border-radius: var(--cc-radius-xl);
+            padding: 2.25rem;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(14, 165, 233, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .command-login-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--cc-accent-glow), transparent);
+        }
+
+        /* Role Picker Tabs */
+        .role-picker {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            background: rgba(5, 8, 17, 0.7);
+            padding: 0.35rem;
+            border-radius: var(--cc-radius-lg);
+            border: 1px solid var(--cc-border);
+        }
+
+        .role-tab-btn {
+            background: transparent;
+            border: none;
+            padding: 0.75rem 0.5rem;
+            border-radius: var(--cc-radius-md);
+            color: var(--cc-text-muted);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.35rem;
+            transition: all var(--cc-transition-normal);
+        }
+
+        .role-tab-btn i {
+            font-size: 1.15rem;
+        }
+
+        .role-tab-btn.active.admin {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
+        }
+
+        .role-tab-btn.active.responder {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.4);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+        }
+
+        .role-tab-btn.active.citizen {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+        }
+
+        .form-header-badge {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--cc-border);
+        }
+
+        .active-role-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 0.95rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .active-role-indicator.admin { color: #ef4444; }
+        .active-role-indicator.responder { color: #60a5fa; }
+        .active-role-indicator.citizen { color: #34d399; }
+
+        .auth-portal-badge {
+            font-family: var(--cc-font-mono);
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: var(--cc-radius-sm);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--cc-border);
+            color: var(--cc-text-muted);
+        }
+
+        /* Form Controls */
+        .gateway-input-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .gateway-input-group label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--cc-text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .gateway-input-wrapper {
+            position: relative;
+        }
+
+        .gateway-input-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--cc-text-muted);
+            font-size: 0.95rem;
+        }
+
+        .gateway-input {
+            width: 100%;
+            height: 48px;
+            padding: 0 1rem 0 2.75rem;
+            background: rgba(5, 8, 17, 0.8);
+            border: 1px solid var(--cc-border);
+            border-radius: var(--cc-radius-md);
+            color: #ffffff;
+            font-size: 0.95rem;
+            font-family: inherit;
+            transition: all var(--cc-transition-fast);
+        }
+
+        .gateway-input:focus {
+            outline: none;
+            border-color: var(--cc-accent-glow);
+            box-shadow: 0 0 15px rgba(14, 165, 233, 0.3);
+            background: rgba(5, 8, 17, 0.95);
+        }
+
+        .password-toggle-btn {
+            position: absolute;
+            right: 0.85rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            color: var(--cc-text-muted);
+            cursor: pointer;
+            padding: 0.35rem;
+            font-size: 0.9rem;
+        }
+
+        .password-toggle-btn:hover {
+            color: #ffffff;
+        }
+
+        /* Status and Error Alert */
+        .gateway-alert-box {
+            display: none;
+            padding: 0.75rem 1rem;
+            border-radius: var(--cc-radius-md);
+            font-size: 0.85rem;
+            margin-bottom: 1.25rem;
+            align-items: center;
+            gap: 0.6rem;
+            line-height: 1.4;
+        }
+
+        .gateway-alert-box.error {
+            display: flex;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+        }
+
+        .gateway-alert-box.success {
+            display: flex;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #86efac;
+        }
+
+        /* Submit Button */
+        .btn-gateway-submit {
+            width: 100%;
+            height: 50px;
+            margin-top: 0.5rem;
+            border: none;
+            border-radius: var(--cc-radius-md);
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            transition: all var(--cc-transition-normal);
+            color: #ffffff;
+        }
+
+        .btn-gateway-submit.admin {
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-gateway-submit.admin:hover {
+            background: linear-gradient(135deg, #b91c1c, #dc2626);
+            box-shadow: 0 6px 25px rgba(239, 68, 68, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .btn-gateway-submit.responder {
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-gateway-submit.responder:hover {
+            background: linear-gradient(135deg, #1d4ed8, #2563eb);
+            box-shadow: 0 6px 25px rgba(59, 130, 246, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .btn-gateway-submit.citizen {
+            background: linear-gradient(135deg, #059669, #10b981);
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-gateway-submit.citizen:hover {
+            background: linear-gradient(135deg, #047857, #059669);
+            box-shadow: 0 6px 25px rgba(16, 185, 129, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .btn-gateway-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Gateway Footer Navigation */
+        .gateway-card-footer {
+            margin-top: 1.5rem;
+            padding-top: 1.25rem;
+            border-top: 1px solid var(--cc-border);
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--cc-text-muted);
+        }
+
+        .gateway-link {
+            color: var(--cc-accent-glow);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color var(--cc-transition-fast);
+        }
+
+        .gateway-link:hover {
+            color: #ffffff;
+            text-decoration: underline;
+        }
+
+        /* Bottom Footer */
+        .gateway-bottombar {
+            position: relative;
+            z-index: 10;
+            padding: 1rem 2rem;
+            background: rgba(5, 8, 17, 0.8);
+            border-top: 1px solid var(--cc-border);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            color: var(--cc-text-muted);
+            gap: 0.5rem;
+        }
+
+        .hotline-pills {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .hotline-pill-link {
+            color: #fca5a5;
+            text-decoration: none;
+            font-family: var(--cc-font-mono);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.2rem 0.5rem;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: var(--cc-radius-sm);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .hotline-pill-link:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ffffff;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Background Canvas & Tactical Overlay -->
+    <canvas id="tacticalCanvas"></canvas>
+    <div class="gateway-grid-overlay"></div>
+    <div class="gateway-vignette"></div>
+
+    <!-- Header HUD -->
+    <header class="gateway-topbar">
+        <div class="gateway-brand">
+            <div class="gateway-emblem">
+                <i class="fas fa-shield-halved"></i>
+            </div>
+            <div class="gateway-titles">
+                <h1>NDMA Tactical Operations Command</h1>
+                <p>NATIONAL DISASTER MANAGEMENT PLATFORM // SECURE ACCESS GATEWAY</p>
+            </div>
+        </div>
+
+        <div class="gateway-top-telemetry">
+            <div class="gateway-status-pill">
+                <span class="status-dot-pulse"></span>
+                <span>SYSTEM ACTIVE // SECURE HTTPS</span>
+            </div>
+            <div id="istClock" style="color: var(--cc-text-secondary);"><i class="far fa-clock"></i> IST --:--:--</div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="gateway-main">
+
+        <!-- Academic Evaluator Test-Drive Quick-Fill Toolbar -->
+        <div class="evaluator-banner" role="region" aria-label="Quick Demo Credentials">
+            <div class="evaluator-label">
+                <i class="fas fa-terminal"></i>
+                <span>Academic Evaluator One-Click Fill:</span>
+            </div>
+            <div class="evaluator-actions">
+                <button type="button" class="evaluator-chip admin-chip" onclick="quickFillCredentials('Admin')">
+                    <i class="fas fa-user-shield" style="color:#ef4444;"></i>
+                    <span>Admin Mission Control</span>
+                </button>
+                <button type="button" class="evaluator-chip responder-chip" onclick="quickFillCredentials('Responder')">
+                    <i class="fas fa-truck-medical" style="color:#60a5fa;"></i>
+                    <span>Responder Field Ops</span>
+                </button>
+                <button type="button" class="evaluator-chip citizen-chip" onclick="quickFillCredentials('Citizen')">
+                    <i class="fas fa-user-check" style="color:#34d399;"></i>
+                    <span>Civilian Safety Hub</span>
+                </button>
+                <a href="/emergency-videos.html" class="evaluator-chip" style="text-decoration:none; color:#00e5ff; border-color:rgba(0,229,255,0.4);" title="Watch verified disaster survival protocols">
+                    <i class="fas fa-film" style="color:#00e5ff;"></i>
+                    <span>Survival Video Library</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Authentication Card -->
+        <div class="gateway-card-container">
+            <div class="command-login-card">
+                
+                <!-- Role Picker Tabs -->
+                <div class="role-picker" role="tablist" aria-label="Select Role">
+                    <button type="button" class="role-tab-btn active admin" id="tabAdmin" onclick="setRole('Admin')" role="tab" aria-selected="true">
+                        <i class="fas fa-user-shield"></i>
+                        <span>Admin</span>
+                    </button>
+                    <button type="button" class="role-tab-btn" id="tabResponder" onclick="setRole('Responder')" role="tab" aria-selected="false">
+                        <i class="fas fa-user-ninja"></i>
+                        <span>Responder</span>
+                    </button>
+                    <button type="button" class="role-tab-btn" id="tabCitizen" onclick="setRole('Citizen')" role="tab" aria-selected="false">
+                        <i class="fas fa-user"></i>
+                        <span>Citizen</span>
+                    </button>
+                </div>
+
+                <!-- Form Header -->
+                <div class="form-header-badge">
+                    <div class="active-role-indicator admin" id="activeRoleLabel">
+                        <i class="fas fa-shield-alt" id="roleIcon"></i>
+                        <span id="roleText">Mission Control Access</span>
+                    </div>
+                    <span class="auth-portal-badge" id="defconBadge">RESTRICTED // 2FA CAPABLE</span>
+                </div>
+
+                <!-- Feedback Alert Box -->
+                <div id="statusAlert" class="gateway-alert-box" role="alert">
+                    <i class="fas fa-exclamation-circle" id="alertIcon"></i>
+                    <span id="alertMsg"></span>
+                </div>
+
+                <!-- Login Form -->
+                <form id="authLoginForm" onsubmit="handleLoginSubmit(event)" novalidate>
+                    <div class="gateway-input-group">
+                        <label for="loginEmail">
+                            <span>OPERATIONAL IDENTIFIER (EMAIL)</span>
+                            <span style="font-family: var(--cc-font-mono); font-size: 0.75rem; color: var(--cc-text-muted);">REQUIRED</span>
+                        </label>
+                        <div class="gateway-input-wrapper">
+                            <i class="fas fa-envelope gateway-input-icon"></i>
+                            <input id="loginEmail" type="email" class="gateway-input" placeholder="e.g., admin@disaster.gov.in" required autocomplete="username">
+                        </div>
+                    </div>
+
+                    <div class="gateway-input-group">
+                        <label for="loginPassword">
+                            <span>SECURITY PASSPHRASE</span>
+                            <span style="font-family: var(--cc-font-mono); font-size: 0.75rem; color: var(--cc-text-muted);">ENCRYPTED</span>
+                        </label>
+                        <div class="gateway-input-wrapper">
+                            <i class="fas fa-lock gateway-input-icon"></i>
+                            <input id="loginPassword" type="password" class="gateway-input" placeholder="••••••••••••" required autocomplete="current-password">
+                            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility()" aria-label="Toggle password visibility">
+                                <i class="fas fa-eye" id="toggleIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-gateway-submit admin" id="loginBtn">
+                        <i class="fas fa-right-to-bracket"></i>
+                        <span id="loginBtnText">Authenticate & Launch</span>
+                    </button>
+                </form>
+
+                <!-- Card Footer Navigation -->
+                <div class="gateway-card-footer">
+                    <div>
+                        <span>New civilian user? </span>
+                        <a href="#" class="gateway-link" onclick="toggleRegistrationModal(true)">Register for Citizen Safety Hub</a>
+                    </div>
+                    <div>
+                        <span>Emergency response personnel? </span>
+                        <a href="/responder-register.html" class="gateway-link" style="color: #38bdf8;">
+                            <i class="fas fa-id-badge"></i> Apply for Responder Unit Accreditation
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Registration Modal (For Civilian Sign-Up) -->
+    <div id="registerModal" class="cc-modal-backdrop" style="display: none; align-items: center; justify-content: center; z-index: 1000;" role="dialog" aria-modal="true" aria-labelledby="regModalTitle">
+        <div class="cc-modal-card" style="max-width: 500px; width: 92%;">
+            <div class="cc-modal-header">
+                <div class="cc-modal-title" id="regModalTitle" style="color: #34d399;">
+                    <i class="fas fa-user-plus"></i> Civilian Safety Hub Registration
+                </div>
+                <button type="button" class="cc-drawer-close" onclick="toggleRegistrationModal(false)" aria-label="Close modal">&times;</button>
+            </div>
+            
+            <form id="regForm" onsubmit="handleRegistrationSubmit(event)">
+                <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
+                    <div class="gateway-input-group" style="margin-bottom: 0;">
+                        <label for="regName">Full Legal Name</label>
+                        <input id="regName" type="text" class="gateway-input" style="height: 42px; padding-left: 1rem;" placeholder="e.g., Rajesh Kumar" required>
+                    </div>
+
+                    <div class="gateway-input-group" style="margin-bottom: 0;">
+                        <label for="regEmail">Email Address</label>
+                        <input id="regEmail" type="email" class="gateway-input" style="height: 42px; padding-left: 1rem;" placeholder="e.g., rajesh@gmail.com" required>
+                    </div>
+
+                    <div class="gateway-input-group" style="margin-bottom: 0;">
+                        <label for="regPassword">Create Password</label>
+                        <input id="regPassword" type="password" class="gateway-input" style="height: 42px; padding-left: 1rem;" placeholder="Minimum 6 characters" required>
+                    </div>
+
+                    <div class="gateway-input-group" style="margin-bottom: 0;">
+                        <label for="regPhone">Contact Phone (for SMS Alerts)</label>
+                        <input id="regPhone" type="tel" class="gateway-input" style="height: 42px; padding-left: 1rem;" placeholder="+91 98765 43210" required>
+                    </div>
+
+                    <div class="gateway-input-group" style="margin-bottom: 0;">
+                        <label for="regLocation">District / City</label>
+                        <input id="regLocation" type="text" class="gateway-input" style="height: 42px; padding-left: 1rem;" placeholder="e.g., Chennai, Tamil Nadu" required>
+                    </div>
+
+                    <input type="hidden" id="regRole" value="Citizen">
+
+                    <button type="submit" class="btn-gateway-submit citizen" id="regSubmitBtn" style="height: 44px; margin-top: 0.5rem;">
+                        <i class="fas fa-check-circle"></i> Create Civilian Profile
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bottom Telemetry & Hotlines Footer -->
+    <footer class="gateway-bottombar">
+        <div>
+            <span>&copy; 2026 National Disaster Management & Alert System &bull; Final Year Academic Project</span>
+        </div>
+        <div class="hotline-pills">
+            <span style="color: var(--cc-text-muted); font-size: 0.75rem; align-self: center;">National Emergency Hotlines:</span>
+            <a href="tel:112" class="hotline-pill-link"><i class="fas fa-phone-volume"></i> 112 (National)</a>
+            <a href="tel:1070" class="hotline-pill-link"><i class="fas fa-phone-volume"></i> 1070 (State)</a>
+            <a href="tel:1077" class="hotline-pill-link"><i class="fas fa-phone-volume"></i> 1077 (District)</a>
+            <a href="tel:108" class="hotline-pill-link"><i class="fas fa-phone-volume"></i> 108 (Ambulance)</a>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="command-center.js?v=3"></script>
+    <script src="role-loading.js?v=2"></script>
+    <script src="pwa-manager.js"></script>
+
+    <script>
+        let currentRole = 'Admin';
+
+        // Pre-configured evaluator credentials for academic viva / demonstration
+        const EVALUATOR_PRESETS = {
+            'Admin': {
+                email: 'admin@disaster.gov.in',
+                pass: 'admin123',
+                label: 'Mission Control Access',
+                icon: 'fas fa-user-shield',
+                color: '#ef4444',
+                defcon: 'RESTRICTED // 2FA CAPABLE',
+                btnText: 'Authenticate & Access Mission Control'
+            },
+            'Responder': {
+                email: 'responder@disaster.gov.in',
+                pass: 'responder123',
+                label: 'Field Operations Access',
+                icon: 'fas fa-truck-medical',
+                color: '#60a5fa',
+                defcon: 'TACTICAL DISPATCH // GPS ACTIVE',
+                btnText: 'Deploy to Tactical Field Operations'
+            },
+            'Citizen': {
+                email: 'citizen@gmail.com',
+                pass: 'citizen123',
+                label: 'Civilian Safety Hub',
+                icon: 'fas fa-user-check',
+                color: '#34d399',
+                defcon: 'CIVILIAN RELIEF // SOS ENABLED',
+                btnText: 'Open Civilian Safety Hub'
+            }
+        };
+
+        // Real-time Clock
+        function updateClock() {
+            const now = new Date();
+            const istTime = now.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour12: false });
+            const clockEl = document.getElementById('istClock');
+            if (clockEl) {
+                clockEl.innerHTML = `<i class="far fa-clock"></i> IST ${istTime}`;
+            }
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Switch role tabs
+        function setRole(role) {
+            currentRole = role;
+            if (window.CommandCenterSound) CommandCenterSound.playClick();
+
+            // Clear previous alerts
+            hideAlert();
+
+            // Update Tab Styles
+            ['Admin', 'Responder', 'Citizen'].forEach(r => {
+                const tab = document.getElementById(`tab${r}`);
+                if (tab) {
+                    tab.classList.remove('active', 'admin', 'responder', 'citizen');
+                    tab.setAttribute('aria-selected', 'false');
+                    if (r === role) {
+                        tab.classList.add('active', r.toLowerCase());
+                        tab.setAttribute('aria-selected', 'true');
+                    }
+                }
+            });
+
+            // Update Active Role Indicators
+            const roleConfig = EVALUATOR_PRESETS[role];
+            const activeRoleLabel = document.getElementById('activeRoleLabel');
+            const roleIcon = document.getElementById('roleIcon');
+            const roleText = document.getElementById('roleText');
+            const defconBadge = document.getElementById('defconBadge');
+            const loginBtn = document.getElementById('loginBtn');
+            const loginBtnText = document.getElementById('loginBtnText');
+
+            activeRoleLabel.className = `active-role-indicator ${role.toLowerCase()}`;
+            roleIcon.className = roleConfig.icon;
+            roleText.innerText = roleConfig.label;
+            defconBadge.innerText = roleConfig.defcon;
+            loginBtnText.innerText = roleConfig.btnText;
+
+            loginBtn.className = `btn-gateway-submit ${role.toLowerCase()}`;
+        }
+
+        // Quick-fill credentials for examiners
+        function quickFillCredentials(role) {
+            setRole(role);
+            const config = EVALUATOR_PRESETS[role];
+            document.getElementById('loginEmail').value = config.email;
+            document.getElementById('loginPassword').value = config.pass;
+            showAlert(`Loaded ${role} demonstration credentials into form.`, 'success');
+            if (window.CommandCenterSound) CommandCenterSound.playSuccess();
+        }
+
+        // Toggle password visibility
+        function togglePasswordVisibility() {
+            const pwdInput = document.getElementById('loginPassword');
+            const toggleIcon = document.getElementById('toggleIcon');
+            if (pwdInput.type === 'password') {
+                pwdInput.type = 'text';
+                toggleIcon.className = 'fas fa-eye-slash';
+            } else {
+                pwdInput.type = 'password';
+                toggleIcon.className = 'fas fa-eye';
+            }
+        }
+
+        // Display inline alerts
+        function showAlert(msg, type = 'error') {
+            const alertBox = document.getElementById('statusAlert');
+            const alertMsg = document.getElementById('alertMsg');
+            const alertIcon = document.getElementById('alertIcon');
+
+            alertBox.className = `gateway-alert-box ${type}`;
+            alertMsg.innerText = msg;
+            alertIcon.className = type === 'error' ? 'fas fa-triangle-exclamation' : 'fas fa-circle-check';
+            alertBox.style.display = 'flex';
+            if (window.showToast) window.showToast(msg, type === 'error' ? 'error' : 'success');
+        }
+
+        function hideAlert() {
+            const alertBox = document.getElementById('statusAlert');
+            if (alertBox) alertBox.style.display = 'none';
+        }
+
+        // Handle Login Submission
+        async function handleLoginSubmit(event) {
+            event.preventDefault();
+            hideAlert();
+
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const loginBtnText = document.getElementById('loginBtnText');
+
+            if (!email || !password) {
+                showAlert('Please provide both operational email and security passphrase.');
+                return;
+            }
+
+            loginBtn.disabled = true;
+            loginBtnText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Authenticating with NDMA Core...';
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.status === 'success' && data.token) {
+                    const actualRole = data.role || 'Citizen';
+
+                    // Verify role match
+                    if (currentRole !== actualRole) {
+                        loginBtn.disabled = false;
+                        loginBtnText.innerText = EVALUATOR_PRESETS[currentRole].btnText;
+                        if (window.CommandCenterSound) CommandCenterSound.playAlert();
+                        showAlert(`Access Denied! Account "${email}" holds the role [${actualRole}], but you selected [${currentRole}] tab. Please switch tabs.`);
+                        return;
+                    }
+
+                    // Success: store session
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('userRole', actualRole);
+                    if (data.name) localStorage.setItem('userName', data.name);
+                    if (data.email) localStorage.setItem('userEmail', data.email);
+                    if (typeof data.sosShortcutEnabled === 'boolean') {
+                        localStorage.setItem('emergencyShortcutEnabled', String(data.sosShortcutEnabled));
+                    }
+                    if (data.sosShortcutKey) {
+                        localStorage.setItem('emergencyShortcut', data.sosShortcutKey);
+                    }
+                    if (typeof data.sosSoundVolume === 'number') {
+                        localStorage.setItem('emergencySoundVolume', String(data.sosSoundVolume));
+                    }
+
+                    if (window.CommandCenterSound) CommandCenterSound.playSuccess();
+                    showAlert('Authentication verified. Transitioning to Command Center...', 'success');
+
+                    // Route to target dashboard
+                    setTimeout(() => {
+                        let targetUrl;
+                        if (actualRole === 'Admin') targetUrl = 'admin-dashboard.html';
+                        else if (actualRole === 'Responder') targetUrl = 'responder-dashboard.html';
+                        else targetUrl = 'citizen-dashboard.html';
+
+                        if (window.RoleLoadingScreen) {
+                            RoleLoadingScreen.showAndNavigate(actualRole, targetUrl);
+                        } else {
+                            window.location.href = targetUrl;
+                        }
+                    }, 400);
+
+                } else {
+                    loginBtn.disabled = false;
+                    loginBtnText.innerText = EVALUATOR_PRESETS[currentRole].btnText;
+                    if (window.CommandCenterSound) CommandCenterSound.playAlert();
+                    showAlert(data.message || 'Invalid operational credentials or unauthorized access.');
+                }
+            } catch (err) {
+                loginBtn.disabled = false;
+                loginBtnText.innerText = EVALUATOR_PRESETS[currentRole].btnText;
+                if (window.CommandCenterSound) CommandCenterSound.playAlert();
+                showAlert(`Network error: ${err.message}. Ensure backend server is running.`);
+            }
+        }
+
+        // Registration Modal Logic
+        function toggleRegistrationModal(show) {
+            const modal = document.getElementById('registerModal');
+            modal.style.display = show ? 'flex' : 'none';
+            if (show) {
+                document.getElementById('regName').focus();
+            }
+        }
+
+        async function handleRegistrationSubmit(event) {
+            event.preventDefault();
+            const submitBtn = document.getElementById('regSubmitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registering...';
+
+            const payload = {
+                name: document.getElementById('regName').value.trim(),
+                email: document.getElementById('regEmail').value.trim(),
+                password: document.getElementById('regPassword').value,
+                phone: document.getElementById('regPhone').value.trim(),
+                location: document.getElementById('regLocation').value.trim(),
+                role: 'Citizen'
+            };
+
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const resData = await response.json();
+
+                if (response.ok && resData.status === 'success') {
+                    toggleRegistrationModal(false);
+                    setRole('Citizen');
+                    document.getElementById('loginEmail').value = payload.email;
+                    document.getElementById('loginPassword').value = payload.password;
+                    showAlert('Civilian account registered successfully! You may now login.', 'success');
+                    if (window.CommandCenterSound) CommandCenterSound.playSuccess();
+                } else {
+                    showAlert('Registration failed: ' + (resData.message || 'Unknown error'), 'error');
+                }
+            } catch (err) {
+                showAlert('Connection error: ' + err.message, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-check-circle"></i> Create Civilian Profile';
+            }
+        }
+
+        // Tactical Canvas Particle Grid
+        const canvas = document.getElementById('tacticalCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+
+        function resizeCanvas() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        const nodes = [];
+        const NODE_COUNT = 45;
+        for (let i = 0; i < NODE_COUNT; i++) {
+            nodes.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                vx: (Math.random() - 0.5) * 0.4,
+                vy: (Math.random() - 0.5) * 0.4,
+                radius: Math.random() * 1.5 + 1
+            });
+        }
+
+        function drawTacticalNetwork() {
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw links
+            for (let i = 0; i < NODE_COUNT; i++) {
+                for (let j = i + 1; j < NODE_COUNT; j++) {
+                    const dx = nodes[i].x - nodes[j].x;
+                    const dy = nodes[i].y - nodes[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 130) {
+                        ctx.beginPath();
+                        ctx.moveTo(nodes[i].x, nodes[i].y);
+                        ctx.lineTo(nodes[j].x, nodes[j].y);
+                        ctx.strokeStyle = `rgba(14, 165, 233, ${0.15 * (1 - dist / 130)})`;
+                        ctx.lineWidth = 0.8;
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // Draw nodes
+            nodes.forEach(node => {
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.5)';
+                ctx.fill();
+
+                node.x += node.vx;
+                node.y += node.vy;
+
+                if (node.x < 0 || node.x > width) node.vx *= -1;
+                if (node.y < 0 || node.y > height) node.vy *= -1;
+            });
+
+            requestAnimationFrame(drawTacticalNetwork);
+        }
+        drawTacticalNetwork();
+
+        // Default to Admin role on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            setRole('Admin');
+        });
+    </script>
+</body>
+</html>

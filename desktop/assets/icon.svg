@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background Radial Gradient -->
+    <radialGradient id="bgGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#142034"/>
+      <stop offset="70%" stop-color="#0a1220"/>
+      <stop offset="100%" stop-color="#050811"/>
+    </radialGradient>
+
+    <!-- Shield Linear Gradient -->
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0ea5e9"/>
+      <stop offset="50%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#ef4444"/>
+    </linearGradient>
+
+    <!-- Inner Core Gradient -->
+    <linearGradient id="coreGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+
+    <!-- Glow Filter -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Base Circle Background -->
+  <rect width="512" height="512" rx="110" fill="url(#bgGrad)" />
+  <rect width="504" height="504" x="4" y="4" rx="106" fill="none" stroke="rgba(14, 165, 233, 0.4)" stroke-width="4"/>
+
+  <!-- Radar Grid Circles -->
+  <circle cx="256" cy="256" r="210" fill="none" stroke="rgba(14, 165, 233, 0.12)" stroke-width="2" stroke-dasharray="6 6"/>
+  <circle cx="256" cy="256" r="160" fill="none" stroke="rgba(14, 165, 233, 0.18)" stroke-width="2"/>
+  <circle cx="256" cy="256" r="110" fill="none" stroke="rgba(14, 165, 233, 0.12)" stroke-width="2" stroke-dasharray="4 4"/>
+
+  <!-- Crosshairs -->
+  <line x1="256" y1="40" x2="256" y2="472" stroke="rgba(14, 165, 233, 0.15)" stroke-width="2"/>
+  <line x1="40" y1="256" x2="472" y2="256" stroke="rgba(14, 165, 233, 0.15)" stroke-width="2"/>
+
+  <!-- Outer Tactical Shield -->
+  <path d="M 256,90 L 390,140 L 390,265 C 390,345 330,410 256,435 C 182,410 122,345 122,265 L 122,140 Z"
+        fill="url(#coreGrad)"
+        stroke="url(#shieldGrad)"
+        stroke-width="10"
+        filter="url(#glow)"/>
+
+  <!-- Inner Protective Shield Boundary -->
+  <path d="M 256,115 L 366,155 L 366,260 C 366,325 318,380 256,402 C 194,380 146,325 146,260 L 146,155 Z"
+        fill="none"
+        stroke="rgba(255, 255, 255, 0.1)"
+        stroke-width="2"/>
+
+  <!-- Emergency Beacon / Radar Tower Waves -->
+  <path d="M 200,210 A 70 70 0 0 1 312,210" fill="none" stroke="#ef4444" stroke-width="6" stroke-linecap="round"/>
+  <path d="M 220,230 A 45 45 0 0 1 292,230" fill="none" stroke="#f59e0b" stroke-width="5" stroke-linecap="round"/>
+  <path d="M 238,248 A 20 20 0 0 1 274,248" fill="none" stroke="#38bdf8" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Tactical Medical & Rescue Cross -->
+  <path d="M 244,260 L 268,260 L 268,284 L 292,284 L 292,308 L 268,308 L 268,332 L 244,332 L 244,308 L 220,308 L 220,284 L 244,284 Z"
+        fill="#ef4444"
+        stroke="#ffffff"
+        stroke-width="2"/>
+
+  <!-- Pulsing Center Location Pip -->
+  <circle cx="256" cy="296" r="6" fill="#ffffff" filter="url(#glow)"/>
+
+  <!-- Top Emergency Alert Triangle Badge -->
+  <polygon points="256,135 272,165 240,165" fill="#f59e0b" stroke="#ffffff" stroke-width="1.5"/>
+  <line x1="256" y1="145" x2="256" y2="155" stroke="#000000" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="256" cy="160" r="1.5" fill="#000000"/>
+
+  <!-- National Operation Typography Badge -->
+  <rect x="180" y="348" width="152" height="26" rx="6" fill="#0f172a" stroke="rgba(14, 165, 233, 0.5)" stroke-width="1.5"/>
+  <text x="256" y="366" font-family="'JetBrains Mono', 'Segoe UI', monospace" font-size="14" font-weight="700" fill="#38bdf8" text-anchor="middle" letter-spacing="3">NDMA-OPS</text>
+</svg>

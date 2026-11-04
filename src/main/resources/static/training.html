@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+    <meta http-equiv="Pragma" content="no-cache"/>
+    <meta http-equiv="Expires" content="0"/>
+    <title>Training & Preparedness - Disaster Management</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link rel="stylesheet" href="toast-manager.css?v=2" />
+    <script src="toast-manager.js?v=2"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #0f1a2a 0%, #0a1420 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding-bottom: 5rem;
+        }
+        .header {
+            background: linear-gradient(135deg, #10b981, #34d399);
+            padding: 1.8rem 1rem;
+            text-align: center;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+        }
+        .header h1 {
+            font-size: 2.2rem;
+            color: white;
+            font-weight: 700;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
+        .header p {
+            color: rgba(255,255,255,0.9);
+            margin-top: 0.5rem;
+            font-size: 1.1rem;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+        .card {
+            background: rgba(30, 41, 59, 0.95);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(16,185,129,0.2);
+            margin-bottom: 2rem;
+        }
+        .card h2 {
+            color: #10b981;
+            margin-bottom: 1.5rem;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .section-title {
+            color: #10b981;
+            margin-bottom: 1.5rem;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        /* Disaster Cards Grid */
+        .disaster-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+        .disaster-card {
+            background: rgba(30, 41, 59, 0.95);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(16,185,129,0.2);
+            transition: all 0.3s;
+        }
+        .disaster-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(16,185,129,0.3);
+            border-color: #10b981;
+        }
+        .disaster-card.flood { border-left: 4px solid #3b82f6; }
+        .disaster-card.earthquake { border-left: 4px solid #f59e0b; }
+        .disaster-card.fire { border-left: 4px solid #ef4444; }
+        .disaster-card.cyclone { border-left: 4px solid #8b5cf6; }
+        
+        .disaster-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+        }
+        .flood .disaster-icon { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+        .earthquake .disaster-icon { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+        .fire .disaster-icon { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        .cyclone .disaster-icon { background: rgba(139, 92, 246, 0.2); color: #8b5cf6; }
+        
+        .disaster-card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+            color: white;
+        }
+        .disaster-card ul {
+            list-style: none;
+            padding: 0;
+        }
+        .disaster-card li {
+            padding: 0.5rem 0;
+            color: #94a3b8;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+        .disaster-card li i {
+            color: #10b981;
+            margin-top: 0.25rem;
+        }
+        
+        /* Checklist */
+        .checklist {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 12px;
+            border: 1px solid rgba(16,185,129,0.2);
+            transition: all 0.3s;
+        }
+        .checklist-item:hover {
+            background: rgba(16, 185, 129, 0.2);
+            transform: translateX(5px);
+        }
+        .checklist-item i {
+            color: #10b981;
+            font-size: 1.4rem;
+        }
+        .checklist-item span {
+            color: #e0e0e0;
+            font-size: 1.1rem;
+        }
+        
+        /* Training Alert Card */
+        .training-alert {
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            border-radius: 16px;
+            padding: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            box-shadow: 0 8px 30px rgba(239, 68, 68, 0.4);
+        }
+        .training-alert-icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: white;
+            flex-shrink: 0;
+        }
+        .training-alert-content h3 {
+            color: white;
+            font-size: 1.6rem;
+            margin-bottom: 0.5rem;
+        }
+        .training-alert-content p {
+            color: rgba(255,255,255,0.9);
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+        
+        /* Resources Section */
+        .resources-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        .resource-card {
+            background: rgba(30, 41, 59, 0.95);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(16,185,129,0.2);
+            text-align: center;
+            transition: all 0.3s;
+        }
+        .resource-card:hover {
+            transform: translateY(-5px);
+            border-color: #10b981;
+        }
+        .resource-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #10b981, #34d399);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+            margin: 0 auto 1rem;
+        }
+        .resource-card h3 {
+            color: white;
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+        }
+        .resource-card p {
+            color: #94a3b8;
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+        }
+        .resource-btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, #10b981, #34d399);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .resource-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16,185,129,0.4);
+        }
+        .resource-btn.coming {
+            background: #64748b;
+            cursor: not-allowed;
+        }
+        .resource-btn.coming:hover {
+            transform: none;
+            box-shadow: none;
+        }
+        
+        /* Shelter Cards */
+        .shelter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+        .shelter-card {
+            background: rgba(30, 41, 59, 0.95);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(16,185,129,0.2);
+            transition: all 0.3s;
+        }
+        .shelter-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(16,185,129,0.3);
+            border-color: #10b981;
+        }
+        .shelter-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .shelter-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #10b981, #34d399);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+        }
+        .shelter-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: white;
+        }
+        .shelter-details {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        .shelter-detail {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #94a3b8;
+            font-size: 0.95rem;
+        }
+        .shelter-detail i {
+            color: #10b981;
+        }
+        .shelter-type {
+            display: inline-block;
+            padding: 0.4rem 0.8rem;
+            background: rgba(16,185,129,0.2);
+            color: #10b981;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .view-map-btn {
+            display: inline-block;
+            width: 100%;
+            padding: 0.75rem;
+            background: linear-gradient(135deg, #3b82f6, #60a5fa);
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin-top: 0.5rem;
+        }
+        .view-map-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }
+        
+        /* Video Section */
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+        .video-card {
+            background: rgba(30, 41, 59, 0.95);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(16,185,129,0.2);
+            transition: all 0.3s;
+        }
+        .video-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(16,185,129,0.3);
+            border-color: #10b981;
+        }
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+        }
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .video-info {
+            padding: 1.25rem;
+        }
+        .video-info h3 {
+            color: white;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+        .video-info p {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1e293b;
+            display: flex;
+            justify-content: space-around;
+            padding: 1rem 0;
+            box-shadow: 0 -6px 20px rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        .bottom-nav a {
+            color: #94a3b8;
+            text-decoration: none;
+            text-align: center;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+        .bottom-nav a i {
+            font-size: 1.9rem;
+            display: block;
+            margin-bottom: 0.4rem;
+        }
+        .bottom-nav a.active,
+        .bottom-nav a:hover {
+            color: #10b981;
+            transform: translateY(-3px);
+        }
+        
+        @media (max-width: 768px) {
+            .disaster-grid, .checklist, .resources-grid, .shelter-grid, .video-grid {
+                grid-template-columns: 1fr;
+            }
+            .training-alert {
+                flex-direction: column;
+                text-align: center;
+            }
+            .header h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1><i class="fas fa-graduation-cap"></i> Disaster Training & Preparedness</h1>
+    <p>Learn how to respond safely during different disasters and participate in training simulations.</p>
+</div>
+
+<div class="container">
+    
+    <!-- Disaster Safety Guidance Section -->
+    <h2 class="section-title">
+        <i class="fas fa-shield-alt"></i> Disaster Safety Guidance
+    </h2>
+    
+    <div class="disaster-grid">
+        <!-- Flood Card -->
+        <div class="disaster-card flood">
+            <div class="disaster-icon">
+                <i class="fas fa-water"></i>
+            </div>
+            <h3><i class="fas fa-water"></i> Flood</h3>
+            <ul>
+                <li><i class="fas fa-check-circle"></i> Move to higher ground immediately</li>
+                <li><i class="fas fa-check-circle"></i> Avoid walking through moving water</li>
+                <li><i class="fas fa-check-circle"></i> Follow evacuation routes</li>
+                <li><i class="fas fa-check-circle"></i> Keep emergency kit ready</li>
+            </ul>
+        </div>
+        
+        <!-- Earthquake Card -->
+        <div class="disaster-card earthquake">
+            <div class="disaster-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3><i class="fas fa-exclamation-triangle"></i> Earthquake</h3>
+            <ul>
+                <li><i class="fas fa-check-circle"></i> Drop, Cover, Hold under a sturdy table</li>
+                <li><i class="fas fa-check-circle"></i> Stay away from windows and heavy objects</li>
+                <li><i class="fas fa-check-circle"></i> Move to open area after shaking stops</li>
+                <li><i class="fas fa-check-circle"></i> Expect aftershocks</li>
+            </ul>
+        </div>
+        
+        <!-- Fire Card -->
+        <div class="disaster-card fire">
+            <div class="disaster-icon">
+                <i class="fas fa-fire"></i>
+            </div>
+            <h3><i class="fas fa-fire"></i> Fire</h3>
+            <ul>
+                <li><i class="fas fa-check-circle"></i> Use stairs instead of elevators</li>
+                <li><i class="fas fa-check-circle"></i> Cover nose and mouth with cloth</li>
+                <li><i class="fas fa-check-circle"></i> Exit through nearest safe route</li>
+                <li><i class="fas fa-check-circle"></i> Feel doors before opening</li>
+            </ul>
+        </div>
+        
+        <!-- Cyclone Card -->
+        <div class="disaster-card cyclone">
+            <div class="disaster-icon">
+                <i class="fas fa-wind"></i>
+            </div>
+            <h3><i class="fas fa-wind"></i> Cyclone</h3>
+            <ul>
+                <li><i class="fas fa-check-circle"></i> Stay indoors and away from windows</li>
+                <li><i class="fas fa-check-circle"></i> Follow official alerts</li>
+                <li><i class="fas fa-check-circle"></i> Move to safe shelter if required</li>
+                <li><i class="fas fa-check-circle"></i> Secure loose objects outside</li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Emergency Preparedness Checklist -->
+    <div class="card">
+        <h2><i class="fas fa-clipboard-check"></i> Emergency Preparedness Checklist</h2>
+        <p style="color: #94a3b8; margin-bottom: 1.5rem;">Keep these essential items ready for any disaster situation:</p>
+        
+        <div class="checklist">
+            <div class="checklist-item">
+                <i class="fas fa-tint"></i>
+                <span>Drinking water (3-day supply)</span>
+            </div>
+            <div class="checklist-item">
+                <i class="fas fa-flashlight"></i>
+                <span>Flashlight with extra batteries</span>
+            </div>
+            <div class="checklist-item">
+                <i class="fas fa-first-aid"></i>
+                <span>First aid kit</span>
+            </div>
+            <div class="checklist-item">
+                <i class="fas fa-battery-full"></i>
+                <span>Portable phone charger</span>
+            </div>
+            <div class="checklist-item">
+                <i class="fas fa-file-alt"></i>
+                <span>Important documents</span>
+            </div>
+            <div class="checklist-item">
+                <i class="fas fa-utensils"></i>
+                <span>Non-perishable food</span>
+            </div>
+            <div class="checklist-item">
+                <i class="fas fa-pills"></i>
+                <span>Essential medications</span>
+            </div>
+            <div class="checklist-item">
+                <i class="fas fa-blanket"></i>
+                <span>Blankets or sleeping bags</span>
+            </div>
+            <div class="checklist-item">
+                <i class="fas fa-wrench"></i>
+                <span>Multi-tool or basic tools</span>
+            </div>
+            <div class="checklist-item">
+                <i class="fas fa-phone"></i>
+                <span>Emergency contact list</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Training Simulation Section -->
+    <div class="training-alert">
+        <div class="training-alert-icon">
+            <i class="fas fa-bullhorn"></i>
+        </div>
+        <div class="training-alert-content">
+            <h3><i class="fas fa-drone"></i> Disaster Drill Simulation</h3>
+            <p>Training Alert: Flood Evacuation Drill in your region. Citizens and responders should practice evacuation procedures. Follow official instructions and use designated evacuation routes.</p>
+        </div>
+    </div>
+    
+    <!-- Nearest Safe Locations & Shelters -->
+    <div class="card">
+        <h2><i class="fas fa-map-marker-alt"></i> Nearest Safe Locations & Shelters</h2>
+        <p style="color: #94a3b8; margin-bottom: 1.5rem;">Find safe shelters and evacuation centers near you during emergencies:</p>
+        
+        <div class="shelter-grid">
+            <div class="shelter-card">
+                <div class="shelter-header">
+                    <div class="shelter-icon">
+                        <i class="fas fa-school"></i>
+                    </div>
+                    <div class="shelter-name">Government School Shelter</div>
+                </div>
+                <div class="shelter-details">
+                    <div class="shelter-detail">
+                        <i class="fas fa-route"></i>
+                        <span>1.2 km</span>
+                    </div>
+                    <span class="shelter-type">Emergency Shelter</span>
+                </div>
+                <a href="#" class="view-map-btn" href="/citizen-dashboard.html?tab=radar">
+                    <i class="fas fa-map"></i> View Map
+                </a>
+            </div>
+            
+            <div class="shelter-card">
+                <div class="shelter-header">
+                    <div class="shelter-icon">
+                        <i class="fas fa-building"></i>
+                    </div>
+                    <div class="shelter-name">Community Hall Shelter</div>
+                </div>
+                <div class="shelter-details">
+                    <div class="shelter-detail">
+                        <i class="fas fa-route"></i>
+                        <span>2.4 km</span>
+                    </div>
+                    <span class="shelter-type">Evacuation Center</span>
+                </div>
+                <a href="#" class="view-map-btn" href="/citizen-dashboard.html?tab=radar">
+                    <i class="fas fa-map"></i> View Map
+                </a>
+            </div>
+            
+            <div class="shelter-card">
+                <div class="shelter-header">
+                    <div class="shelter-icon">
+                        <i class="fas fa-hospital"></i>
+                    </div>
+                    <div class="shelter-name">District Hospital Safe Zone</div>
+                </div>
+                <div class="shelter-details">
+                    <div class="shelter-detail">
+                        <i class="fas fa-route"></i>
+                        <span>3.1 km</span>
+                    </div>
+                    <span class="shelter-type">Medical Shelter</span>
+                </div>
+                <a href="#" class="view-map-btn" href="/citizen-dashboard.html?tab=radar">
+                    <i class="fas fa-map"></i> View Map
+                </a>
+            </div>
+            
+            <div class="shelter-card">
+                <div class="shelter-header">
+                    <div class="shelter-icon">
+                        <i class="fas fa-umbrella"></i>
+                    </div>
+                    <div class="shelter-name">Flood Relief Center</div>
+                </div>
+                <div class="shelter-details">
+                    <div class="shelter-detail">
+                        <i class="fas fa-route"></i>
+                        <span>4.5 km</span>
+                    </div>
+                    <span class="shelter-type">Temporary Shelter</span>
+                </div>
+                <a href="#" class="view-map-btn" href="/citizen-dashboard.html?tab=radar">
+                    <i class="fas fa-map"></i> View Map
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Emergency Training Videos -->
+    <div class="card">
+        <h2><i class="fas fa-video"></i> Emergency Training Videos</h2>
+        <p style="color: #94a3b8; margin-bottom: 1.5rem;">Watch instructional videos to learn essential emergency skills:</p>
+        
+        <div class="video-grid">
+            <div class="video-card">
+                <div class="video-container">
+                    <iframe src="https://www.youtube.com/embed/0H3NqV8n1kE" allowfullscreen></iframe>
+                </div>
+                <div class="video-info">
+                    <h3>Basic First Aid Training</h3>
+                    <p>Learn essential first aid techniques for emergency situations including wound care, CPR basics, and treating common injuries.</p>
+                </div>
+            </div>
+            
+            <div class="video-card">
+                <div class="video-container">
+                    <iframe src="https://www.youtube.com/embed/-NodDRTsV88" allowfullscreen></iframe>
+                </div>
+                <div class="video-info">
+                    <h3>CPR & Resuscitation Guide</h3>
+                    <p>Step-by-step guide on performing CPR and resuscitation techniques for cardiac emergencies.</p>
+                </div>
+            </div>
+            
+            <div class="video-card">
+                <div class="video-container">
+                    <iframe src="https://www.youtube.com/embed/4d6kq1z4Cq4" allowfullscreen></iframe>
+                </div>
+                <div class="video-info">
+                    <h3>Disaster Evacuation Procedures</h3>
+                    <p>Learn proper evacuation protocols for different disaster scenarios including earthquakes, floods, and fires.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+</div>
+
+<!-- Bottom Navigation -->
+<nav class="bottom-nav">
+    <a href="/citizen-dashboard.html">
+        <i class="fas fa-tachometer-alt"></i>
+        <span>Dashboard</span>
+    </a>
+    <a href="/training.html" class="active">
+        <i class="fas fa-graduation-cap"></i>
+        <span>Training</span>
+    </a>
+    <a href="/profile.html">
+        <i class="fas fa-user"></i>
+        <span>Profile</span>
+    </a>
+</nav>
+
+<script src="/js/emergency-alert.js?v=3"></script>
+<script>
+    // Role-based dashboard redirect
+    function goToDashboard() {
+        const token = localStorage.getItem('token');
+        const storedRole = localStorage.getItem('userRole');
+        if (!token) {
+            window.location.href = '/index.html';
+            return;
+        }
+        
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const role = storedRole || payload.role || 'Citizen';
+            
+            if (role === 'Admin') {
+                window.location.href = '/admin-dashboard.html';
+            } else if (role === 'Responder') {
+                window.location.href = '/responder-dashboard.html';
+            } else {
+                window.location.href = '/citizen-dashboard.html';
+            }
+        } catch (e) {
+            // Try stored role
+            if (storedRole === 'Admin') {
+                window.location.href = '/admin-dashboard.html';
+            } else if (storedRole === 'Responder') {
+                window.location.href = '/responder-dashboard.html';
+            } else {
+                localStorage.removeItem('token');
+                localStorage.removeItem('userRole');
+                window.location.href = '/index.html';
+            }
+        }
+    }
+    
+    // Simple animation on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const cards = document.querySelectorAll('.disaster-card, .checklist-item, .resource-card');
+        cards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                card.style.transition = 'all 0.5s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+    });
+</script>
+
+</body>
+</html>

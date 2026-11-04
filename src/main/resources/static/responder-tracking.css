@@ -1,0 +1,340 @@
+/* ==============================================================================
+   LIVE RESPONDER TRACKING & DELIVERY-APP HUD STYLES
+   Disaster Management & Alert System - Cinematic Command Center
+   ============================================================================== */
+
+.tracking-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(3, 7, 18, 0.9);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.tracking-modal-backdrop.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.tracking-modal-container {
+    background: linear-gradient(160deg, rgba(14, 23, 42, 0.98), rgba(7, 12, 24, 0.99));
+    border: 1px solid rgba(0, 229, 255, 0.35);
+    border-radius: 16px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(0, 229, 255, 0.15);
+    width: 100%;
+    max-width: 900px;
+    height: 85vh;
+    max-height: 800px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    color: #e2e8f0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    animation: trackingModalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes trackingModalPop {
+    from { transform: translateY(25px) scale(0.96); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.tracking-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.9rem 1.4rem;
+    background: rgba(8, 14, 28, 0.9);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tracking-modal-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #00e5ff;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.tracking-status-chip {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.tracking-status-chip.stale {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border-color: rgba(245, 158, 11, 0.4);
+}
+
+.tracking-status-chip.completed {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border-color: rgba(59, 130, 246, 0.4);
+}
+
+.pulse-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 8px currentColor;
+    animation: trackingDotPulse 1.2s infinite;
+}
+
+@keyframes trackingDotPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+/* Modal Body: Split Map & Delivery HUD */
+.tracking-modal-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Map area */
+.tracking-map-viewport {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    background: #080f1d;
+    position: relative;
+    z-index: 1;
+}
+
+/* Delivery-App Floating HUD Card */
+.tracking-hud-card {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    background: linear-gradient(135deg, rgba(12, 20, 36, 0.95), rgba(7, 12, 24, 0.98));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(0, 229, 255, 0.3);
+    border-radius: 14px;
+    padding: 1.1rem 1.4rem;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.65), 0 0 20px rgba(0, 229, 255, 0.12);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.hud-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.responder-profile-info {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+.responder-avatar-badge {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #00e5ff, #0077ff);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
+}
+
+.responder-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #f8fafc;
+    line-height: 1.2;
+}
+
+.responder-role-sub {
+    font-size: 0.78rem;
+    color: #94a3b8;
+    margin-top: 2px;
+}
+
+/* Prominent ETA & Distance Display */
+.hud-eta-box {
+    text-align: right;
+}
+
+.eta-large-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #00e5ff;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    text-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
+}
+
+.distance-sub-value {
+    font-size: 0.8rem;
+    color: #cbd5e1;
+    margin-top: 3px;
+    font-weight: 600;
+}
+
+/* Stepper Progress Bar (Delivery Flow) */
+.hud-stepper-track {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    padding-top: 0.3rem;
+}
+
+.hud-stepper-track::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 10px;
+    right: 10px;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-50%);
+    z-index: 1;
+}
+
+.hud-step-node {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.step-circle {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #1e293b;
+    border: 2px solid #64748b;
+    transition: all 0.3s;
+}
+
+.hud-step-node.active .step-circle {
+    background: #00e5ff;
+    border-color: #fff;
+    box-shadow: 0 0 12px #00e5ff;
+}
+
+.hud-step-node.completed .step-circle {
+    background: #10b981;
+    border-color: #fff;
+    box-shadow: 0 0 10px #10b981;
+}
+
+.step-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+}
+
+.hud-step-node.active .step-label {
+    color: #00e5ff;
+}
+
+/* Custom Leaflet Pulsing Vehicle Marker */
+.vehicle-marker-icon {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vehicle-marker-pulse {
+    position: absolute;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(0, 229, 255, 0.3);
+    border: 2px solid rgba(0, 229, 255, 0.7);
+    animation: vehiclePulseRing 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+@keyframes vehiclePulseRing {
+    0% { transform: scale(0.6); opacity: 1; }
+    100% { transform: scale(1.6); opacity: 0; }
+}
+
+.vehicle-marker-body {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #00e5ff, #0055ff);
+    border: 2px solid #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6), 0 0 15px rgba(0, 229, 255, 0.6);
+}
+
+/* Destination Target Marker */
+.destination-marker-icon {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, #ff2244, #ff5500);
+    border: 2px solid #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6), 0 0 20px rgba(255, 34, 68, 0.7);
+}
+
+@media (max-width: 640px) {
+    .tracking-modal-container {
+        height: 94vh;
+        max-height: none;
+    }
+    .tracking-hud-card {
+        bottom: 8px;
+        left: 8px;
+        right: 8px;
+        padding: 0.85rem 1rem;
+    }
+    .eta-large-value {
+        font-size: 1.25rem;
+    }
+}
+

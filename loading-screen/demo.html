@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading Screen Component Demo</title>
+    <link rel="stylesheet" href="loading-screen.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            color: #fff;
+        }
+
+        .demo-container {
+            max-width: 600px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        p {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        button {
+            padding: 0.875rem 1.75rem;
+            font-size: 1rem;
+            font-weight: 500;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: #6366f1;
+            border: 2px solid #6366f1;
+        }
+
+        .btn-outline:hover {
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .code-block {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            text-align: left;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.875rem;
+            overflow-x: auto;
+        }
+
+        .code-block code {
+            color: #a5b4fc;
+        }
+
+        .code-block .comment {
+            color: #6b7280;
+        }
+
+        .code-block .string {
+            color: #34d399;
+        }
+
+        .divider {
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            margin: 2rem 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1>Loading Screen</h1>
+        <p>A modern, visually stunning loading overlay component for web applications. Features smooth animations, multiple progress indicators, and easy customization.</p>
+
+        <div class="button-group">
+            <button class="btn-primary" onclick="demoSignIn()">Sign In Loading</button>
+            <button class="btn-primary" onclick="demoDashboard()">Dashboard Loading</button>
+            <button class="btn-secondary" onclick="demoCustomTheme()">Light Theme</button>
+            <button class="btn-outline" onclick="demoProgressTypes()">Progress Types</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="code-block">
+            <code>
+<span class="comment">// Show loading screen</span>
+LoadingScreen.show(<span class="string">'Signing you in...'</span>);
+
+<span class="comment">// Hide after task completes</span>
+LoadingScreen.hide(() => {
+    console.log(<span class="string">'Loading complete!'</span>);
+});
+
+<span class="comment">// Change theme</span>
+LoadingScreen.setTheme(<span class="string">'light'</span>);
+
+<span class="comment">// Custom options</span>
+LoadingScreen.show(<span class="string">'Loading...'</span>, {
+    theme: <span class="string">'dark'</span>,
+    progressType: <span class="string">'bar'</span>,
+    backdropBlur: <span class="string">true</span>
+});
+            </code>
+        </div>
+    </div>
+
+    <script src="loading-screen.js"></script>
+    <script>
+        function demoSignIn() {
+            LoadingScreen.show('Signing you in...', { progressType: 'spinner' });
+            
+            setTimeout(() => {
+                LoadingScreen.hide(() => {
+                    alert('Signed in successfully!');
+                });
+            }, 2500);
+        }
+
+        function demoDashboard() {
+            LoadingScreen.show('Loading your dashboard...', { progressType: 'dots' });
+            
+            setTimeout(() => {
+                LoadingScreen.hide(() => {
+                    alert('Dashboard loaded!');
+                });
+            }, 2500);
+        }
+
+        function demoCustomTheme() {
+            LoadingScreen.setTheme('light');
+            LoadingScreen.show('Please wait...', { progressType: 'bar' });
+            
+            setTimeout(() => {
+                LoadingScreen.hide(() => {
+                    LoadingScreen.setTheme('auto');
+                });
+            }, 2500);
+        }
+
+        function demoProgressTypes() {
+            const types = ['spinner', 'bar', 'dots'];
+            let index = 0;
+            
+            function showNext() {
+                if (index >= types.length) {
+                    LoadingScreen.hide();
+                    return;
+                }
+                
+                LoadingScreen.show(`Progress: ${types[index]}`, { 
+                    progressType: types[index] 
+                });
+                
+                setTimeout(() => {
+                    LoadingScreen.hide(() => {
+                        index++;
+                        showNext();
+                    });
+                }, 1500);
+            }
+            
+            showNext();
+        }
+    </script>
+</body>
+</html>

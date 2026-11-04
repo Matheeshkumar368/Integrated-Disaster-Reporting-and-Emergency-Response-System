@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emergency Survival Video Library | Disaster Response System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="command-center.css?v=2">
+    <link rel="stylesheet" href="toast-manager.css?v=2">
+    <style>
+        :root {
+            --video-bg: #091322;
+            --video-card: #0d1b2e;
+            --video-card-hover: #13243d;
+            --video-accent: #00e5ff;
+            --video-border: rgba(56, 189, 248, 0.2);
+        }
+
+        body {
+            background-color: #060c17;
+            color: #e2e8f0;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .video-header {
+            background: linear-gradient(180deg, #091322 0%, #060c17 100%);
+            border-bottom: 1px solid var(--video-border);
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .video-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .video-brand-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #0284c7, #00e5ff);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #030a16;
+            font-size: 1.25rem;
+            font-weight: 800;
+            box-shadow: 0 0 16px rgba(0, 229, 255, 0.4);
+        }
+
+        .video-title-wrap h1 {
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin: 0;
+            color: #ffffff;
+            letter-spacing: -0.01em;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .video-title-wrap p {
+            margin: 0.15rem 0 0;
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+
+        .video-nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .hero-banner {
+            max-width: 1300px;
+            margin: 1.5rem auto 1rem;
+            padding: 0 1.5rem;
+        }
+
+        .recommended-box {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(13, 27, 46, 0.85) 100%);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            border-radius: 12px;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+            box-shadow: 0 4px 20px rgba(239, 68, 68, 0.12);
+        }
+
+        .recommended-info h3 {
+            margin: 0 0 0.35rem;
+            font-size: 1.05rem;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .recommended-info p {
+            margin: 0;
+            font-size: 0.85rem;
+            color: #cbd5e1;
+            line-height: 1.4;
+        }
+
+        .controls-bar {
+            max-width: 1300px;
+            margin: 0 auto 1.5rem;
+            padding: 0 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .search-input-wrap {
+            position: relative;
+            flex: 1;
+            min-width: 260px;
+            max-width: 420px;
+        }
+
+        .search-input-wrap i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .search-input-wrap input {
+            width: 100%;
+            background: #0d1b2e;
+            border: 1px solid var(--video-border);
+            border-radius: 8px;
+            padding: 0.6rem 1rem 0.6rem 2.4rem;
+            color: #ffffff;
+            font-size: 0.88rem;
+            outline: none;
+            box-sizing: border-box;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .search-input-wrap input:focus {
+            border-color: var(--video-accent);
+            box-shadow: 0 0 12px rgba(0, 229, 255, 0.25);
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+        }
+
+        .category-scroll-nav {
+            max-width: 1300px;
+            margin: 0 auto 1.5rem;
+            padding: 0 1.5rem;
+            display: flex;
+            gap: 0.5rem;
+            overflow-x: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #38bdf8 transparent;
+            padding-bottom: 0.5rem;
+        }
+
+        .category-chip {
+            background: rgba(13, 27, 46, 0.7);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            color: #94a3b8;
+            padding: 0.45rem 1rem;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .category-chip:hover {
+            color: #ffffff;
+            border-color: rgba(56, 189, 248, 0.5);
+            background: rgba(56, 189, 248, 0.1);
+        }
+
+        .category-chip.active {
+            background: linear-gradient(135deg, #0284c7, #00e5ff);
+            color: #030a16;
+            border-color: #00e5ff;
+            font-weight: 700;
+            box-shadow: 0 0 12px rgba(0, 229, 255, 0.35);
+        }
+
+        .video-grid {
+            max-width: 1300px;
+            margin: 0 auto 3rem;
+            padding: 0 1.5rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .video-card {
+            background: var(--video-card);
+            border: 1px solid var(--video-border);
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+            position: relative;
+        }
+
+        .video-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 229, 255, 0.5);
+            box-shadow: 0 10px 24px rgba(0, 229, 255, 0.15);
+        }
+
+        .thumbnail-container {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* 16:9 Aspect Ratio */
+            background: #020617;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .thumbnail-container img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .video-card:hover .thumbnail-container img {
+            transform: scale(1.05);
+        }
+
+        .play-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(3, 10, 22, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .play-button-circle {
+            width: 48px;
+            height: 48px;
+            background: rgba(0, 229, 255, 0.9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #030a16;
+            font-size: 1.1rem;
+            box-shadow: 0 0 16px rgba(0, 229, 255, 0.6);
+            transition: transform 0.2s;
+            padding-left: 3px;
+        }
+
+        .video-card:hover .play-button-circle {
+            transform: scale(1.15);
+        }
+
+        .duration-badge {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: rgba(3, 10, 22, 0.85);
+            color: #ffffff;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .category-badge-chip {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(2, 132, 199, 0.9);
+            color: #ffffff;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .video-details {
+            padding: 1.1rem;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .video-meta-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-size: 0.78rem;
+        }
+
+        .source-tag {
+            color: #00e5ff;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .lang-tag {
+            background: rgba(255, 255, 255, 0.08);
+            color: #94a3b8;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .video-card-title {
+            font-size: 0.98rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin: 0 0 0.5rem;
+            line-height: 1.35;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .video-card-desc {
+            font-size: 0.82rem;
+            color: #94a3b8;
+            margin: 0 0 1rem;
+            line-height: 1.45;
+            flex: 1;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .video-card-footer {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: auto;
+        }
+
+        /* Modal Player Styling */
+        .video-modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(3, 10, 22, 0.9);
+            backdrop-filter: blur(8px);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .video-modal-backdrop.active {
+            display: flex;
+        }
+
+        .video-modal-container {
+            background: #091322;
+            border: 1px solid var(--video-accent);
+            border-radius: 12px;
+            max-width: 860px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 0 35px rgba(0, 229, 255, 0.25);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .video-modal-header {
+            padding: 1rem 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+        }
+
+        .video-modal-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .player-viewport {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%;
+            background: #000;
+        }
+
+        .player-viewport iframe {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .modal-body-content {
+            padding: 1.25rem;
+        }
+
+        .offline-guide-box {
+            background: rgba(255, 255, 255, 0.04);
+            border-left: 3px solid #10b981;
+            padding: 1rem 1.25rem;
+            border-radius: 6px;
+            margin-top: 1rem;
+        }
+
+        .offline-guide-box h4 {
+            margin: 0 0 0.5rem;
+            color: #10b981;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .offline-guide-text {
+            color: #cbd5e1;
+            font-size: 0.85rem;
+            line-height: 1.55;
+            white-space: pre-line;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header class="video-header">
+        <div class="video-brand">
+            <div class="video-brand-icon">
+                <i class="fas fa-play"></i>
+            </div>
+            <div class="video-title-wrap">
+                <h1>
+                    <span>EMERGENCY SURVIVAL VIDEO LIBRARY</span>
+                    <span class="cc-badge cc-badge-official" style="font-size:0.68rem;">OFFICIAL PROTOCOLS</span>
+                </h1>
+                <p>Verified public evacuation, trauma first-aid & survival guides from NDMA, NDRF, and WHO</p>
+            </div>
+        </div>
+
+        <div class="video-nav-actions">
+            <div id="hudClockDisplay" style="font-family:monospace; font-weight:700; color:#38bdf8; font-size:0.85rem; background:rgba(13,27,46,0.6); padding:4px 8px; border-radius:4px; border:1px solid rgba(56,189,248,0.3);">
+                --:--:--
+            </div>
+
+            <!-- Role Dashboard Return Button -->
+            <button id="btnReturnDashboard" class="cc-btn cc-btn-secondary" onclick="returnToDashboard()" style="padding:0.45rem 0.85rem; font-size:0.82rem;">
+                <i class="fas fa-house-chimney"></i> Return to Safety Hub
+            </button>
+
+            <!-- Admin Add Video Button (Visible to Admin only) -->
+            <button id="btnAdminAddVideo" class="cc-btn cc-btn-primary" onclick="openAdminAddModal()" style="display:none; padding:0.45rem 0.85rem; font-size:0.82rem;">
+                <i class="fas fa-plus"></i> Add Video Protocol
+            </button>
+        </div>
+    </header>
+
+    <!-- Contextual Emergency Recommendation Banner -->
+    <section class="hero-banner" id="recommendedSection" style="display:none;">
+        <div class="recommended-box">
+            <div class="recommended-info">
+                <h3 id="recTitle"><i class="fas fa-triangle-exclamation" style="color:#ef4444;"></i> Active Alert Safety Guidance</h3>
+                <p id="recDesc">Loading emergency safety video recommendations for active sector weather hazards...</p>
+            </div>
+            <button id="btnRecPlay" class="cc-btn cc-btn-danger" style="padding:0.55rem 1.1rem; font-size:0.85rem; font-weight:700;">
+                <i class="fas fa-play"></i> Watch Safety Video Now
+            </button>
+        </div>
+    </section>
+
+    <!-- Filter and Search Controls -->
+    <section class="controls-bar">
+        <div class="search-input-wrap">
+            <i class="fas fa-magnifying-glass"></i>
+            <input type="text" id="videoSearchInput" placeholder="Search safety procedures, CPR, flood evacuation..." oninput="handleSearch()">
+        </div>
+
+        <div class="filter-group">
+            <label style="font-size:0.82rem; color:#94a3b8;"><i class="fas fa-language"></i> Language:</label>
+            <select id="videoLangSelect" onchange="handleFilterChange()" style="background:#0d1b2e; border:1px solid var(--video-border); color:#fff; padding:0.45rem 0.8rem; border-radius:6px; font-size:0.82rem;">
+                <option value="ALL">All Languages</option>
+                <option value="English">English</option>
+                <option value="Tamil">தமிழ் (Tamil)</option>
+            </select>
+        </div>
+    </section>
+
+    <!-- Category Tabs (10 Categories) -->
+    <nav class="category-scroll-nav" id="categoryTabsNav">
+        <button class="category-chip active" onclick="selectCategory('ALL', this)">
+            <i class="fas fa-border-all"></i> All Protocols
+        </button>
+        <button class="category-chip" onclick="selectCategory('Flood', this)">
+            <i class="fas fa-water"></i> Flood Evacuation
+        </button>
+        <button class="category-chip" onclick="selectCategory('Fire', this)">
+            <i class="fas fa-fire"></i> Fire Escape
+        </button>
+        <button class="category-chip" onclick="selectCategory('Earthquake', this)">
+            <i class="fas fa-volcano"></i> Earthquake Safety
+        </button>
+        <button class="category-chip" onclick="selectCategory('Cyclone', this)">
+            <i class="fas fa-wind"></i> Cyclone & Storm
+        </button>
+        <button class="category-chip" onclick="selectCategory('Tsunami', this)">
+            <i class="fas fa-water-ladder"></i> Tsunami Evacuation
+        </button>
+        <button class="category-chip" onclick="selectCategory('Landslide', this)">
+            <i class="fas fa-mountain"></i> Landslide Safety
+        </button>
+        <button class="category-chip" onclick="selectCategory('First Aid', this)">
+            <i class="fas fa-heart-pulse"></i> First Aid & CPR
+        </button>
+        <button class="category-chip" onclick="selectCategory('Evacuation', this)">
+            <i class="fas fa-person-walking-arrow-right"></i> Mass Evacuation
+        </button>
+        <button class="category-chip" onclick="selectCategory('Disaster Kit', this)">
+            <i class="fas fa-kit-medical"></i> 72h Survival Kit
+        </button>
+        <button class="category-chip" onclick="selectCategory('Emergency Communication', this)">
+            <i class="fas fa-tower-broadcast"></i> SOS & Comms
+        </button>
+    </nav>
+
+    <!-- Video Grid Container -->
+    <main class="video-grid" id="videoGridContainer">
+        <!-- Injected via JavaScript -->
+    </main>
+
+    <!-- Video Playback Modal with Offline Step Guide -->
+    <div id="videoPlayerModal" class="video-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalVideoTitle">
+        <div class="video-modal-container">
+            <div class="video-modal-header">
+                <h3 id="modalVideoTitle"><i class="fas fa-play-circle" style="color:var(--video-accent);"></i> Survival Video Protocol</h3>
+                <button type="button" class="cc-btn cc-btn-secondary" onclick="closePlayerModal()" style="padding:4px 8px; font-size:0.8rem;">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="player-viewport">
+                <iframe id="youtubeIframe" src="" title="Emergency Video Player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+
+            <div class="modal-body-content">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; flex-wrap:wrap; gap:0.5rem;">
+                    <div>
+                        <span id="modalSourceBadge" class="cc-badge cc-badge-official" style="font-size:0.75rem;">NDMA</span>
+                        <span id="modalCategoryBadge" class="cc-badge cc-badge-warning" style="font-size:0.75rem;">FLOOD</span>
+                    </div>
+                    <span id="modalDurationBadge" style="font-size:0.8rem; color:#94a3b8;"><i class="fas fa-clock"></i> Duration: --:--</span>
+                </div>
+
+                <p id="modalVideoDesc" style="color:#cbd5e1; font-size:0.88rem; line-height:1.5; margin:0 0 1rem;"></p>
+
+                <!-- Offline Safety Guide -->
+                <div class="offline-guide-box">
+                    <h4><i class="fas fa-file-shield"></i> Emergency Offline Action Steps (If Video Unavailable)</h4>
+                    <div id="modalOfflineGuide" class="offline-guide-text"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Add/Edit Video Modal -->
+    <div id="adminVideoModal" class="video-modal-backdrop" role="dialog" aria-modal="true">
+        <div class="video-modal-container" style="max-width:600px;">
+            <div class="video-modal-header">
+                <h3 id="adminModalTitle"><i class="fas fa-video"></i> Add Emergency Survival Video</h3>
+                <button type="button" class="cc-btn cc-btn-secondary" onclick="closeAdminModal()" style="padding:4px 8px;">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+            <form id="adminVideoForm" onsubmit="handleSaveVideo(event)" style="padding:1.25rem; display:flex; flex-direction:column; gap:1rem;">
+                <input type="hidden" id="adminVideoId" value="">
+                <div>
+                    <label style="font-size:0.82rem; color:#94a3b8; display:block; margin-bottom:4px;">Video Title *</label>
+                    <input type="text" id="adminTitle" required style="width:100%; background:#0d1b2e; border:1px solid var(--video-border); color:#fff; padding:8px 12px; border-radius:6px; box-sizing:border-box;">
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                    <div>
+                        <label style="font-size:0.82rem; color:#94a3b8; display:block; margin-bottom:4px;">YouTube ID or URL *</label>
+                        <input type="text" id="adminYoutubeId" required placeholder="e.g. W8S-f6T56tA" style="width:100%; background:#0d1b2e; border:1px solid var(--video-border); color:#fff; padding:8px 12px; border-radius:6px; box-sizing:border-box;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.82rem; color:#94a3b8; display:block; margin-bottom:4px;">Disaster Category *</label>
+                        <select id="adminCategory" required style="width:100%; background:#0d1b2e; border:1px solid var(--video-border); color:#fff; padding:8px 12px; border-radius:6px; box-sizing:border-box;">
+                            <option value="Flood">Flood Safety</option>
+                            <option value="Fire">Fire Escape</option>
+                            <option value="Earthquake">Earthquake</option>
+                            <option value="Cyclone">Cyclone & Storm</option>
+                            <option value="Tsunami">Tsunami</option>
+                            <option value="Landslide">Landslide</option>
+                            <option value="First Aid">First Aid & CPR</option>
+                            <option value="Evacuation">Evacuation</option>
+                            <option value="Disaster Kit">Disaster Kit</option>
+                            <option value="Emergency Communication">Emergency Communication</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                    <div>
+                        <label style="font-size:0.82rem; color:#94a3b8; display:block; margin-bottom:4px;">Source Organization</label>
+                        <input type="text" id="adminSource" placeholder="NDMA / NDRF / WHO" style="width:100%; background:#0d1b2e; border:1px solid var(--video-border); color:#fff; padding:8px 12px; border-radius:6px; box-sizing:border-box;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.82rem; color:#94a3b8; display:block; margin-bottom:4px;">Language</label>
+                        <select id="adminLanguage" style="width:100%; background:#0d1b2e; border:1px solid var(--video-border); color:#fff; padding:8px 12px; border-radius:6px; box-sizing:border-box;">
+                            <option value="English">English</option>
+                            <option value="Tamil">Tamil</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label style="font-size:0.82rem; color:#94a3b8; display:block; margin-bottom:4px;">Duration</label>
+                    <input type="text" id="adminDuration" placeholder="e.g. 4:15" style="width:100%; background:#0d1b2e; border:1px solid var(--video-border); color:#fff; padding:8px 12px; border-radius:6px; box-sizing:border-box;">
+                </div>
+                <div>
+                    <label style="font-size:0.82rem; color:#94a3b8; display:block; margin-bottom:4px;">Description</label>
+                    <textarea id="adminDescription" rows="2" style="width:100%; background:#0d1b2e; border:1px solid var(--video-border); color:#fff; padding:8px 12px; border-radius:6px; box-sizing:border-box;"></textarea>
+                </div>
+                <div>
+                    <label style="font-size:0.82rem; color:#94a3b8; display:block; margin-bottom:4px;">Offline Step-by-Step Safety Guide *</label>
+                    <textarea id="adminOfflineGuide" rows="4" required placeholder="Numbered steps to display when network or video player fails..." style="width:100%; background:#0d1b2e; border:1px solid var(--video-border); color:#fff; padding:8px 12px; border-radius:6px; box-sizing:border-box;"></textarea>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:0.5rem;">
+                    <button type="button" class="cc-btn cc-btn-secondary" onclick="closeAdminModal()">Cancel</button>
+                    <button type="submit" class="cc-btn cc-btn-primary"><i class="fas fa-floppy-disk"></i> Save Video</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="toast-manager.js?v=2"></script>
+    <script src="auth-helper.js?v=2"></script>
+    <script src="command-center.js?v=3"></script>
+
+    <script>
+        if (window.AuthHelper && window.AuthHelper.initUrlAuth) {
+            window.AuthHelper.initUrlAuth();
+        }
+
+        let allVideos = [];
+        let currentCategory = 'ALL';
+        let currentLanguage = 'ALL';
+        let currentSearch = '';
+        const userRole = localStorage.getItem('userRole') || '';
+        const token = localStorage.getItem('token') || '';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.CommandCenter && CommandCenter.initHudClock) {
+                CommandCenter.initHudClock('hudClockDisplay');
+            }
+
+            // Adjust navigation based on role
+            updateReturnButton();
+
+            // Admin button display
+            if (userRole === 'Admin') {
+                const addBtn = document.getElementById('btnAdminAddVideo');
+                if (addBtn) addBtn.style.display = 'inline-flex';
+            }
+
+            // Check URL query parameters (e.g. ?category=Flood or ?hazard=Heavy+Rain)
+            const params = new URLSearchParams(window.location.search);
+            const hazardParam = params.get('hazard');
+            const catParam = params.get('category');
+
+            if (catParam) {
+                currentCategory = catParam;
+                highlightCategoryChip(catParam);
+            }
+
+            loadVideos();
+            checkActiveAlertRecommendation(hazardParam);
+        });
+
+        function updateReturnButton() {
+            const btn = document.getElementById('btnReturnDashboard');
+            if (!btn) return;
+            if (userRole === 'Admin') {
+                btn.innerHTML = '<i class="fas fa-tower-observation"></i> Central Command';
+                btn.onclick = () => window.location.href = '/admin-dashboard.html';
+            } else if (userRole === 'Responder') {
+                btn.innerHTML = '<i class="fas fa-truck-medical"></i> Field Operations';
+                btn.onclick = () => window.location.href = '/responder-dashboard.html';
+            } else if (userRole === 'Citizen') {
+                btn.innerHTML = '<i class="fas fa-shield-halved"></i> Citizen Hub';
+                btn.onclick = () => window.location.href = '/citizen-dashboard.html';
+            } else {
+                btn.innerHTML = '<i class="fas fa-house"></i> Home';
+                btn.onclick = () => window.location.href = '/index.html';
+            }
+        }
+
+        function returnToDashboard() {
+            if (userRole === 'Admin') window.location.href = '/admin-dashboard.html';
+            else if (userRole === 'Responder') window.location.href = '/responder-dashboard.html';
+            else if (userRole === 'Citizen') window.location.href = '/citizen-dashboard.html';
+            else window.location.href = '/index.html';
+        }
+
+        async function loadVideos() {
+            try {
+                let url = '/api/emergency-videos';
+                const params = new URLSearchParams();
+                if (currentCategory && currentCategory !== 'ALL') params.append('category', currentCategory);
+                if (currentLanguage && currentLanguage !== 'ALL') params.append('language', currentLanguage);
+                if (currentSearch && currentSearch.trim() !== '') params.append('search', currentSearch.trim());
+
+                if (params.toString()) url += '?' + params.toString();
+
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                allVideos = await res.json();
+                renderVideoGrid(allVideos);
+            } catch (err) {
+                console.error('Failed to load emergency videos:', err);
+                const container = document.getElementById('videoGridContainer');
+                if (container) {
+                    container.innerHTML = `
+                        <div style="grid-column:1/-1; text-align:center; padding:3rem; color:#94a3b8;">
+                            <i class="fas fa-circle-exclamation" style="font-size:2rem; color:#ef4444; margin-bottom:0.75rem; display:block;"></i>
+                            <h4 style="color:#fff; margin:0 0 0.5rem;">Could Not Load Safety Video Library</h4>
+                            <p style="font-size:0.85rem; margin:0 0 1rem;">Server connection deferred or offline. You can review safety guides in the offline index.</p>
+                            <button class="cc-btn cc-btn-primary" onclick="loadVideos()"><i class="fas fa-rotate"></i> Retry Connection</button>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        function renderVideoGrid(videos) {
+            const container = document.getElementById('videoGridContainer');
+            if (!container) return;
+
+            if (!videos || videos.length === 0) {
+                container.innerHTML = `
+                    <div style="grid-column:1/-1; text-align:center; padding:4rem 1rem; color:#94a3b8;">
+                        <i class="fas fa-film" style="font-size:2.5rem; color:#38bdf8; margin-bottom:1rem; display:block;"></i>
+                        <h4 style="color:#fff; margin:0 0 0.5rem;">No Videos Match Selected Filters</h4>
+                        <p style="font-size:0.85rem; margin:0 0 1.25rem;">Try resetting your search query or selecting 'All Protocols'.</p>
+                        <button class="cc-btn cc-btn-secondary" onclick="resetFilters()">Reset All Filters</button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = videos.map(v => {
+                const thumbUrl = `https://img.youtube.com/vi/${encodeURIComponent(v.youtubeId)}/hqdefault.jpg`;
+                const isAdmin = (userRole === 'Admin');
+
+                return `
+                    <article class="video-card" id="video-card-${v.id}">
+                        <div class="thumbnail-container" onclick="openPlayerModal(${v.id})">
+                            <img src="${thumbUrl}" alt="${escapeHtml(v.title)}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=640&q=80'">
+                            <div class="play-overlay">
+                                <div class="play-button-circle">
+                                    <i class="fas fa-play"></i>
+                                </div>
+                            </div>
+                            <span class="category-badge-chip">${escapeHtml(v.category)}</span>
+                            ${v.duration ? `<span class="duration-badge"><i class="fas fa-clock"></i> ${escapeHtml(v.duration)}</span>` : ''}
+                        </div>
+
+                        <div class="video-details">
+                            <div class="video-meta-row">
+                                <span class="source-tag"><i class="fas fa-shield-check"></i> ${escapeHtml(v.sourceOrganization || 'NDMA / NDRF')}</span>
+                                <span class="lang-tag">${escapeHtml(v.language || 'English')}</span>
+                            </div>
+
+                            <h3 class="video-card-title" title="${escapeHtml(v.title)}">${escapeHtml(v.title)}</h3>
+                            <p class="video-card-desc">${escapeHtml(v.description || 'Verified official emergency guidelines and evacuation procedures.')}</p>
+
+                            <div class="video-card-footer">
+                                <button class="cc-btn cc-btn-primary" onclick="openPlayerModal(${v.id})" style="flex:1; padding:0.4rem 0.75rem; font-size:0.8rem;">
+                                    <i class="fas fa-play"></i> Watch Video
+                                </button>
+                                <button class="cc-btn cc-btn-secondary" onclick="openOfflineGuideModal(${v.id})" style="padding:0.4rem 0.75rem; font-size:0.8rem;" title="View offline step-by-step instructions">
+                                    <i class="fas fa-file-lines"></i> Guide
+                                </button>
+                                ${isAdmin ? `
+                                    <button class="cc-btn cc-btn-secondary" onclick="openAdminEditModal(${v.id})" style="padding:0.4rem 0.6rem; font-size:0.8rem;" title="Edit Video">
+                                        <i class="fas fa-pencil"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </article>
+                `;
+            }).join('');
+        }
+
+        async function checkActiveAlertRecommendation(hazardParam) {
+            try {
+                let recVideo = null;
+                if (hazardParam) {
+                    const res = await fetch(`/api/emergency-videos/recommended?hazardType=${encodeURIComponent(hazardParam)}`);
+                    if (res.ok) {
+                        const recs = await res.json();
+                        if (recs && recs.length > 0) recVideo = recs[0];
+                    }
+                } else {
+                    const alertRes = await fetch('/api/official-alerts/active');
+                    if (alertRes.ok) {
+                        const alerts = await alertRes.json();
+                        if (alerts && alerts.length > 0) {
+                            const topHazard = alerts[0].hazardType || alerts[0].headline || 'Flood';
+                            const recRes = await fetch(`/api/emergency-videos/recommended?hazardType=${encodeURIComponent(topHazard)}`);
+                            if (recRes.ok) {
+                                const recs = await recRes.json();
+                                if (recs && recs.length > 0) recVideo = recs[0];
+                            }
+                        }
+                    }
+                }
+
+                if (recVideo) {
+                    const banner = document.getElementById('recommendedSection');
+                    document.getElementById('recTitle').innerHTML = `<i class="fas fa-triangle-exclamation" style="color:#ef4444;"></i> Recommended For Active Situation: ${escapeHtml(recVideo.category)} Protocol`;
+                    document.getElementById('recDesc').innerText = `${recVideo.title} (${recVideo.sourceOrganization || 'NDMA'}) — Immediate safety action guidelines.`;
+                    document.getElementById('btnRecPlay').onclick = () => openPlayerModal(recVideo.id);
+                    banner.style.display = 'block';
+                }
+            } catch (err) {
+                console.warn('Recommendation fetch deferred:', err);
+            }
+        }
+
+        function selectCategory(cat, btn) {
+            currentCategory = cat;
+            document.querySelectorAll('#categoryTabsNav .category-chip').forEach(c => c.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+            loadVideos();
+        }
+
+        function highlightCategoryChip(cat) {
+            document.querySelectorAll('#categoryTabsNav .category-chip').forEach(c => {
+                if (c.textContent.toLowerCase().includes(cat.toLowerCase())) {
+                    c.classList.add('active');
+                } else {
+                    c.classList.remove('active');
+                }
+            });
+        }
+
+        let searchTimeout = null;
+        function handleSearch() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentSearch = document.getElementById('videoSearchInput').value;
+                loadVideos();
+            }, 250);
+        }
+
+        function handleFilterChange() {
+            currentLanguage = document.getElementById('videoLangSelect').value;
+            loadVideos();
+        }
+
+        function resetFilters() {
+            currentCategory = 'ALL';
+            currentLanguage = 'ALL';
+            currentSearch = '';
+            document.getElementById('videoSearchInput').value = '';
+            document.getElementById('videoLangSelect').value = 'ALL';
+            document.querySelectorAll('#categoryTabsNav .category-chip').forEach(c => c.classList.remove('active'));
+            const allBtn = document.querySelector('#categoryTabsNav .category-chip');
+            if (allBtn) allBtn.classList.add('active');
+            loadVideos();
+        }
+
+        function openPlayerModal(videoId) {
+            const video = allVideos.find(v => v.id === videoId);
+            if (!video) return;
+
+            document.getElementById('modalVideoTitle').innerHTML = `<i class="fas fa-play-circle" style="color:var(--video-accent);"></i> ${escapeHtml(video.title)}`;
+            document.getElementById('modalSourceBadge').innerText = video.sourceOrganization || 'NDMA / NDRF';
+            document.getElementById('modalCategoryBadge').innerText = (video.category || 'General').toUpperCase();
+            document.getElementById('modalDurationBadge').innerHTML = video.duration ? `<i class="fas fa-clock"></i> Duration: ${escapeHtml(video.duration)}` : '';
+            document.getElementById('modalVideoDesc').innerText = video.description || '';
+            document.getElementById('modalOfflineGuide').innerText = video.alternativeGuide || 'Step 1: Move to safety and await official emergency broadcasts.\nStep 2: Keep calm and notify emergency services.';
+
+            const iframe = document.getElementById('youtubeIframe');
+            iframe.src = `https://www.youtube.com/embed/${encodeURIComponent(video.youtubeId)}?autoplay=1&rel=0`;
+
+            document.getElementById('videoPlayerModal').classList.add('active');
+        }
+
+        function openOfflineGuideModal(videoId) {
+            openPlayerModal(videoId);
+            const guideEl = document.querySelector('.offline-guide-box');
+            if (guideEl) guideEl.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function closePlayerModal() {
+            const iframe = document.getElementById('youtubeIframe');
+            if (iframe) iframe.src = '';
+            document.getElementById('videoPlayerModal').classList.remove('active');
+        }
+
+        // Admin Video Management
+        function openAdminAddModal() {
+            document.getElementById('adminModalTitle').innerHTML = '<i class="fas fa-video"></i> Add Emergency Survival Video';
+            document.getElementById('adminVideoId').value = '';
+            document.getElementById('adminVideoForm').reset();
+            document.getElementById('adminVideoModal').classList.add('active');
+        }
+
+        function openAdminEditModal(id) {
+            const video = allVideos.find(v => v.id === id);
+            if (!video) return;
+
+            document.getElementById('adminModalTitle').innerHTML = '<i class="fas fa-pencil"></i> Edit Emergency Survival Video #' + id;
+            document.getElementById('adminVideoId').value = video.id;
+            document.getElementById('adminTitle').value = video.title || '';
+            document.getElementById('adminYoutubeId').value = video.youtubeId || '';
+            document.getElementById('adminCategory').value = video.category || 'Flood';
+            document.getElementById('adminSource').value = video.sourceOrganization || '';
+            document.getElementById('adminLanguage').value = video.language || 'English';
+            document.getElementById('adminDuration').value = video.duration || '';
+            document.getElementById('adminDescription').value = video.description || '';
+            document.getElementById('adminOfflineGuide').value = video.alternativeGuide || '';
+
+            document.getElementById('adminVideoModal').classList.add('active');
+        }
+
+        function closeAdminModal() {
+            document.getElementById('adminVideoModal').classList.remove('active');
+        }
+
+        async function handleSaveVideo(event) {
+            event.preventDefault();
+            const id = document.getElementById('adminVideoId').value;
+            const payload = {
+                title: document.getElementById('adminTitle').value,
+                youtubeId: document.getElementById('adminYoutubeId').value,
+                category: document.getElementById('adminCategory').value,
+                sourceOrganization: document.getElementById('adminSource').value,
+                language: document.getElementById('adminLanguage').value,
+                duration: document.getElementById('adminDuration').value,
+                description: document.getElementById('adminDescription').value,
+                alternativeGuide: document.getElementById('adminOfflineGuide').value
+            };
+
+            const isEdit = (id && id.trim() !== '');
+            const url = isEdit ? `/api/emergency-videos/${id}` : '/api/emergency-videos';
+            const method = isEdit ? 'PUT' : 'POST';
+
+            try {
+                const res = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.message || 'HTTP ' + res.status);
+                }
+
+                if (window.showToast) window.showToast(`Survival video protocol ${isEdit ? 'updated' : 'published'} successfully.`, 'success');
+                closeAdminModal();
+                loadVideos();
+            } catch (err) {
+                if (window.showToast) window.showToast('Failed to save video: ' + err.message, 'error');
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return text.toString().replace(/[&<>"']/g, m => map[m]);
+        }
+    </script>
+</body>
+</html>
+

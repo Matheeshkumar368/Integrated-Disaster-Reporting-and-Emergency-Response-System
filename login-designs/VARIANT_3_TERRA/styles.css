@@ -1,0 +1,731 @@
+/* ==========================================================================
+   VARIANT 3: TERRA NOVA - CSS
+   Design Intent: Earthy, grounded aesthetic with warm organic tones
+   Best For: General enterprise, community apps, government services
+   ========================================================================== */
+
+:root {
+  /* Primary Colors - Warm Earth */
+  --primary-terracotta: #c2410c;
+  --primary-terracotta-light: #ea580c;
+  --primary-amber: #d97706;
+  --primary-amber-light: #f59e0b;
+  --primary-teal: #0d9488;
+  --primary-teal-light: #14b8a6;
+  --primary-olive: #65a30d;
+  
+  /* Neutral - Warm Dark */
+  --bg-dark: #1c1917;
+  --bg-darker: #0c0a09;
+  --surface: rgba(28, 25, 23, 0.95);
+  --surface-warm: rgba(41, 37, 36, 0.9);
+  --border: rgba(161, 138, 127, 0.15);
+  --border-light: rgba(161, 138, 127, 0.25);
+
+  /* Text - Warm Tones */
+  --text-primary: #fafaf9;
+  --text-secondary: #a8a29e;
+  --text-muted: #78716c;
+  --text-warm: #fef3c7;
+
+  /* State Colors */
+  --state-error: #f87171;
+  --state-success: #4ade80;
+  --state-warning: #fbbf24;
+  --state-info: #38bdf8;
+
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+
+  /* Typography */
+  --font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.5rem;
+  --font-size-2xl: 1.875rem;
+
+  /* Border Radius - Organic */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+
+  /* Shadows - Warm */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.6);
+  --shadow-warm: 0 4px 20px rgba(217, 119, 6, 0.15);
+  --shadow-earth: 0 2px 8px rgba(0, 0, 0, 0.3);
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 300ms ease;
+  --transition-slow: 500ms ease;
+
+  /* Z-Index */
+  --z-bg: -3;
+  --z-overlay: -1;
+  --z-content: 10;
+}
+
+/* Reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  font-family: var(--font-family);
+  min-height: 100vh;
+  background: var(--bg-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  overflow-x: hidden;
+}
+
+/* ============================================
+   BACKGROUND - Earth Layers
+   ============================================ */
+.earth-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: var(--z-bg);
+  background: 
+    radial-gradient(ellipse at 30% 0%, rgba(217, 119, 6, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 100%, rgba(13, 148, 136, 0.06) 0%, transparent 50%),
+    linear-gradient(180deg, var(--bg-darker) 0%, var(--bg-dark) 50%, #1c1917 100%);
+}
+
+/* Layered texture */
+.earth-bg::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+}
+
+/* Horizon glow */
+.horizon-glow {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 40%;
+  background: linear-gradient(0deg, rgba(217, 119, 6, 0.05) 0%, transparent 100%);
+  z-index: var(--z-bg);
+  pointer-events: none;
+}
+
+/* Subtle pattern */
+.pattern-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: var(--z-overlay);
+  opacity: 0.4;
+  background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.03) 1px, transparent 0);
+  background-size: 32px 32px;
+  pointer-events: none;
+}
+
+/* ============================================
+   MAIN CONTAINER - Earth Card
+   ============================================ */
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-8);
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  z-index: var(--z-content);
+  overflow: hidden;
+  animation: earthRise 0.6s var(--transition-slow) forwards;
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+@keyframes earthRise {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Decorative bottom gradient */
+.login-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, 
+    var(--primary-terracotta), 
+    var(--primary-amber), 
+    var(--primary-teal));
+}
+
+/* ============================================
+   LOGO / BRAND AREA
+   ============================================ */
+.brand-area {
+  text-align: center;
+  margin-bottom: var(--space-6);
+}
+
+.brand-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto var(--space-4);
+  background: linear-gradient(135deg, var(--primary-terracotta), var(--primary-amber));
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-warm);
+}
+
+.brand-icon i {
+  font-size: 1.5rem;
+  color: white;
+}
+
+.login-title {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.login-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+/* ============================================
+   FORM ELEMENTS
+   ============================================ */
+.form-group {
+  margin-bottom: var(--space-4);
+}
+
+.form-label {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-2);
+}
+
+.form-input {
+  width: 100%;
+  height: 48px;
+  padding: 0 var(--space-4);
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  transition: all var(--transition-fast);
+}
+
+.form-input::placeholder {
+  color: var(--text-muted);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--primary-amber);
+  background: rgba(0, 0, 0, 0.3);
+  box-shadow: 
+    0 0 0 3px rgba(217, 119, 6, 0.1),
+    var(--shadow-warm);
+}
+
+.form-input.error {
+  border-color: var(--state-error);
+}
+
+/* Password wrapper */
+.password-wrapper {
+  position: relative;
+}
+
+.password-toggle {
+  position: absolute;
+  right: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: var(--space-1);
+  transition: color var(--transition-fast);
+}
+
+.password-toggle:hover {
+  color: var(--text-secondary);
+}
+
+/* Checkbox */
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-4) 0;
+}
+
+.checkbox-input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary-amber);
+}
+
+.checkbox-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.checkbox-label a {
+  color: var(--primary-amber-light);
+  text-decoration: none;
+}
+
+.checkbox-label a:hover {
+  text-decoration: underline;
+}
+
+/* Links */
+.form-links {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-size-sm);
+  margin-top: var(--space-2);
+}
+
+.form-link {
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.form-link:hover {
+  color: var(--primary-amber-light);
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+.btn {
+  width: 100%;
+  height: 50px;
+  border: none;
+  border-radius: var(--radius-lg);
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  cursor: pointer;
+  position: relative;
+  transition: all var(--transition-fast);
+  margin-top: var(--space-5);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary-terracotta), var(--primary-amber));
+  color: white;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-warm);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-primary:focus {
+  outline: 2px solid var(--primary-amber);
+  outline-offset: 2px;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Loading */
+.btn.loading {
+  color: transparent;
+}
+
+.btn.loading::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  top: 50%;
+  left: 50%;
+  margin: -9px 0 0 -9px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Role buttons */
+.role-btn {
+  width: 100%;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--surface-warm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  margin-bottom: var(--space-3);
+}
+
+.role-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--primary-terracotta);
+  color: var(--text-primary);
+}
+
+.role-btn i {
+  font-size: 1.2rem;
+}
+
+.role-btn.admin:hover {
+  border-color: var(--primary-terracotta);
+  box-shadow: 0 0 15px rgba(194, 65, 12, 0.15);
+}
+
+.role-btn.responder:hover {
+  border-color: var(--primary-teal);
+  box-shadow: 0 0 15px rgba(13, 148, 136, 0.15);
+}
+
+.role-btn.citizen:hover {
+  border-color: var(--primary-olive);
+  box-shadow: 0 0 15px rgba(101, 163, 13, 0.15);
+}
+
+/* Secondary button */
+.btn-secondary {
+  display: block;
+  width: auto;
+  margin: var(--space-3) auto 0;
+  padding: var(--space-2) var(--space-4);
+  height: auto;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--space-4);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--text-muted);
+  box-shadow: none;
+  transform: none;
+}
+
+/* ============================================
+   ROLE BADGE
+   ============================================ */
+.role-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: rgba(217, 119, 6, 0.1);
+  border: 1px solid rgba(217, 119, 6, 0.2);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--primary-amber-light);
+  margin-bottom: var(--space-4);
+}
+
+.role-badge i {
+  font-size: 1rem;
+}
+
+.role-badge.admin {
+  background: rgba(194, 65, 12, 0.1);
+  border-color: rgba(194, 65, 12, 0.2);
+  color: var(--primary-terracotta-light);
+}
+
+.role-badge.responder {
+  background: rgba(13, 148, 136, 0.1);
+  border-color: rgba(13, 148, 136, 0.2);
+  color: var(--primary-teal-light);
+}
+
+.role-badge.citizen {
+  background: rgba(101, 163, 13, 0.1);
+  border-color: rgba(101, 163, 13, 0.2);
+  color: var(--primary-olive);
+}
+
+/* ============================================
+   FORM SECTIONS
+   ============================================ */
+.form-section {
+  display: none;
+}
+
+.form-section.active {
+  display: block;
+  animation: fadeInUp 0.4s var(--transition-normal) forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   RADIO GROUPS
+   ============================================ */
+.radio-group {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-6);
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+.radio-group label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.radio-group label:hover {
+  color: var(--text-secondary);
+}
+
+.radio-group input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary-amber);
+}
+
+/* ============================================
+   EXTRA LINKS
+   ============================================ */
+.extra-links {
+  text-align: center;
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+.extra-links a {
+  color: var(--primary-amber-light);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.extra-links a:hover {
+  text-decoration: underline;
+}
+
+.extra-links .secondary-link {
+  display: block;
+  margin-top: var(--space-2);
+  color: var(--primary-teal-light);
+}
+
+/* ============================================
+   STATUS
+   ============================================ */
+#status {
+  text-align: center;
+  margin-top: var(--space-4);
+  color: var(--state-error);
+  font-size: var(--font-size-sm);
+  min-height: 1.5em;
+}
+
+/* ============================================
+   SOCIAL LOGIN
+   ============================================ */
+.social-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin: var(--space-5) 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+.social-divider::before,
+.social-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.social-buttons {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.social-btn {
+  flex: 1;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-warm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-size: var(--font-size-base);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.social-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-light);
+  color: var(--text-secondary);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 480px) {
+  body {
+    padding: var(--space-4);
+    align-items: flex-start;
+    padding-top: var(--space-8);
+  }
+
+  .login-card {
+    padding: var(--space-6);
+  }
+
+  .role-btn {
+    height: 52px;
+  }
+
+  .btn {
+    height: 46px;
+  }
+}
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+:focus-visible {
+  outline: 2px solid var(--primary-amber);
+  outline-offset: 2px;
+}
+
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--primary-terracotta);
+  color: white;
+  padding: var(--space-2) var(--space-4);
+  z-index: 1000;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* High contrast */
+@media (prefers-contrast: high) {
+  :root {
+    --border: rgba(255, 255, 255, 0.25);
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================
+   GRACEFUL DEGRADATION
+   ============================================ */
+.no-js .form-section {
+  display: block;
+}
+
+.no-js .btn,
+.no-js .password-toggle {
+  display: none;
+}

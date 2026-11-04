@@ -1,0 +1,79 @@
+# ==============================================================================
+# DISASTER MANAGEMENT & EMERGENCY RESPONSE PLATFORM - .GITIGNORE
+# ==============================================================================
+
+# Compiled Class Files & Build Output
+*.class
+target/
+build/
+.gradle/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Packaged Binaries (Except project archives)
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Node.js & Electron Desktop Dependencies
+node_modules/
+**/node_modules/
+desktop/node_modules/
+desktop/dist/
+
+# Local Environment Variables & Secrets
+.env
+.env.*
+.env.local
+!.env.example
+application-local.properties
+**/application-local.properties
+
+# Runtime Uploads Containing Incident Media & Private Citizen Files
+uploads/
+**/uploads/
+uploads/incident-media/
+disaster.db
+*.db
+
+# IDE & Editor Temporary Configuration Files
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+.kilo/
+scratch/
+
+# OS-Generated Temporary Files
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Application Logs & Crash Dumps
+*.log
+*.dump

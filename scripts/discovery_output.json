@@ -1,0 +1,2655 @@
+{
+  "generatedAt": "2026-11-01T09:01:29.821Z",
+  "endpoints": [
+    {
+      "controller": "AlertController.java",
+      "httpMethod": "ALL",
+      "path": "/api/alerts/api/alerts",
+      "javaMethod": "",
+      "line": 31
+    },
+    {
+      "controller": "AlertController.java",
+      "httpMethod": "POST",
+      "path": "/api/alerts",
+      "javaMethod": "createAlert",
+      "line": 44
+    },
+    {
+      "controller": "AlertController.java",
+      "httpMethod": "GET",
+      "path": "/api/alerts",
+      "javaMethod": "getAllAlerts",
+      "line": 94
+    },
+    {
+      "controller": "AlertController.java",
+      "httpMethod": "GET",
+      "path": "/api/alerts/broadcasted",
+      "javaMethod": "getBroadcastedAlerts",
+      "line": 100
+    },
+    {
+      "controller": "AlertController.java",
+      "httpMethod": "PUT",
+      "path": "/api/alerts/{alertId}/broadcast",
+      "javaMethod": "broadcastAlert",
+      "line": 106
+    },
+    {
+      "controller": "AlertController.java",
+      "httpMethod": "PUT",
+      "path": "/api/alerts/{alertId}/media",
+      "javaMethod": "addMedia",
+      "line": 123
+    },
+    {
+      "controller": "AlertController.java",
+      "httpMethod": "GET",
+      "path": "/api/alerts/region/{region}",
+      "javaMethod": "getAlertsByRegion",
+      "line": 143
+    },
+    {
+      "controller": "AlertController.java",
+      "httpMethod": "PUT",
+      "path": "/api/alerts/{alertId}/acknowledge",
+      "javaMethod": "acknowledgeAlert",
+      "line": 149
+    },
+    {
+      "controller": "AlertController.java",
+      "httpMethod": "PUT",
+      "path": "/api/alerts/{alertId}/resolve",
+      "javaMethod": "resolveAlert",
+      "line": 164
+    },
+    {
+      "controller": "AuthController.java",
+      "httpMethod": "ALL",
+      "path": "/api/auth/api/auth",
+      "javaMethod": "",
+      "line": 39
+    },
+    {
+      "controller": "AuthController.java",
+      "httpMethod": "POST",
+      "path": "/api/auth/register",
+      "javaMethod": "register",
+      "line": 70
+    },
+    {
+      "controller": "AuthController.java",
+      "httpMethod": "POST",
+      "path": "/api/auth/login",
+      "javaMethod": "login",
+      "line": 132
+    },
+    {
+      "controller": "AuthController.java",
+      "httpMethod": "POST",
+      "path": "/api/auth/profile",
+      "javaMethod": "getProfile",
+      "line": 195
+    },
+    {
+      "controller": "AuthController.java",
+      "httpMethod": "POST",
+      "path": "/api/auth/update-profile",
+      "javaMethod": "updateProfile",
+      "line": 230
+    },
+    {
+      "controller": "AuthController.java",
+      "httpMethod": "POST",
+      "path": "/api/auth/register-responder",
+      "javaMethod": "registerResponder",
+      "line": 288
+    },
+    {
+      "controller": "AuthController.java",
+      "httpMethod": "GET",
+      "path": "/api/auth/responders/by-zone",
+      "javaMethod": "getRespondersByZone",
+      "line": 340
+    },
+    {
+      "controller": "AuthController.java",
+      "httpMethod": "GET",
+      "path": "/api/auth/responders/all",
+      "javaMethod": "getAllResponders",
+      "line": 369
+    },
+    {
+      "controller": "AuthController.java",
+      "httpMethod": "POST",
+      "path": "/api/auth/assign-zone",
+      "javaMethod": "assignZone",
+      "line": 403
+    },
+    {
+      "controller": "AuthController.java",
+      "httpMethod": "POST",
+      "path": "/api/auth/admin/pin/enroll",
+      "javaMethod": "enrollAdminPin",
+      "line": 455
+    },
+    {
+      "controller": "AuthController.java",
+      "httpMethod": "POST",
+      "path": "/api/auth/admin/pin/verify",
+      "javaMethod": "verifyAdminPin",
+      "line": 475
+    },
+    {
+      "controller": "AuthController.java",
+      "httpMethod": "GET",
+      "path": "/api/auth/admin/pin/status",
+      "javaMethod": "getAdminPinStatus",
+      "line": 503
+    },
+    {
+      "controller": "AuthController.java",
+      "httpMethod": "GET",
+      "path": "/api/auth/admin/audit-logs",
+      "javaMethod": "getAdminAuditLogs",
+      "line": 513
+    },
+    {
+      "controller": "AuthController.java",
+      "httpMethod": "GET",
+      "path": "/api/auth/responder/availability",
+      "javaMethod": "getResponderAvailability",
+      "line": 531
+    },
+    {
+      "controller": "AuthController.java",
+      "httpMethod": "PUT",
+      "path": "/api/auth/responder/availability",
+      "javaMethod": "updateResponderAvailability",
+      "line": 569
+    },
+    {
+      "controller": "AuthController.java",
+      "httpMethod": "POST",
+      "path": "/api/auth/logout",
+      "javaMethod": "logout",
+      "line": 625
+    },
+    {
+      "controller": "CitizenReportController.java",
+      "httpMethod": "ALL",
+      "path": "/api/citizen-reports/api/citizen-reports",
+      "javaMethod": "",
+      "line": 27
+    },
+    {
+      "controller": "CitizenReportController.java",
+      "httpMethod": "POST",
+      "path": "/api/citizen-reports",
+      "javaMethod": "createReport",
+      "line": 37
+    },
+    {
+      "controller": "CitizenReportController.java",
+      "httpMethod": "GET",
+      "path": "/api/citizen-reports/my-reports",
+      "javaMethod": "getMyReports",
+      "line": 61
+    },
+    {
+      "controller": "CitizenReportController.java",
+      "httpMethod": "GET",
+      "path": "/api/citizen-reports",
+      "javaMethod": "getAllReports",
+      "line": 73
+    },
+    {
+      "controller": "CitizenReportController.java",
+      "httpMethod": "GET",
+      "path": "/api/citizen-reports/pending",
+      "javaMethod": "getPendingReports",
+      "line": 79
+    },
+    {
+      "controller": "CitizenReportController.java",
+      "httpMethod": "PUT",
+      "path": "/api/citizen-reports/{reportId}/acknowledge",
+      "javaMethod": "acknowledgeReport",
+      "line": 85
+    },
+    {
+      "controller": "CitizenReportController.java",
+      "httpMethod": "PUT",
+      "path": "/api/citizen-reports/{reportId}/resolve",
+      "javaMethod": "resolveReport",
+      "line": 102
+    },
+    {
+      "controller": "DisasterController.java",
+      "httpMethod": "ALL",
+      "path": "/api/api",
+      "javaMethod": "",
+      "line": 21
+    },
+    {
+      "controller": "DisasterController.java",
+      "httpMethod": "GET",
+      "path": "/api/disasters",
+      "javaMethod": "getDisasters",
+      "line": 32
+    },
+    {
+      "controller": "DisasterController.java",
+      "httpMethod": "GET",
+      "path": "/api/weather",
+      "javaMethod": "getWeather",
+      "line": 42
+    },
+    {
+      "controller": "IncidentReportController.java",
+      "httpMethod": "ALL",
+      "path": "/api/reports/api/reports",
+      "javaMethod": "",
+      "line": 34
+    },
+    {
+      "controller": "IncidentReportController.java",
+      "httpMethod": "POST",
+      "path": "/api/reports",
+      "javaMethod": "createReport",
+      "line": 47
+    },
+    {
+      "controller": "IncidentReportController.java",
+      "httpMethod": "GET",
+      "path": "/api/reports",
+      "javaMethod": "getAllReports",
+      "line": 84
+    },
+    {
+      "controller": "IncidentReportController.java",
+      "httpMethod": "GET",
+      "path": "/api/reports/my-reports",
+      "javaMethod": "getMyReports",
+      "line": 112
+    },
+    {
+      "controller": "IncidentReportController.java",
+      "httpMethod": "GET",
+      "path": "/api/reports/{id}",
+      "javaMethod": "getReportById",
+      "line": 130
+    },
+    {
+      "controller": "IncidentReportController.java",
+      "httpMethod": "PUT",
+      "path": "/api/reports/{id}/status",
+      "javaMethod": "updateReportStatus",
+      "line": 147
+    },
+    {
+      "controller": "IncidentReportController.java",
+      "httpMethod": "DELETE",
+      "path": "/api/reports/{id}",
+      "javaMethod": "deleteReport",
+      "line": 186
+    },
+    {
+      "controller": "IncidentReportController.java",
+      "httpMethod": "GET",
+      "path": "/api/reports/export/csv",
+      "javaMethod": "",
+      "line": 202
+    },
+    {
+      "controller": "IncidentRoomController.java",
+      "httpMethod": "ALL",
+      "path": "/api/incidents/api/incidents",
+      "javaMethod": "",
+      "line": 36
+    },
+    {
+      "controller": "IncidentRoomController.java",
+      "httpMethod": "GET",
+      "path": "/api/incidents/{id}/timeline",
+      "javaMethod": "getIncidentTimeline",
+      "line": 57
+    },
+    {
+      "controller": "IncidentRoomController.java",
+      "httpMethod": "POST",
+      "path": "/api/incidents/{id}/timeline/message",
+      "javaMethod": "postTimelineMessage",
+      "line": 64
+    },
+    {
+      "controller": "IncidentRoomController.java",
+      "httpMethod": "GET",
+      "path": "/api/incidents/{id}/room",
+      "javaMethod": "getIncidentRoomData",
+      "line": 106
+    },
+    {
+      "controller": "MediaController.java",
+      "httpMethod": "ALL",
+      "path": "/api/media/api/media",
+      "javaMethod": "",
+      "line": 34
+    },
+    {
+      "controller": "MediaController.java",
+      "httpMethod": "POST",
+      "path": "/api/media/upload",
+      "javaMethod": "uploadMedia",
+      "line": 46
+    },
+    {
+      "controller": "MediaController.java",
+      "httpMethod": "GET",
+      "path": "/api/media/{id}",
+      "javaMethod": "getMediaMetadata",
+      "line": 112
+    },
+    {
+      "controller": "MediaController.java",
+      "httpMethod": "GET",
+      "path": "/api/media/{id}/download",
+      "javaMethod": "downloadMediaById",
+      "line": 122
+    },
+    {
+      "controller": "MediaController.java",
+      "httpMethod": "GET",
+      "path": "/api/media/file/{filename:.+}",
+      "javaMethod": "serveMediaFile",
+      "line": 146
+    },
+    {
+      "controller": "MediaController.java",
+      "httpMethod": "GET",
+      "path": "/api/media/incident/{incidentId}",
+      "javaMethod": "getMediaByIncident",
+      "line": 176
+    },
+    {
+      "controller": "MediaController.java",
+      "httpMethod": "GET",
+      "path": "/api/media/recent",
+      "javaMethod": "getRecentMedia",
+      "line": 190
+    },
+    {
+      "controller": "MessageController.java",
+      "httpMethod": "ALL",
+      "path": "/api/messages/api/messages",
+      "javaMethod": "",
+      "line": 27
+    },
+    {
+      "controller": "MessageController.java",
+      "httpMethod": "POST",
+      "path": "/api/messages",
+      "javaMethod": "sendMessage",
+      "line": 40
+    },
+    {
+      "controller": "MessageController.java",
+      "httpMethod": "GET",
+      "path": "/api/messages/sent",
+      "javaMethod": "getSentMessages",
+      "line": 71
+    },
+    {
+      "controller": "MessageController.java",
+      "httpMethod": "GET",
+      "path": "/api/messages/received",
+      "javaMethod": "getReceivedMessages",
+      "line": 83
+    },
+    {
+      "controller": "MessageController.java",
+      "httpMethod": "GET",
+      "path": "/api/messages/responders",
+      "javaMethod": "getMessagesForResponders",
+      "line": 95
+    },
+    {
+      "controller": "OfficialAlertController.java",
+      "httpMethod": "ALL",
+      "path": "/api/api",
+      "javaMethod": "",
+      "line": 24
+    },
+    {
+      "controller": "OfficialAlertController.java",
+      "httpMethod": "GET",
+      "path": "/api/official-alerts/active",
+      "javaMethod": "getActiveOfficialAlerts",
+      "line": 43
+    },
+    {
+      "controller": "OfficialAlertController.java",
+      "httpMethod": "GET",
+      "path": "/api/official-alerts",
+      "javaMethod": "getAllOfficialAlerts",
+      "line": 52
+    },
+    {
+      "controller": "OfficialAlertController.java",
+      "httpMethod": "GET",
+      "path": "/api/official-alerts/status",
+      "javaMethod": "",
+      "line": 74
+    },
+    {
+      "controller": "OfficialAlertController.java",
+      "httpMethod": "POST",
+      "path": "/api/admin/ndma/sync",
+      "javaMethod": "triggerManualSync",
+      "line": 83
+    },
+    {
+      "controller": "RescueTaskController.java",
+      "httpMethod": "ALL",
+      "path": "/api/tasks/api/tasks",
+      "javaMethod": "",
+      "line": 35
+    },
+    {
+      "controller": "RescueTaskController.java",
+      "httpMethod": "POST",
+      "path": "/api/tasks",
+      "javaMethod": "createTask",
+      "line": 57
+    },
+    {
+      "controller": "RescueTaskController.java",
+      "httpMethod": "GET",
+      "path": "/api/tasks",
+      "javaMethod": "getAllTasks",
+      "line": 85
+    },
+    {
+      "controller": "RescueTaskController.java",
+      "httpMethod": "GET",
+      "path": "/api/tasks/my-tasks",
+      "javaMethod": "getMyTasks",
+      "line": 113
+    },
+    {
+      "controller": "RescueTaskController.java",
+      "httpMethod": "GET",
+      "path": "/api/tasks/{id}",
+      "javaMethod": "getTaskById",
+      "line": 131
+    },
+    {
+      "controller": "RescueTaskController.java",
+      "httpMethod": "PUT",
+      "path": "/api/tasks/{id}/assign",
+      "javaMethod": "assignTask",
+      "line": 148
+    },
+    {
+      "controller": "RescueTaskController.java",
+      "httpMethod": "PUT",
+      "path": "/api/tasks/{id}/status",
+      "javaMethod": "updateTaskStatus",
+      "line": 189
+    },
+    {
+      "controller": "RescueTaskController.java",
+      "httpMethod": "DELETE",
+      "path": "/api/tasks/{id}",
+      "javaMethod": "deleteTask",
+      "line": 297
+    },
+    {
+      "controller": "RescueTaskController.java",
+      "httpMethod": "GET",
+      "path": "/api/tasks/responders",
+      "javaMethod": "getAllResponders",
+      "line": 319
+    },
+    {
+      "controller": "RoutingController.java",
+      "httpMethod": "ALL",
+      "path": "/api/routing/api/routing",
+      "javaMethod": "",
+      "line": 16
+    },
+    {
+      "controller": "RoutingController.java",
+      "httpMethod": "GET",
+      "path": "/api/routing/directions",
+      "javaMethod": "getDirections",
+      "line": 23
+    },
+    {
+      "controller": "RoutingController.java",
+      "httpMethod": "GET",
+      "path": "/api/routing/distance",
+      "javaMethod": "getDistance",
+      "line": 33
+    },
+    {
+      "controller": "SmartAssignmentController.java",
+      "httpMethod": "ALL",
+      "path": "/api/admin/assignments/api/admin/assignments",
+      "javaMethod": "",
+      "line": 20
+    },
+    {
+      "controller": "SmartAssignmentController.java",
+      "httpMethod": "GET",
+      "path": "/api/admin/assignments/recommendations/{taskId}",
+      "javaMethod": "getRecommendationsForTask",
+      "line": 27
+    },
+    {
+      "controller": "SmartAssignmentController.java",
+      "httpMethod": "POST",
+      "path": "/api/admin/assignments/evaluate",
+      "javaMethod": "evaluateCustomLocation",
+      "line": 44
+    },
+    {
+      "controller": "TrackingController.java",
+      "httpMethod": "ALL",
+      "path": "/api/tracking/api/tracking",
+      "javaMethod": "",
+      "line": 31
+    },
+    {
+      "controller": "TrackingController.java",
+      "httpMethod": "POST",
+      "path": "/api/tracking/start",
+      "javaMethod": "startTracking",
+      "line": 43
+    },
+    {
+      "controller": "TrackingController.java",
+      "httpMethod": "POST",
+      "path": "/api/tracking/update",
+      "javaMethod": "updateLocation",
+      "line": 84
+    },
+    {
+      "controller": "TrackingController.java",
+      "httpMethod": "POST",
+      "path": "/api/tracking/stop",
+      "javaMethod": "stopTracking",
+      "line": 122
+    },
+    {
+      "controller": "TrackingController.java",
+      "httpMethod": "GET",
+      "path": "/api/tracking",
+      "javaMethod": "streamTracking",
+      "line": 147
+    },
+    {
+      "controller": "TrackingController.java",
+      "httpMethod": "GET",
+      "path": "/api/tracking/latest/{assignmentId}",
+      "javaMethod": "getLatestTelemetry",
+      "line": 152
+    },
+    {
+      "controller": "TrackingController.java",
+      "httpMethod": "GET",
+      "path": "/api/tracking/active",
+      "javaMethod": "getActiveSessions",
+      "line": 158
+    }
+  ],
+  "pages": [
+    {
+      "file": "admin-alerts.html",
+      "title": "Emergency Broadcast Console | NDMA Mission Control",
+      "buttonsCount": 8,
+      "buttons": [
+        {
+          "text": "Exit",
+          "id": null,
+          "className": "cc-btn cc-btn-danger",
+          "onclick": "AuthHelper.logout()",
+          "tag": "<button class=\"cc-btn cc-btn-danger\" onclick=\"AuthHelper.logout()\" style=\"padding:0.4rem 0.85rem;font-size:0.8rem;\">"
+        },
+        {
+          "text": "Live Tactical Map",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "window.location.href=",
+          "tag": "<button class=\"cc-btn cc-btn-secondary\" onclick=\"window.location.href='/admin-dashboard.html'\" style=\"font-size:0.82rem;"
+        },
+        {
+          "text": "Test Emergency Siren",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "testEmergencySiren()",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" onclick=\"testEmergencySiren()\" title=\"Test audio alarm siren (F12)"
+        },
+        {
+          "text": "Authorize & Transmit Broadcast",
+          "id": "submitBroadcastBtn",
+          "className": "cc-btn cc-btn-danger",
+          "onclick": null,
+          "tag": "<button type=\"submit\" class=\"cc-btn cc-btn-danger\" id=\"submitBroadcastBtn\" style=\"flex: 1; height: 46px; font-size: 0.95"
+        },
+        {
+          "text": "Reset",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "setTimeout(updateLivePreview, 50)",
+          "tag": "<button type=\"reset\" class=\"cc-btn cc-btn-secondary\" onclick=\"setTimeout(updateLivePreview, 50)\" style=\"height: 46px;\">"
+        },
+        {
+          "text": "&times;",
+          "id": null,
+          "className": "cc-drawer-close",
+          "onclick": "closePinModal()",
+          "tag": "<button type=\"button\" class=\"cc-drawer-close\" onclick=\"closePinModal()\" aria-label=\"Close modal\">"
+        },
+        {
+          "text": "Cancel",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "closePinModal()",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" onclick=\"closePinModal()\" style=\"flex: 1;\">"
+        },
+        {
+          "text": "Verify & Dispatch",
+          "id": "confirmPinBtn",
+          "className": "cc-btn cc-btn-danger",
+          "onclick": "verifyAdminPinAndProceed()",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-danger\" id=\"confirmPinBtn\" onclick=\"verifyAdminPinAndProceed()\" style=\"flex: "
+        }
+      ],
+      "linkButtonsCount": 5,
+      "linkButtons": [
+        {
+          "text": "Mission Control",
+          "id": null,
+          "href": "/admin-dashboard.html",
+          "onclick": null
+        },
+        {
+          "text": "Emergency Broadcasts",
+          "id": null,
+          "href": "/admin-alerts.html",
+          "onclick": null
+        },
+        {
+          "text": "Responder Tasks",
+          "id": null,
+          "href": "/admin-tasks.html",
+          "onclick": null
+        },
+        {
+          "text": "Incident Telemetry",
+          "id": null,
+          "href": "/reports.html",
+          "onclick": null
+        },
+        {
+          "text": "Security & 2FA PIN",
+          "id": null,
+          "href": "/admin-profile.html",
+          "onclick": null
+        }
+      ],
+      "formsCount": 1,
+      "forms": [
+        {
+          "id": "broadcastAlertForm",
+          "action": null,
+          "onsubmit": "handleBroadcastSubmit(event)"
+        }
+      ],
+      "inputsCount": 6,
+      "tabsCount": 0,
+      "tabs": [],
+      "fetchCallsCount": 2,
+      "fetchCalls": [
+        "/api/alerts",
+        "/api/auth/admin/pin/verify"
+      ]
+    },
+    {
+      "file": "admin-dashboard.html",
+      "title": "Mission Control — Disaster Management & Alert System",
+      "buttonsCount": 14,
+      "buttons": [
+        {
+          "text": "Exit",
+          "id": null,
+          "className": "cc-btn cc-btn-danger",
+          "onclick": "AuthHelper.logout()",
+          "tag": "<button class=\"cc-btn cc-btn-danger\" onclick=\"AuthHelper.logout()\" style=\"padding:0.4rem 0.85rem;font-size:0.8rem;\">"
+        },
+        {
+          "text": "Ingest NDMA Feed Now",
+          "id": "btnManualSync",
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "triggerNdmaManualSync()",
+          "tag": "<button class=\"cc-btn cc-btn-secondary\" onclick=\"triggerNdmaManualSync()\" id=\"btnManualSync\" style=\"font-size:0.82rem;pa"
+        },
+        {
+          "text": "All India",
+          "id": null,
+          "className": "cc-quick-filter-btn active",
+          "onclick": "zoomMapTo([20.5937, 78.9629], 5, this)",
+          "tag": "<button class=\"cc-quick-filter-btn active\" onclick=\"zoomMapTo([20.5937, 78.9629], 5, this)\">"
+        },
+        {
+          "text": "Tamil Nadu",
+          "id": null,
+          "className": "cc-quick-filter-btn",
+          "onclick": "zoomMapTo([11.1271, 78.6569], 7, this)",
+          "tag": "<button class=\"cc-quick-filter-btn\" onclick=\"zoomMapTo([11.1271, 78.6569], 7, this)\">"
+        },
+        {
+          "text": "Assam / NE",
+          "id": null,
+          "className": "cc-quick-filter-btn",
+          "onclick": "zoomMapTo([26.2006, 92.9376], 7, this)",
+          "tag": "<button class=\"cc-quick-filter-btn\" onclick=\"zoomMapTo([26.2006, 92.9376], 7, this)\">"
+        },
+        {
+          "text": "Odisha",
+          "id": null,
+          "className": "cc-quick-filter-btn",
+          "onclick": "zoomMapTo([20.9517, 85.0985], 7, this)",
+          "tag": "<button class=\"cc-quick-filter-btn\" onclick=\"zoomMapTo([20.9517, 85.0985], 7, this)\">"
+        },
+        {
+          "text": "Delhi NCR",
+          "id": null,
+          "className": "cc-quick-filter-btn",
+          "onclick": "zoomMapTo([28.6139, 77.2090], 10, this)",
+          "tag": "<button class=\"cc-quick-filter-btn\" onclick=\"zoomMapTo([28.6139, 77.2090], 10, this)\">"
+        },
+        {
+          "text": "Broadcast Emergency Alert to Citizens",
+          "id": "submitBtn",
+          "className": "cc-btn cc-btn-danger",
+          "onclick": null,
+          "tag": "<button type=\"submit\" class=\"cc-btn cc-btn-danger\" id=\"submitBtn\" style=\"width:100%;padding:0.9rem;font-size:1rem;margin"
+        },
+        {
+          "text": "Cancel",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "closeAdminPinModal()",
+          "tag": "<button type=\"button\" onclick=\"closeAdminPinModal()\" class=\"cc-btn cc-btn-secondary\" style=\"flex:1;\">"
+        },
+        {
+          "text": "Verify & Broadcast",
+          "id": "verifyPinSubmitBtn",
+          "className": "cc-btn cc-btn-danger",
+          "onclick": "submitAdminPinVerification()",
+          "tag": "<button type=\"button\" id=\"verifyPinSubmitBtn\" onclick=\"submitAdminPinVerification()\" class=\"cc-btn cc-btn-danger\" style="
+        },
+        {
+          "text": "Room",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "window.IncidentRoom.open(${alert.alertId}, ",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" style=\"flex:1;padding:0.4rem;font-size:0.78rem;\" onclick=\"window.I"
+        },
+        {
+          "text": "Evidence",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "window.MediaCapture.open({ incidentId: ${alert.alertId}, incidentType: ",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" style=\"flex:1;padding:0.4rem;font-size:0.78rem;\" onclick=\"window.M"
+        },
+        {
+          "text": "Acknowledge",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "acknowledgeAlert(${alert.alertId})",
+          "tag": "<button class=\"cc-btn cc-btn-secondary\" onclick=\"acknowledgeAlert(${alert.alertId})\" style=\"flex:1;padding:0.5rem;font-s"
+        },
+        {
+          "text": "Mark Resolved",
+          "id": null,
+          "className": "cc-btn cc-btn-success",
+          "onclick": "resolveAlert(${alert.alertId})",
+          "tag": "<button class=\"cc-btn cc-btn-success\" onclick=\"resolveAlert(${alert.alertId})\" style=\"flex:1;padding:0.5rem;font-size:0."
+        }
+      ],
+      "linkButtonsCount": 8,
+      "linkButtons": [
+        {
+          "text": "Mission Control",
+          "id": null,
+          "href": "/admin-dashboard.html",
+          "onclick": null
+        },
+        {
+          "text": "Emergency Broadcasts",
+          "id": null,
+          "href": "/admin-alerts.html",
+          "onclick": null
+        },
+        {
+          "text": "Responder Tasks",
+          "id": null,
+          "href": "/admin-tasks.html",
+          "onclick": null
+        },
+        {
+          "text": "Incident Telemetry",
+          "id": null,
+          "href": "/reports.html",
+          "onclick": null
+        },
+        {
+          "text": "Security & 2FA PIN",
+          "id": null,
+          "href": "/admin-profile.html",
+          "onclick": null
+        },
+        {
+          "text": "Task Allocation",
+          "id": null,
+          "href": "/admin-tasks.html",
+          "onclick": null
+        },
+        {
+          "text": "Full Telemetry",
+          "id": null,
+          "href": "/reports.html",
+          "onclick": null
+        },
+        {
+          "text": "Dispatch / Assign Task",
+          "id": null,
+          "href": "/admin-tasks.html",
+          "onclick": null
+        }
+      ],
+      "formsCount": 1,
+      "forms": [
+        {
+          "id": "alertForm",
+          "action": null,
+          "onsubmit": null
+        }
+      ],
+      "inputsCount": 9,
+      "tabsCount": 0,
+      "tabs": [],
+      "fetchCallsCount": 12,
+      "fetchCalls": [
+        "/api/auth/profile",
+        "/api/official-alerts/active",
+        "/api/disasters",
+        "/api/official-alerts/status",
+        "/api/admin/ndma/sync",
+        "/api/alerts",
+        "/api/auth/admin/verify-pin",
+        "/api/auth/responders/all",
+        "/api/tasks"
+      ]
+    },
+    {
+      "file": "admin-profile.html",
+      "title": "Security Governance & 2FA PIN | NDMA Mission Control",
+      "buttonsCount": 12,
+      "buttons": [
+        {
+          "text": "Exit",
+          "id": null,
+          "className": "cc-btn cc-btn-danger",
+          "onclick": "AuthHelper.logout()",
+          "tag": "<button class=\"cc-btn cc-btn-danger\" onclick=\"AuthHelper.logout()\" style=\"padding:0.4rem 0.85rem;font-size:0.8rem;\">"
+        },
+        {
+          "text": "Live Tactical Map",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "window.location.href=",
+          "tag": "<button class=\"cc-btn cc-btn-secondary\" onclick=\"window.location.href='/admin-dashboard.html'\" style=\"font-size:0.82rem;"
+        },
+        {
+          "text": "Edit Profile Metadata",
+          "id": null,
+          "className": "cc-btn cc-btn-primary",
+          "onclick": "toggleEditMode(true)",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-primary\" onclick=\"toggleEditMode(true)\" style=\"width: 100%;\">"
+        },
+        {
+          "text": "End Session",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "handleLogout()",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" onclick=\"handleLogout()\" style=\"width: 100%;\">"
+        },
+        {
+          "text": "Configure / Reset Security PIN",
+          "id": null,
+          "className": "cc-btn cc-btn-primary",
+          "onclick": "openPinModal()",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-primary\" onclick=\"openPinModal()\">"
+        },
+        {
+          "text": "View 2FA Audit Trail",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "fetchAndDisplayAuditTrail()",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" onclick=\"fetchAndDisplayAuditTrail()\">"
+        },
+        {
+          "text": "&times;",
+          "id": null,
+          "className": "cc-drawer-close",
+          "onclick": "toggleEditMode(false)",
+          "tag": "<button type=\"button\" class=\"cc-drawer-close\" onclick=\"toggleEditMode(false)\">"
+        },
+        {
+          "text": "Save Profile Updates",
+          "id": "saveProfileBtn",
+          "className": "cc-btn cc-btn-primary",
+          "onclick": null,
+          "tag": "<button type=\"submit\" class=\"cc-btn cc-btn-primary\" id=\"saveProfileBtn\">"
+        },
+        {
+          "text": "Cancel",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "toggleEditMode(false)",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" onclick=\"toggleEditMode(false)\">"
+        },
+        {
+          "text": "&times;",
+          "id": null,
+          "className": "cc-drawer-close",
+          "onclick": "closePinModal()",
+          "tag": "<button type=\"button\" class=\"cc-drawer-close\" onclick=\"closePinModal()\">"
+        },
+        {
+          "text": "Cancel",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "closePinModal()",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" onclick=\"closePinModal()\" style=\"flex: 1;\">"
+        },
+        {
+          "text": "Commit PIN",
+          "id": "savePinBtn",
+          "className": "cc-btn cc-btn-primary",
+          "onclick": null,
+          "tag": "<button type=\"submit\" class=\"cc-btn cc-btn-primary\" id=\"savePinBtn\" style=\"flex: 1;\">"
+        }
+      ],
+      "linkButtonsCount": 5,
+      "linkButtons": [
+        {
+          "text": "Mission Control",
+          "id": null,
+          "href": "/admin-dashboard.html",
+          "onclick": null
+        },
+        {
+          "text": "Emergency Broadcasts",
+          "id": null,
+          "href": "/admin-alerts.html",
+          "onclick": null
+        },
+        {
+          "text": "Responder Tasks",
+          "id": null,
+          "href": "/admin-tasks.html",
+          "onclick": null
+        },
+        {
+          "text": "Incident Telemetry",
+          "id": null,
+          "href": "/reports.html",
+          "onclick": null
+        },
+        {
+          "text": "Security & 2FA PIN",
+          "id": null,
+          "href": "/admin-profile.html",
+          "onclick": null
+        }
+      ],
+      "formsCount": 2,
+      "forms": [
+        {
+          "id": "profileUpdateForm",
+          "action": null,
+          "onsubmit": "handleProfileUpdate(event)"
+        },
+        {
+          "id": "pinCurrentPass",
+          "action": null,
+          "onsubmit": "handlePinEnrollment(event)"
+        }
+      ],
+      "inputsCount": 7,
+      "tabsCount": 0,
+      "tabs": [],
+      "fetchCallsCount": 5,
+      "fetchCalls": [
+        "/api/auth/admin/pin/status",
+        "/api/auth/profile",
+        "/api/auth/admin/pin/enroll",
+        "/api/auth/admin/pin/verify",
+        "/api/auth/admin/audit-logs"
+      ]
+    },
+    {
+      "file": "admin-tasks.html",
+      "title": "Rescue Task Management - Admin",
+      "buttonsCount": 16,
+      "buttons": [
+        {
+          "text": "Exit",
+          "id": null,
+          "className": "cc-btn cc-btn-danger",
+          "onclick": "AuthHelper.logout()",
+          "tag": "<button class=\"cc-btn cc-btn-danger\" onclick=\"AuthHelper.logout()\" style=\"padding:0.4rem 0.85rem;font-size:0.8rem;\">"
+        },
+        {
+          "text": "Live Tactical Map",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "window.location.href=",
+          "tag": "<button class=\"cc-btn cc-btn-secondary\" onclick=\"window.location.href='/admin-dashboard.html'\" style=\"font-size:0.82rem;"
+        },
+        {
+          "text": "View All Responders",
+          "id": null,
+          "className": "btn btn-primary",
+          "onclick": "openRespondersModal()",
+          "tag": "<button class=\"btn btn-primary\" onclick=\"openRespondersModal()\">"
+        },
+        {
+          "text": "Refresh Stats",
+          "id": null,
+          "className": "btn btn-success",
+          "onclick": "refreshResponderStats()",
+          "tag": "<button class=\"btn btn-success\" onclick=\"refreshResponderStats()\">"
+        },
+        {
+          "text": "Create Task",
+          "id": "createTaskBtn",
+          "className": "btn btn-primary",
+          "onclick": null,
+          "tag": "<button class=\"btn btn-primary\" id=\"createTaskBtn\">"
+        },
+        {
+          "text": "Close",
+          "id": null,
+          "className": "btn",
+          "onclick": "closeRespondersModal()",
+          "tag": "<button class=\"btn\" style=\"background: rgba(255,255,255,0.1); color: white;\" onclick=\"closeRespondersModal()\">"
+        },
+        {
+          "text": "Close",
+          "id": null,
+          "className": "btn",
+          "onclick": "closeResponderDetailModal()",
+          "tag": "<button class=\"btn\" style=\"background: rgba(255,255,255,0.1); color: white;\" onclick=\"closeResponderDetailModal()\">"
+        },
+        {
+          "text": "Cancel",
+          "id": null,
+          "className": "btn",
+          "onclick": "closeAssignModal()",
+          "tag": "<button class=\"btn\" style=\"background: rgba(255,255,255,0.1); color: white;\" onclick=\"closeAssignModal()\">"
+        },
+        {
+          "text": "Assign",
+          "id": null,
+          "className": "btn btn-primary",
+          "onclick": "confirmAssign()",
+          "tag": "<button class=\"btn btn-primary\" onclick=\"confirmAssign()\">"
+        },
+        {
+          "text": "Assign",
+          "id": null,
+          "className": "btn btn-primary",
+          "onclick": null,
+          "tag": "<button class=\"btn btn-primary\" data-task-id=\"' + task.taskId + '\">"
+        },
+        {
+          "text": "Complete",
+          "id": null,
+          "className": "btn btn-success",
+          "onclick": null,
+          "tag": "<button class=\"btn btn-success\" data-status-id=\"' + task.taskId + '\">"
+        },
+        {
+          "text": "Smart Dispatch",
+          "id": null,
+          "className": "btn",
+          "onclick": "window.SmartAssignment.open(",
+          "tag": "<button type=\"button\" class=\"btn\" style=\"background:linear-gradient(135deg, #00e5ff, #0077ff);color:#030a16;font-weight:"
+        },
+        {
+          "text": "Incident Room",
+          "id": null,
+          "className": "btn btn-secondary",
+          "onclick": "window.IncidentRoom.open(",
+          "tag": "<button type=\"button\" class=\"btn btn-secondary\" style=\"font-size:0.78rem;\" onclick=\"window.IncidentRoom.open(' + task.ta"
+        },
+        {
+          "text": "Field Evidence",
+          "id": null,
+          "className": "btn btn-secondary",
+          "onclick": "window.MediaCapture.open({ incidentId: ",
+          "tag": "<button type=\"button\" class=\"btn btn-secondary\" style=\"font-size:0.78rem;\" onclick=\"window.MediaCapture.open({ incidentI"
+        },
+        {
+          "text": "Track Live",
+          "id": null,
+          "className": "btn",
+          "onclick": "window.ResponderTracking.open(",
+          "tag": "<button type=\"button\" class=\"btn\" style=\"font-size:0.78rem;background:rgba(0,229,255,0.15);border:1px solid #00e5ff;colo"
+        },
+        {
+          "text": "[Icon/Empty]",
+          "id": null,
+          "className": "btn btn-danger",
+          "onclick": null,
+          "tag": "<button class=\"btn btn-danger\" data-delete-id=\"' + task.taskId + '\">"
+        }
+      ],
+      "linkButtonsCount": 5,
+      "linkButtons": [
+        {
+          "text": "Mission Control",
+          "id": null,
+          "href": "/admin-dashboard.html",
+          "onclick": null
+        },
+        {
+          "text": "Emergency Broadcasts",
+          "id": null,
+          "href": "/admin-alerts.html",
+          "onclick": null
+        },
+        {
+          "text": "Responder Tasks",
+          "id": null,
+          "href": "/admin-tasks.html",
+          "onclick": null
+        },
+        {
+          "text": "Incident Telemetry",
+          "id": null,
+          "href": "/reports.html",
+          "onclick": null
+        },
+        {
+          "text": "Security & 2FA PIN",
+          "id": null,
+          "href": "/admin-profile.html",
+          "onclick": null
+        }
+      ],
+      "formsCount": 0,
+      "forms": [],
+      "inputsCount": 11,
+      "tabsCount": 0,
+      "tabs": [],
+      "fetchCallsCount": 9,
+      "fetchCalls": [
+        "/api/tasks",
+        "/api/tasks/responders",
+        "/api/tasks/",
+        "/api/auth/responders/by-zone",
+        "/api/auth/responders/all"
+      ]
+    },
+    {
+      "file": "alerts.html",
+      "title": "Emergency Alerts",
+      "buttonsCount": 1,
+      "buttons": [
+        {
+          "text": "Acknowledge Alert",
+          "id": null,
+          "className": "btn-acknowledge",
+          "onclick": "acknowledgeAlert(${alert.alertId})",
+          "tag": "<button class=\"btn-acknowledge\" onclick=\"acknowledgeAlert(${alert.alertId})\">"
+        }
+      ],
+      "linkButtonsCount": 1,
+      "linkButtons": [
+        {
+          "text": "Report",
+          "id": null,
+          "href": "#",
+          "onclick": "openCameraModal(); return false;"
+        }
+      ],
+      "formsCount": 0,
+      "forms": [],
+      "inputsCount": 2,
+      "tabsCount": 0,
+      "tabs": [],
+      "fetchCallsCount": 1,
+      "fetchCalls": [
+        "/api/alerts"
+      ]
+    },
+    {
+      "file": "citizen-dashboard.html",
+      "title": "Citizen Safety Hub — Disaster Management & Alert System",
+      "buttonsCount": 32,
+      "buttons": [
+        {
+          "text": "3",
+          "id": "notifBellBtn",
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "toggleNotificationDrawer()",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" id=\"notifBellBtn\" onclick=\"toggleNotificationDrawer()\" style=\"padd"
+        },
+        {
+          "text": "Exit",
+          "id": null,
+          "className": "cc-btn cc-btn-danger",
+          "onclick": "AuthHelper.logout()",
+          "tag": "<button class=\"cc-btn cc-btn-danger\" onclick=\"AuthHelper.logout()\" style=\"padding:0.4rem 0.85rem;font-size:0.8rem;\">"
+        },
+        {
+          "text": "TRANSMIT EMERGENCY SOS",
+          "id": null,
+          "className": "cc-btn cc-btn-danger",
+          "onclick": "openFastSosModal()",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-danger\" onclick=\"openFastSosModal()\" style=\"padding:0.75rem 1.4rem;font-size:"
+        },
+        {
+          "text": "File Detailed Report",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "switchTab(",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" onclick=\"switchTab('reportTab')\" style=\"padding:0.75rem 1rem;font-"
+        },
+        {
+          "text": "View Safety Map",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "switchTab(",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" onclick=\"switchTab('mapTab')\" style=\"padding:0.75rem 1rem;font-siz"
+        },
+        {
+          "text": "Live Warnings & Advisories\n                0",
+          "id": "tabBtnAlerts",
+          "className": "cc-tab-btn active",
+          "onclick": "switchTab(",
+          "tag": "<button class=\"cc-tab-btn active\" id=\"tabBtnAlerts\" onclick=\"switchTab('alertsTab', this)\">"
+        },
+        {
+          "text": "Interactive Safety & Shelter Map",
+          "id": "tabBtnMap",
+          "className": "cc-tab-btn",
+          "onclick": "switchTab(",
+          "tag": "<button class=\"cc-tab-btn\" id=\"tabBtnMap\" onclick=\"switchTab('mapTab', this)\">"
+        },
+        {
+          "text": "Report Emergency Incident",
+          "id": "tabBtnReport",
+          "className": "cc-tab-btn",
+          "onclick": "switchTab(",
+          "tag": "<button class=\"cc-tab-btn\" id=\"tabBtnReport\" onclick=\"switchTab('reportTab', this)\">"
+        },
+        {
+          "text": "My Reports & Live Status\n                0",
+          "id": "tabBtnMyReports",
+          "className": "cc-tab-btn",
+          "onclick": "switchTab(",
+          "tag": "<button class=\"cc-tab-btn\" id=\"tabBtnMyReports\" onclick=\"switchTab('myReportsTab', this)\">"
+        },
+        {
+          "text": "Disaster Safety Guidelines",
+          "id": "tabBtnSafety",
+          "className": "cc-tab-btn",
+          "onclick": "switchTab(",
+          "tag": "<button class=\"cc-tab-btn\" id=\"tabBtnSafety\" onclick=\"switchTab('safetyTab', this)\">"
+        },
+        {
+          "text": "Refresh Alerts",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "loadUnifiedAlerts()",
+          "tag": "<button class=\"cc-btn cc-btn-secondary\" onclick=\"loadUnifiedAlerts()\" style=\"padding:0.35rem 0.8rem;font-size:0.82rem;\">"
+        },
+        {
+          "text": "Recenter GPS",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "locateCitizenOnMap()",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" onclick=\"locateCitizenOnMap()\" style=\"font-size:0.8rem;padding:0.4"
+        },
+        {
+          "text": "Track This Incident in My Reports",
+          "id": null,
+          "className": "cc-btn cc-btn-primary",
+          "onclick": "switchTab(",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-primary\" onclick=\"switchTab('myReportsTab')\">"
+        },
+        {
+          "text": "Submit Another Report",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "resetReportForm()",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" onclick=\"resetReportForm()\">"
+        },
+        {
+          "text": "Acquire Device GPS",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "detectGpsLocation()",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" onclick=\"detectGpsLocation()\" style=\"font-size:0.78rem;padding:0.3"
+        },
+        {
+          "text": "Pin on Map",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "switchTab(",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" onclick=\"switchTab('mapTab')\" style=\"font-size:0.78rem;padding:0.3"
+        },
+        {
+          "text": "Open Live Camera / Record Video",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "openLiveCameraModal()",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" onclick=\"openLiveCameraModal()\" style=\"font-size:0.85rem;\">"
+        },
+        {
+          "text": "&times;",
+          "id": null,
+          "className": null,
+          "onclick": "removeReportImage()",
+          "tag": "<button type=\"button\" onclick=\"removeReportImage()\" style=\"position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.8"
+        },
+        {
+          "text": "Submit Incident Report to Responders",
+          "id": "btnSubmitReport",
+          "className": "cc-btn cc-btn-danger",
+          "onclick": null,
+          "tag": "<button type=\"submit\" id=\"btnSubmitReport\" class=\"cc-btn cc-btn-danger\" style=\"width:100%;padding:0.95rem;font-size:1rem"
+        },
+        {
+          "text": "Refresh Status",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "loadMyReports()",
+          "tag": "<button class=\"cc-btn cc-btn-secondary\" onclick=\"loadMyReports()\" style=\"padding:0.35rem 0.8rem;font-size:0.82rem;\">"
+        },
+        {
+          "text": "&times;",
+          "id": null,
+          "className": null,
+          "onclick": "closeCameraModal()",
+          "tag": "<button type=\"button\" onclick=\"closeCameraModal()\" style=\"background:none;border:none;color:#94a3b8;font-size:1.5rem;cur"
+        },
+        {
+          "text": "Take Photograph",
+          "id": null,
+          "className": "cc-btn cc-btn-primary",
+          "onclick": "snapPhotoFromCamera()",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-primary\" onclick=\"snapPhotoFromCamera()\">"
+        },
+        {
+          "text": "Record Video Clip",
+          "id": "btnToggleVideoRec",
+          "className": "cc-btn cc-btn-danger",
+          "onclick": "toggleVideoRecording()",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-danger\" id=\"btnToggleVideoRec\" onclick=\"toggleVideoRecording()\">"
+        },
+        {
+          "text": "Cancel",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "closeCameraModal()",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" onclick=\"closeCameraModal()\">"
+        },
+        {
+          "text": "Cancel",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "closeFastSosModal()",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" onclick=\"closeFastSosModal()\" style=\"flex:1;\">"
+        },
+        {
+          "text": "Dispatch SOS Now",
+          "id": "confirmSosBtn",
+          "className": "cc-btn cc-btn-danger",
+          "onclick": "executeFastSosDispatch()",
+          "tag": "<button type=\"button\" id=\"confirmSosBtn\" class=\"cc-btn cc-btn-danger\" onclick=\"executeFastSosDispatch()\" style=\"flex:1.4"
+        },
+        {
+          "text": "&times;",
+          "id": null,
+          "className": null,
+          "onclick": "toggleNotificationDrawer()",
+          "tag": "<button type=\"button\" onclick=\"toggleNotificationDrawer()\" style=\"background:none;border:none;color:#94a3b8;font-size:1."
+        },
+        {
+          "text": "Mark All as Read",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "clearAllNotifications()",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" style=\"width:100%;font-size:0.82rem;\" onclick=\"clearAllNotificatio"
+        },
+        {
+          "text": "Comms Room & Live Chat",
+          "id": null,
+          "className": "cc-btn cc-btn-primary",
+          "onclick": "window.IncidentRoom.open(${report.reportId}, ",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-primary\" style=\"padding:0.45rem 0.9rem;font-size:0.82rem;\" onclick=\"window.In"
+        },
+        {
+          "text": "loadMyReports() })\">\n                             Attach More Proof",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "window.MediaCapture.open({ incidentId: ${report.reportId}, incidentType: ",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" style=\"padding:0.45rem 0.9rem;font-size:0.82rem;\" onclick=\"window."
+        },
+        {
+          "text": "Track Responders Live (GPS Radar)",
+          "id": null,
+          "className": "cc-btn",
+          "onclick": "window.ResponderTracking.open(${report.reportId})",
+          "tag": "<button type=\"button\" class=\"cc-btn\" style=\"padding:0.45rem 0.9rem;font-size:0.82rem;background:linear-gradient(135deg, "
+        },
+        {
+          "text": "Report Incident Here",
+          "id": null,
+          "className": "cc-btn cc-btn-danger",
+          "onclick": "usePinnedLocationForReport(${lat}, ${lng})",
+          "tag": "<button class=\"cc-btn cc-btn-danger\" style=\"margin-top:6px;padding:3px 8px;font-size:0.75rem;\" onclick=\"usePinnedLocatio"
+        }
+      ],
+      "linkButtonsCount": 0,
+      "linkButtons": [],
+      "formsCount": 1,
+      "forms": [
+        {
+          "id": "citizenReportForm",
+          "action": null,
+          "onsubmit": null
+        }
+      ],
+      "inputsCount": 10,
+      "tabsCount": 0,
+      "tabs": [],
+      "fetchCallsCount": 7,
+      "fetchCalls": [
+        "/api/auth/profile",
+        "/api/alerts/broadcasted",
+        "/api/official-alerts/active",
+        "/api/citizen-reports",
+        "/api/citizen-reports/my-reports"
+      ]
+    },
+    {
+      "file": "home.html",
+      "title": "Home - Disaster Management & Alert System",
+      "buttonsCount": 5,
+      "buttons": [
+        {
+          "text": "View Live Disasters",
+          "id": null,
+          "className": "menu-btn",
+          "onclick": "window.location.href=",
+          "tag": "<button class=\"menu-btn\" onclick=\"window.location.href='citizen-dashboard.html'\">"
+        },
+        {
+          "text": "Chat",
+          "id": null,
+          "className": "menu-btn",
+          "onclick": "window.showToast(",
+          "tag": "<button class=\"menu-btn\" onclick=\"window.showToast('Chat feature coming soon!', 'info')\">"
+        },
+        {
+          "text": "Settings",
+          "id": null,
+          "className": "menu-btn",
+          "onclick": "window.showToast(",
+          "tag": "<button class=\"menu-btn\" onclick=\"window.showToast('Settings page coming soon!', 'info')\">"
+        },
+        {
+          "text": "Alert History",
+          "id": null,
+          "className": "menu-btn",
+          "onclick": "window.showToast(",
+          "tag": "<button class=\"menu-btn\" onclick=\"window.showToast('Alert History coming soon!', 'info')\">"
+        },
+        {
+          "text": "Logout",
+          "id": null,
+          "className": "menu-btn logout",
+          "onclick": "logout()",
+          "tag": "<button class=\"menu-btn logout\" onclick=\"logout()\">"
+        }
+      ],
+      "linkButtonsCount": 0,
+      "linkButtons": [],
+      "formsCount": 0,
+      "forms": [],
+      "inputsCount": 0,
+      "tabsCount": 0,
+      "tabs": [],
+      "fetchCallsCount": 0,
+      "fetchCalls": []
+    },
+    {
+      "file": "index-new-login.html",
+      "title": "Disaster Management & Alert System",
+      "buttonsCount": 6,
+      "buttons": [
+        {
+          "text": "Admin",
+          "id": null,
+          "className": "role-btn role-btn-admin",
+          "onclick": "selectRole(",
+          "tag": "<button onclick=\"selectRole('Admin')\" class=\"role-btn role-btn-admin\">"
+        },
+        {
+          "text": "Responder",
+          "id": null,
+          "className": "role-btn role-btn-responder",
+          "onclick": "selectRole(",
+          "tag": "<button onclick=\"selectRole('Responder')\" class=\"role-btn role-btn-responder\">"
+        },
+        {
+          "text": "Citizen",
+          "id": null,
+          "className": "role-btn role-btn-citizen",
+          "onclick": "selectRole(",
+          "tag": "<button onclick=\"selectRole('Citizen')\" class=\"role-btn role-btn-citizen\">"
+        },
+        {
+          "text": "Change Role",
+          "id": null,
+          "className": "back-btn",
+          "onclick": "backToRoleSelection()",
+          "tag": "<button onclick=\"backToRoleSelection()\" class=\"back-btn\">"
+        },
+        {
+          "text": "Login",
+          "id": "loginBtn",
+          "className": null,
+          "onclick": "login()",
+          "tag": "<button onclick=\"login()\" id=\"loginBtn\">"
+        },
+        {
+          "text": "Register",
+          "id": null,
+          "className": null,
+          "onclick": "register()",
+          "tag": "<button onclick=\"register()\">"
+        }
+      ],
+      "linkButtonsCount": 2,
+      "linkButtons": [
+        {
+          "text": "Sign up",
+          "id": null,
+          "href": "#",
+          "onclick": "showRegisterForm()"
+        },
+        {
+          "text": "Login",
+          "id": null,
+          "href": "#",
+          "onclick": "backToRoleSelection()"
+        }
+      ],
+      "formsCount": 0,
+      "forms": [],
+      "inputsCount": 10,
+      "tabsCount": 0,
+      "tabs": [],
+      "fetchCallsCount": 2,
+      "fetchCalls": [
+        "http://localhost:8080/api/auth/register",
+        "http://localhost:8080/api/auth/login"
+      ]
+    },
+    {
+      "file": "index.html",
+      "title": "NDMA Tactical Command Gateway | Disaster Management & Alert System",
+      "buttonsCount": 10,
+      "buttons": [
+        {
+          "text": "Admin Mission Control",
+          "id": null,
+          "className": "evaluator-chip admin-chip",
+          "onclick": "quickFillCredentials(",
+          "tag": "<button type=\"button\" class=\"evaluator-chip admin-chip\" onclick=\"quickFillCredentials('Admin')\">"
+        },
+        {
+          "text": "Responder Field Ops",
+          "id": null,
+          "className": "evaluator-chip responder-chip",
+          "onclick": "quickFillCredentials(",
+          "tag": "<button type=\"button\" class=\"evaluator-chip responder-chip\" onclick=\"quickFillCredentials('Responder')\">"
+        },
+        {
+          "text": "Civilian Safety Hub",
+          "id": null,
+          "className": "evaluator-chip citizen-chip",
+          "onclick": "quickFillCredentials(",
+          "tag": "<button type=\"button\" class=\"evaluator-chip citizen-chip\" onclick=\"quickFillCredentials('Citizen')\">"
+        },
+        {
+          "text": "Admin",
+          "id": "tabAdmin",
+          "className": "role-tab-btn active admin",
+          "onclick": "setRole(",
+          "tag": "<button type=\"button\" class=\"role-tab-btn active admin\" id=\"tabAdmin\" onclick=\"setRole('Admin')\" role=\"tab\" aria-selecte"
+        },
+        {
+          "text": "Responder",
+          "id": "tabResponder",
+          "className": "role-tab-btn",
+          "onclick": "setRole(",
+          "tag": "<button type=\"button\" class=\"role-tab-btn\" id=\"tabResponder\" onclick=\"setRole('Responder')\" role=\"tab\" aria-selected=\"fa"
+        },
+        {
+          "text": "Citizen",
+          "id": "tabCitizen",
+          "className": "role-tab-btn",
+          "onclick": "setRole(",
+          "tag": "<button type=\"button\" class=\"role-tab-btn\" id=\"tabCitizen\" onclick=\"setRole('Citizen')\" role=\"tab\" aria-selected=\"false\""
+        },
+        {
+          "text": "[Icon/Empty]",
+          "id": "toggleIcon",
+          "className": "password-toggle-btn",
+          "onclick": "togglePasswordVisibility()",
+          "tag": "<button type=\"button\" class=\"password-toggle-btn\" onclick=\"togglePasswordVisibility()\" aria-label=\"Toggle password visib"
+        },
+        {
+          "text": "Authenticate & Launch",
+          "id": "loginBtn",
+          "className": "btn-gateway-submit admin",
+          "onclick": null,
+          "tag": "<button type=\"submit\" class=\"btn-gateway-submit admin\" id=\"loginBtn\">"
+        },
+        {
+          "text": "&times;",
+          "id": null,
+          "className": "cc-drawer-close",
+          "onclick": "toggleRegistrationModal(false)",
+          "tag": "<button type=\"button\" class=\"cc-drawer-close\" onclick=\"toggleRegistrationModal(false)\" aria-label=\"Close modal\">"
+        },
+        {
+          "text": "Create Civilian Profile",
+          "id": "regSubmitBtn",
+          "className": "btn-gateway-submit citizen",
+          "onclick": null,
+          "tag": "<button type=\"submit\" class=\"btn-gateway-submit citizen\" id=\"regSubmitBtn\" style=\"height: 44px; margin-top: 0.5rem;\">"
+        }
+      ],
+      "linkButtonsCount": 1,
+      "linkButtons": [
+        {
+          "text": "Register for Citizen Safety Hub",
+          "id": null,
+          "href": "#",
+          "onclick": "toggleRegistrationModal(true)"
+        }
+      ],
+      "formsCount": 2,
+      "forms": [
+        {
+          "id": "authLoginForm",
+          "action": null,
+          "onsubmit": "handleLoginSubmit(event)"
+        },
+        {
+          "id": "regForm",
+          "action": null,
+          "onsubmit": "handleRegistrationSubmit(event)"
+        }
+      ],
+      "inputsCount": 8,
+      "tabsCount": 3,
+      "tabs": [
+        "Admin",
+        "Responder",
+        "Citizen"
+      ],
+      "fetchCallsCount": 2,
+      "fetchCalls": [
+        "/api/auth/login",
+        "/api/auth/register"
+      ]
+    },
+    {
+      "file": "offline.html",
+      "title": "Offline Emergency Mode | NDMA Safety Hub",
+      "buttonsCount": 1,
+      "buttons": [
+        {
+          "text": "Check Connection & Reconnect",
+          "id": null,
+          "className": "cc-btn cc-btn-primary",
+          "onclick": "retryConnection()",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-primary\" onclick=\"retryConnection()\" style=\"width: 100%; height: 46px; margin"
+        }
+      ],
+      "linkButtonsCount": 4,
+      "linkButtons": [
+        {
+          "text": "Call 112\n                    National Emergency SOS",
+          "id": null,
+          "href": "tel:112",
+          "onclick": null
+        },
+        {
+          "text": "Call 1070\n                    State Disaster Control",
+          "id": null,
+          "href": "tel:1070",
+          "onclick": null
+        },
+        {
+          "text": "Call 1077\n                    District Emergency Operations",
+          "id": null,
+          "href": "tel:1077",
+          "onclick": null
+        },
+        {
+          "text": "Call 108\n                    Medical Ambulance Dispatch",
+          "id": null,
+          "href": "tel:108",
+          "onclick": null
+        }
+      ],
+      "formsCount": 0,
+      "forms": [],
+      "inputsCount": 0,
+      "tabsCount": 0,
+      "tabs": [],
+      "fetchCallsCount": 0,
+      "fetchCalls": []
+    },
+    {
+      "file": "profile.html",
+      "title": "Civilian Profile | NDMA Safety Hub",
+      "buttonsCount": 10,
+      "buttons": [
+        {
+          "text": "Safety Hub",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "window.location.href=",
+          "tag": "<button class=\"cc-btn cc-btn-secondary\" onclick=\"window.location.href='/citizen-dashboard.html'\" style=\"padding:0.4rem 0"
+        },
+        {
+          "text": "Exit",
+          "id": null,
+          "className": "cc-btn cc-btn-danger",
+          "onclick": "AuthHelper.logout()",
+          "tag": "<button class=\"cc-btn cc-btn-danger\" onclick=\"AuthHelper.logout()\" style=\"padding:0.4rem 0.85rem;font-size:0.8rem;\">"
+        },
+        {
+          "text": "Change",
+          "id": null,
+          "className": "btn",
+          "onclick": "enableEditShortcut()",
+          "tag": "<button type=\"button\" class=\"btn\" style=\"background: #3b82f6; color: white; padding: 0.7rem 1.2rem;\" onclick=\"enableEdit"
+        },
+        {
+          "text": "Test",
+          "id": null,
+          "className": "btn",
+          "onclick": "EmergencyAlertSystem.testAlarm()",
+          "tag": "<button type=\"button\" class=\"btn\" style=\"background: #dc2626; color: white; padding: 0.7rem 1.2rem;\" onclick=\"EmergencyA"
+        },
+        {
+          "text": "Save",
+          "id": null,
+          "className": "btn",
+          "onclick": "saveShortcut()",
+          "tag": "<button type=\"button\" class=\"btn\" style=\"background: #10b981; color: white;\" onclick=\"saveShortcut()\">"
+        },
+        {
+          "text": "Cancel",
+          "id": null,
+          "className": "btn",
+          "onclick": "cancelShortcutEdit()",
+          "tag": "<button type=\"button\" class=\"btn\" style=\"background: #64748b; color: white;\" onclick=\"cancelShortcutEdit()\">"
+        },
+        {
+          "text": "Edit Profile",
+          "id": null,
+          "className": "btn btn-primary",
+          "onclick": "enableEditMode()",
+          "tag": "<button class=\"btn btn-primary\" onclick=\"enableEditMode()\">"
+        },
+        {
+          "text": "Logout",
+          "id": null,
+          "className": "btn btn-danger",
+          "onclick": "logout()",
+          "tag": "<button class=\"btn btn-danger\" onclick=\"logout()\">"
+        },
+        {
+          "text": "Save Changes",
+          "id": null,
+          "className": "btn btn-primary",
+          "onclick": null,
+          "tag": "<button type=\"submit\" class=\"btn btn-primary\">"
+        },
+        {
+          "text": "Cancel",
+          "id": null,
+          "className": "btn",
+          "onclick": "cancelEdit()",
+          "tag": "<button type=\"button\" class=\"btn\" style=\"background:#64748b;color:white;\" onclick=\"cancelEdit()\">"
+        }
+      ],
+      "linkButtonsCount": 0,
+      "linkButtons": [],
+      "formsCount": 1,
+      "forms": [
+        {
+          "id": "editForm",
+          "action": null,
+          "onsubmit": null
+        }
+      ],
+      "inputsCount": 5,
+      "tabsCount": 0,
+      "tabs": [],
+      "fetchCallsCount": 2,
+      "fetchCalls": [
+        "/api/auth/profile",
+        "/api/auth/update-profile"
+      ]
+    },
+    {
+      "file": "reports.html",
+      "title": "Incident Telemetry & Analytics | NDMA Mission Control",
+      "buttonsCount": 4,
+      "buttons": [
+        {
+          "text": "Exit",
+          "id": null,
+          "className": "cc-btn cc-btn-danger",
+          "onclick": "AuthHelper.logout()",
+          "tag": "<button class=\"cc-btn cc-btn-danger\" onclick=\"AuthHelper.logout()\" style=\"padding:0.4rem 0.85rem;font-size:0.8rem;\">"
+        },
+        {
+          "text": "Live Tactical Map",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "window.location.href=",
+          "tag": "<button class=\"cc-btn cc-btn-secondary\" onclick=\"window.location.href='/admin-dashboard.html'\" style=\"font-size:0.82rem;"
+        },
+        {
+          "text": "Export Incident Telemetry (CSV)",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "exportTelemetryCSV()",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" onclick=\"exportTelemetryCSV()\">"
+        },
+        {
+          "text": "Refresh Telemetry",
+          "id": null,
+          "className": "cc-btn cc-btn-primary",
+          "onclick": "loadTelemetryData()",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-primary\" onclick=\"loadTelemetryData()\">"
+        }
+      ],
+      "linkButtonsCount": 5,
+      "linkButtons": [
+        {
+          "text": "Mission Control",
+          "id": null,
+          "href": "/admin-dashboard.html",
+          "onclick": null
+        },
+        {
+          "text": "Emergency Broadcasts",
+          "id": null,
+          "href": "/admin-alerts.html",
+          "onclick": null
+        },
+        {
+          "text": "Responder Tasks",
+          "id": null,
+          "href": "/admin-tasks.html",
+          "onclick": null
+        },
+        {
+          "text": "Incident Telemetry",
+          "id": null,
+          "href": "/reports.html",
+          "onclick": null
+        },
+        {
+          "text": "Security & 2FA PIN",
+          "id": null,
+          "href": "/admin-profile.html",
+          "onclick": null
+        }
+      ],
+      "formsCount": 0,
+      "forms": [],
+      "inputsCount": 0,
+      "tabsCount": 0,
+      "tabs": [],
+      "fetchCallsCount": 1,
+      "fetchCalls": [
+        "/api/alerts"
+      ]
+    },
+    {
+      "file": "responder-dashboard.html",
+      "title": "Field Operations — Emergency Responder Console",
+      "buttonsCount": 19,
+      "buttons": [
+        {
+          "text": "Off Duty",
+          "id": null,
+          "className": "cc-btn cc-btn-danger",
+          "onclick": "AuthHelper.logout()",
+          "tag": "<button class=\"cc-btn cc-btn-danger\" onclick=\"AuthHelper.logout()\" style=\"padding:0.4rem 0.85rem;font-size:0.8rem;\">"
+        },
+        {
+          "text": "Refresh Queue",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "loadResponderQueue()",
+          "tag": "<button class=\"cc-btn cc-btn-secondary\" onclick=\"loadResponderQueue()\" style=\"font-size:0.82rem;padding:0.4rem 0.85rem;\""
+        },
+        {
+          "text": "My Assigned Rescue Tasks\n                0",
+          "id": "tabBtnAssigned",
+          "className": "cc-sub-tab-btn active",
+          "onclick": "switchQueueSubTab(",
+          "tag": "<button class=\"cc-sub-tab-btn active\" id=\"tabBtnAssigned\" onclick=\"switchQueueSubTab('assigned')\">"
+        },
+        {
+          "text": "Citizen SOS Calls\n                0",
+          "id": "tabBtnDistress",
+          "className": "cc-sub-tab-btn",
+          "onclick": "switchQueueSubTab(",
+          "tag": "<button class=\"cc-sub-tab-btn\" id=\"tabBtnDistress\" onclick=\"switchQueueSubTab('distress')\">"
+        },
+        {
+          "text": "Active Warning Broadcasts\n                0",
+          "id": "tabBtnWarnings",
+          "className": "cc-sub-tab-btn",
+          "onclick": "switchQueueSubTab(",
+          "tag": "<button class=\"cc-sub-tab-btn\" id=\"tabBtnWarnings\" onclick=\"switchQueueSubTab('warnings')\">"
+        },
+        {
+          "text": "1. Acknowledge Mission",
+          "id": null,
+          "className": "cc-btn cc-btn-primary",
+          "onclick": "updateTaskStatus(${task.taskId}, ",
+          "tag": "<button class=\"cc-btn cc-btn-primary\" style=\"flex:1;\" onclick=\"updateTaskStatus(${task.taskId}, 'Acknowledged')\">"
+        },
+        {
+          "text": "2. Deploy En Route & Stream GPS",
+          "id": null,
+          "className": "cc-btn",
+          "onclick": "updateTaskStatus(${task.taskId}, ",
+          "tag": "<button class=\"cc-btn\" style=\"flex:1;background:linear-gradient(135deg, #0284c7, #00e5ff);color:#030a16;font-weight:700;"
+        },
+        {
+          "text": "3. Report Arrived On Scene",
+          "id": null,
+          "className": "cc-btn",
+          "onclick": "updateTaskStatus(${task.taskId}, ",
+          "tag": "<button class=\"cc-btn\" style=\"flex:1;background:linear-gradient(135deg, #f59e0b, #eab308);color:#030a16;font-weight:700;"
+        },
+        {
+          "text": "4. Complete Rescue Mission",
+          "id": null,
+          "className": "cc-btn cc-btn-success",
+          "onclick": "updateTaskStatus(${task.taskId}, ",
+          "tag": "<button class=\"cc-btn cc-btn-success\" style=\"flex:1;\" onclick=\"updateTaskStatus(${task.taskId}, 'Completed')\">"
+        },
+        {
+          "text": "Room & Chat",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "window.IncidentRoom.open(${task.taskId}, ",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" style=\"font-size:0.8rem;padding:0.4rem 0.75rem;\" onclick=\"window.I"
+        },
+        {
+          "text": "loadResponderQueue() })\">\n                             Upload Field Evidence",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "window.MediaCapture.open({ incidentId: ${task.taskId}, incidentType: ",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" style=\"font-size:0.8rem;padding:0.4rem 0.75rem;\" onclick=\"window.M"
+        },
+        {
+          "text": "Tactical Radar",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "window.ResponderTracking.open(${task.taskId})",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" style=\"font-size:0.8rem;padding:0.4rem 0.75rem;\" onclick=\"window.R"
+        },
+        {
+          "text": "Share Live GPS",
+          "id": "btn-gps-${task.taskId}",
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "toggleGpsStream(${task.taskId})",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" id=\"btn-gps-${task.taskId}\" style=\"font-size:0.8rem;padding:0.4rem"
+        },
+        {
+          "text": "Note",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "promptCustomNotes(${task.taskId}, ",
+          "tag": "<button class=\"cc-btn cc-btn-secondary\" style=\"font-size:0.8rem;padding:0.45rem 0.65rem;\" onclick=\"promptCustomNotes(${t"
+        },
+        {
+          "text": "Room & Chat",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "window.IncidentRoom.open(${cr.reportId}, ",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" style=\"font-size:0.8rem;padding:0.4rem 0.8rem;\" onclick=\"window.In"
+        },
+        {
+          "text": "loadResponderQueue() })\">\n                             Field Proof",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "window.MediaCapture.open({ incidentId: ${cr.reportId}, incidentType: ",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" style=\"font-size:0.8rem;padding:0.4rem 0.8rem;\" onclick=\"window.Me"
+        },
+        {
+          "text": "Claim & Acknowledge Distress Call",
+          "id": null,
+          "className": "cc-btn cc-btn-primary",
+          "onclick": "acknowledgeCitizenReport(${cr.reportId})",
+          "tag": "<button class=\"cc-btn cc-btn-primary\" onclick=\"acknowledgeCitizenReport(${cr.reportId})\" style=\"flex:1;\">"
+        },
+        {
+          "text": "Room & Comms",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "window.IncidentRoom.open(${al.alertId}, ",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" style=\"font-size:0.8rem;padding:0.4rem 0.8rem;\" onclick=\"window.In"
+        },
+        {
+          "text": "loadResponderQueue() })\">\n                             Broadcast Evidence",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "window.MediaCapture.open({ incidentId: al.alertId, incidentType: ",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" style=\"font-size:0.8rem;padding:0.4rem 0.8rem;\" onclick=\"window.Me"
+        }
+      ],
+      "linkButtonsCount": 4,
+      "linkButtons": [
+        {
+          "text": "Tactical Incident Queue",
+          "id": null,
+          "href": "/responder-dashboard.html",
+          "onclick": null
+        },
+        {
+          "text": "Live Rescue Operations",
+          "id": null,
+          "href": "/responder-rescue.html",
+          "onclick": null
+        },
+        {
+          "text": "Assigned Field Tasks",
+          "id": null,
+          "href": "/responder-tasks.html",
+          "onclick": null
+        },
+        {
+          "text": "Unit Profile & Zone",
+          "id": null,
+          "href": "/responder-profile.html",
+          "onclick": null
+        }
+      ],
+      "formsCount": 0,
+      "forms": [],
+      "inputsCount": 2,
+      "tabsCount": 0,
+      "tabs": [],
+      "fetchCallsCount": 6,
+      "fetchCalls": [
+        "/api/auth/profile",
+        "/api/tasks/my-tasks",
+        "/api/citizen-reports/pending",
+        "/api/alerts",
+        "/api/auth/responder/availability"
+      ]
+    },
+    {
+      "file": "responder-profile.html",
+      "title": "Unit Profile & Zone | NDMA Tactical Field Command",
+      "buttonsCount": 6,
+      "buttons": [
+        {
+          "text": "Off Duty",
+          "id": null,
+          "className": "cc-btn cc-btn-danger",
+          "onclick": "AuthHelper.logout()",
+          "tag": "<button class=\"cc-btn cc-btn-danger\" onclick=\"AuthHelper.logout()\" style=\"padding:0.4rem 0.85rem;font-size:0.8rem;\">"
+        },
+        {
+          "text": "Return to Queue",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "window.location.href=",
+          "tag": "<button class=\"cc-btn cc-btn-secondary\" onclick=\"window.location.href='/responder-dashboard.html'\" style=\"font-size:0.82"
+        },
+        {
+          "text": "Edit Profile",
+          "id": null,
+          "className": "btn btn-primary",
+          "onclick": "enableEditMode()",
+          "tag": "<button class=\"btn btn-primary\" onclick=\"enableEditMode()\">"
+        },
+        {
+          "text": "Logout",
+          "id": null,
+          "className": "btn btn-danger",
+          "onclick": "logout()",
+          "tag": "<button class=\"btn btn-danger\" onclick=\"logout()\">"
+        },
+        {
+          "text": "Save Changes",
+          "id": null,
+          "className": "btn btn-primary",
+          "onclick": null,
+          "tag": "<button type=\"submit\" class=\"btn btn-primary\">"
+        },
+        {
+          "text": "Cancel",
+          "id": null,
+          "className": "btn btn-secondary",
+          "onclick": "cancelEdit()",
+          "tag": "<button type=\"button\" class=\"btn btn-secondary\" onclick=\"cancelEdit()\">"
+        }
+      ],
+      "linkButtonsCount": 4,
+      "linkButtons": [
+        {
+          "text": "Tactical Incident Queue",
+          "id": null,
+          "href": "/responder-dashboard.html",
+          "onclick": null
+        },
+        {
+          "text": "Live Rescue Operations",
+          "id": null,
+          "href": "/responder-rescue.html",
+          "onclick": null
+        },
+        {
+          "text": "Assigned Field Tasks",
+          "id": null,
+          "href": "/responder-tasks.html",
+          "onclick": null
+        },
+        {
+          "text": "Unit Profile & Zone",
+          "id": null,
+          "href": "/responder-profile.html",
+          "onclick": null
+        }
+      ],
+      "formsCount": 1,
+      "forms": [
+        {
+          "id": "editForm",
+          "action": null,
+          "onsubmit": null
+        }
+      ],
+      "inputsCount": 4,
+      "tabsCount": 0,
+      "tabs": [],
+      "fetchCallsCount": 2,
+      "fetchCalls": [
+        "/api/auth/profile",
+        "/api/auth/update-profile"
+      ]
+    },
+    {
+      "file": "responder-register.html",
+      "title": "Responder Accreditation Registration | NDMA Emergency Portal",
+      "buttonsCount": 1,
+      "buttons": [
+        {
+          "text": "Register as Responder",
+          "id": "submitBtn",
+          "className": "btn-submit",
+          "onclick": null,
+          "tag": "<button type=\"submit\" class=\"btn-submit\" id=\"submitBtn\">"
+        }
+      ],
+      "linkButtonsCount": 0,
+      "linkButtons": [],
+      "formsCount": 1,
+      "forms": [
+        {
+          "id": "registrationForm",
+          "action": null,
+          "onsubmit": null
+        }
+      ],
+      "inputsCount": 9,
+      "tabsCount": 0,
+      "tabs": [],
+      "fetchCallsCount": 1,
+      "fetchCalls": [
+        "/api/auth/register-responder"
+      ]
+    },
+    {
+      "file": "responder-rescue.html",
+      "title": "Rescue Operations & Citizen SOS | NDMA Tactical Field Operations",
+      "buttonsCount": 6,
+      "buttons": [
+        {
+          "text": "Off Duty",
+          "id": null,
+          "className": "cc-btn cc-btn-danger",
+          "onclick": "AuthHelper.logout()",
+          "tag": "<button class=\"cc-btn cc-btn-danger\" onclick=\"AuthHelper.logout()\" style=\"padding:0.4rem 0.85rem;font-size:0.8rem;\">"
+        },
+        {
+          "text": "Synchronize SOS Feed",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "loadAllCitizenReports()",
+          "tag": "<button class=\"cc-btn cc-btn-secondary\" onclick=\"loadAllCitizenReports()\" style=\"font-size:0.82rem;padding:0.45rem 0.9re"
+        },
+        {
+          "text": "Synchronize SOS Feed",
+          "id": null,
+          "className": "cc-btn cc-btn-primary",
+          "onclick": "loadAllCitizenReports()",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-primary\" onclick=\"loadAllCitizenReports()\">"
+        },
+        {
+          "text": "Acknowledge & Deploy Unit",
+          "id": null,
+          "className": "cc-btn cc-btn-primary",
+          "onclick": "acknowledgeReport(${report.reportId})",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-primary\" onclick=\"acknowledgeReport(${report.reportId})\" style=\"width:100%; h"
+        },
+        {
+          "text": "Inspect Full Size",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "window.openMediaLightbox(",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" style=\"flex:1; height:36px; font-size:0.8rem;\" \n                  "
+        },
+        {
+          "text": "Theater View",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "window.openMediaLightbox(",
+          "tag": "<button type=\"button\" class=\"cc-btn cc-btn-secondary\" style=\"flex:1; height:36px; font-size:0.8rem;\"\n                   "
+        }
+      ],
+      "linkButtonsCount": 5,
+      "linkButtons": [
+        {
+          "text": "Tactical Incident Queue",
+          "id": null,
+          "href": "/responder-dashboard.html",
+          "onclick": null
+        },
+        {
+          "text": "Live Rescue Operations",
+          "id": null,
+          "href": "/responder-rescue.html",
+          "onclick": null
+        },
+        {
+          "text": "Assigned Field Tasks",
+          "id": null,
+          "href": "/responder-tasks.html",
+          "onclick": null
+        },
+        {
+          "text": "Unit Profile & Zone",
+          "id": null,
+          "href": "/responder-profile.html",
+          "onclick": null
+        },
+        {
+          "text": "Navigate",
+          "id": null,
+          "href": "${mapsUrl}",
+          "onclick": null
+        }
+      ],
+      "formsCount": 0,
+      "forms": [],
+      "inputsCount": 0,
+      "tabsCount": 0,
+      "tabs": [],
+      "fetchCallsCount": 3,
+      "fetchCalls": [
+        "/api/citizen-reports/pending",
+        "/api/media/recent",
+        "/api/citizen-reports"
+      ]
+    },
+    {
+      "file": "responder-tasks.html",
+      "title": "Assigned Field Tasks | NDMA Tactical Field Operations",
+      "buttonsCount": 19,
+      "buttons": [
+        {
+          "text": "Off Duty",
+          "id": null,
+          "className": "cc-btn cc-btn-danger",
+          "onclick": "AuthHelper.logout()",
+          "tag": "<button class=\"cc-btn cc-btn-danger\" onclick=\"AuthHelper.logout()\" style=\"padding:0.4rem 0.85rem;font-size:0.8rem;\">"
+        },
+        {
+          "text": "Refresh Tasks",
+          "id": null,
+          "className": "cc-btn cc-btn-secondary",
+          "onclick": "loadTasks()",
+          "tag": "<button class=\"cc-btn cc-btn-secondary\" onclick=\"loadTasks()\" style=\"font-size:0.82rem;padding:0.4rem 0.85rem;\">"
+        },
+        {
+          "text": "Load Team Tasks",
+          "id": null,
+          "className": "btn btn-primary",
+          "onclick": "loadTeamTasks()",
+          "tag": "<button class=\"btn btn-primary\" onclick=\"loadTeamTasks()\">"
+        },
+        {
+          "text": "My Tasks",
+          "id": null,
+          "className": "tab active",
+          "onclick": "switchTab(",
+          "tag": "<button class=\"tab active\" onclick=\"switchTab('tasks')\">"
+        },
+        {
+          "text": "Incident Reports",
+          "id": null,
+          "className": "tab",
+          "onclick": "switchTab(",
+          "tag": "<button class=\"tab\" onclick=\"switchTab('reports')\">"
+        },
+        {
+          "text": "Get Current Location",
+          "id": null,
+          "className": "btn btn-primary",
+          "onclick": "getLocation()",
+          "tag": "<button class=\"btn btn-primary\" onclick=\"getLocation()\" style=\"margin-bottom: 1rem;\">"
+        },
+        {
+          "text": "Submit Report",
+          "id": null,
+          "className": "btn btn-success",
+          "onclick": "submitReport()",
+          "tag": "<button class=\"btn btn-success\" onclick=\"submitReport()\">"
+        },
+        {
+          "text": "Acknowledge",
+          "id": null,
+          "className": "btn btn-primary",
+          "onclick": "updateStatus(${task.taskId}, ",
+          "tag": "<button class=\"btn btn-primary\" onclick=\"updateStatus(${task.taskId}, 'Acknowledged', 'Task acknowledged by unit')\">"
+        },
+        {
+          "text": "Accept",
+          "id": null,
+          "className": "btn btn-success",
+          "onclick": "acceptTask(${task.taskId})",
+          "tag": "<button class=\"btn btn-success\" onclick=\"acceptTask(${task.taskId})\">"
+        },
+        {
+          "text": "Start Response (En Route)",
+          "id": null,
+          "className": "btn",
+          "onclick": "startResponseWithGps(${task.taskId})",
+          "tag": "<button class=\"btn\" style=\"background:linear-gradient(135deg, #0284c7, #00e5ff);color:#030a16;font-weight:700;\" onclick="
+        },
+        {
+          "text": "Mark Arrived On Scene",
+          "id": null,
+          "className": "btn btn-warning",
+          "onclick": "updateStatus(${task.taskId}, ",
+          "tag": "<button class=\"btn btn-warning\" onclick=\"updateStatus(${task.taskId}, 'Arrived', 'Unit arrived on scene')\">"
+        },
+        {
+          "text": "Resolve Incident",
+          "id": null,
+          "className": "btn btn-success",
+          "onclick": "updateStatus(${task.taskId}, ",
+          "tag": "<button class=\"btn btn-success\" onclick=\"updateStatus(${task.taskId}, 'Completed', 'Rescue operation successfully comple"
+        },
+        {
+          "text": "View Details",
+          "id": null,
+          "className": "btn",
+          "onclick": "viewTaskDetails(${task.taskId})",
+          "tag": "<button type=\"button\" class=\"btn\" style=\"background:rgba(255,255,255,0.08);padding:0.35rem 0.65rem;font-size:0.78rem;\" o"
+        },
+        {
+          "text": "Comms Chat",
+          "id": null,
+          "className": "btn",
+          "onclick": "window.IncidentRoom.open(${task.taskId}, ",
+          "tag": "<button type=\"button\" class=\"btn\" style=\"background:rgba(255,255,255,0.08);padding:0.35rem 0.65rem;font-size:0.78rem;\" o"
+        },
+        {
+          "text": "loadTasks() })\">\n                             Evidence",
+          "id": null,
+          "className": "btn",
+          "onclick": "window.MediaCapture.open({ incidentId: ${task.taskId}, incidentType: ",
+          "tag": "<button type=\"button\" class=\"btn\" style=\"background:rgba(255,255,255,0.08);padding:0.35rem 0.65rem;font-size:0.78rem;\" o"
+        },
+        {
+          "text": "Radar",
+          "id": null,
+          "className": "btn",
+          "onclick": "window.ResponderTracking.open(${task.taskId})",
+          "tag": "<button type=\"button\" class=\"btn\" style=\"background:rgba(255,255,255,0.08);padding:0.35rem 0.65rem;font-size:0.78rem;\" o"
+        },
+        {
+          "text": "Post Note",
+          "id": null,
+          "className": "btn btn-primary",
+          "onclick": "addNote(${task.taskId})",
+          "tag": "<button class=\"btn btn-primary\" onclick=\"addNote(${task.taskId})\" style=\"padding:0.4rem 0.8rem;font-size:0.8rem;\">"
+        },
+        {
+          "text": "&times;",
+          "id": null,
+          "className": null,
+          "onclick": "document.getElementById(",
+          "tag": "<button type=\"button\" onclick=\"document.getElementById('task-detail-modal').style.display='none'\" style=\"background:none"
+        },
+        {
+          "text": "Close",
+          "id": null,
+          "className": "btn",
+          "onclick": "document.getElementById(",
+          "tag": "<button type=\"button\" class=\"btn\" onclick=\"document.getElementById('task-detail-modal').style.display='none'\" style=\"bac"
+        }
+      ],
+      "linkButtonsCount": 5,
+      "linkButtons": [
+        {
+          "text": "Tactical Incident Queue",
+          "id": null,
+          "href": "/responder-dashboard.html",
+          "onclick": null
+        },
+        {
+          "text": "Live Rescue Operations",
+          "id": null,
+          "href": "/responder-rescue.html",
+          "onclick": null
+        },
+        {
+          "text": "Assigned Field Tasks",
+          "id": null,
+          "href": "/responder-tasks.html",
+          "onclick": null
+        },
+        {
+          "text": "Unit Profile & Zone",
+          "id": null,
+          "href": "/responder-profile.html",
+          "onclick": null
+        },
+        {
+          "text": "Navigate",
+          "id": null,
+          "href": "https://www.google.com/maps/dir/?api=1&destination=${locQuery}",
+          "onclick": null
+        }
+      ],
+      "formsCount": 0,
+      "forms": [],
+      "inputsCount": 11,
+      "tabsCount": 0,
+      "tabs": [],
+      "fetchCallsCount": 8,
+      "fetchCalls": [
+        "/api/auth/profile",
+        "/api/tasks/responders",
+        "/api/tasks",
+        "/api/tasks/my-tasks",
+        "/api/reports/my-reports",
+        "/api/auth/responder/availability",
+        "/api/reports"
+      ]
+    },
+    {
+      "file": "toast_showcase.html",
+      "title": "Toast Showcase",
+      "buttonsCount": 0,
+      "buttons": [],
+      "linkButtonsCount": 0,
+      "linkButtons": [],
+      "formsCount": 0,
+      "forms": [],
+      "inputsCount": 0,
+      "tabsCount": 0,
+      "tabs": [],
+      "fetchCallsCount": 0,
+      "fetchCalls": []
+    },
+    {
+      "file": "training.html",
+      "title": "Training & Preparedness - Disaster Management",
+      "buttonsCount": 0,
+      "buttons": [],
+      "linkButtonsCount": 4,
+      "linkButtons": [
+        {
+          "text": "View Map",
+          "id": null,
+          "href": "#",
+          "onclick": "if (window.showToast) showToast("
+        },
+        {
+          "text": "View Map",
+          "id": null,
+          "href": "#",
+          "onclick": "if (window.showToast) showToast("
+        },
+        {
+          "text": "View Map",
+          "id": null,
+          "href": "#",
+          "onclick": "if (window.showToast) showToast("
+        },
+        {
+          "text": "View Map",
+          "id": null,
+          "href": "#",
+          "onclick": "if (window.showToast) showToast("
+        }
+      ],
+      "formsCount": 0,
+      "forms": [],
+      "inputsCount": 0,
+      "tabsCount": 0,
+      "tabs": [],
+      "fetchCallsCount": 0,
+      "fetchCalls": []
+    }
+  ],
+  "jsSummary": [
+    {
+      "file": "auth-guard.js",
+      "fetchCalls": [
+        "/api/auth/profile"
+      ],
+      "clickListenersCount": 0
+    },
+    {
+      "file": "auth-helper.js",
+      "fetchCalls": [
+        "/api/auth/logout"
+      ],
+      "clickListenersCount": 0
+    },
+    {
+      "file": "command-center.js",
+      "fetchCalls": [],
+      "clickListenersCount": 0
+    },
+    {
+      "file": "incident-room.js",
+      "fetchCalls": [],
+      "clickListenersCount": 3
+    },
+    {
+      "file": "media-capture.js",
+      "fetchCalls": [
+        "/api/media/upload"
+      ],
+      "clickListenersCount": 8
+    },
+    {
+      "file": "pwa-manager.js",
+      "fetchCalls": [],
+      "clickListenersCount": 0
+    },
+    {
+      "file": "responder-tracking.js",
+      "fetchCalls": [],
+      "clickListenersCount": 1
+    },
+    {
+      "file": "role-loading.js",
+      "fetchCalls": [],
+      "clickListenersCount": 0
+    },
+    {
+      "file": "smart-assignment.js",
+      "fetchCalls": [],
+      "clickListenersCount": 2
+    },
+    {
+      "file": "sw.js",
+      "fetchCalls": [],
+      "clickListenersCount": 0
+    },
+    {
+      "file": "toast-manager.js",
+      "fetchCalls": [],
+      "clickListenersCount": 6
+    }
+  ]
+}

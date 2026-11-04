@@ -1,0 +1,434 @@
+[
+  {
+    "page": "admin-dashboard.html",
+    "id": "admin_dashboard",
+    "role": "Admin",
+    "viewport": "desktop",
+    "resolution": "1440x900",
+    "filename": "admin_dashboard_desktop_1440x900.png",
+    "sizeBytes": 268201
+  },
+  {
+    "page": "admin-dashboard.html",
+    "id": "admin_dashboard",
+    "role": "Admin",
+    "viewport": "laptop",
+    "resolution": "1366x768",
+    "filename": "admin_dashboard_laptop_1366x768.png",
+    "sizeBytes": 229812
+  },
+  {
+    "page": "admin-dashboard.html",
+    "id": "admin_dashboard",
+    "role": "Admin",
+    "viewport": "tablet",
+    "resolution": "768x1024",
+    "filename": "admin_dashboard_tablet_768x1024.png",
+    "sizeBytes": 163369
+  },
+  {
+    "page": "admin-dashboard.html",
+    "id": "admin_dashboard",
+    "role": "Admin",
+    "viewport": "mobile",
+    "resolution": "390x844",
+    "filename": "admin_dashboard_mobile_390x844.png",
+    "sizeBytes": 82022
+  },
+  {
+    "page": "admin-alerts.html",
+    "id": "admin_alerts",
+    "role": "Admin",
+    "viewport": "desktop",
+    "resolution": "1440x900",
+    "filename": "admin_alerts_desktop_1440x900.png",
+    "sizeBytes": 249731
+  },
+  {
+    "page": "admin-alerts.html",
+    "id": "admin_alerts",
+    "role": "Admin",
+    "viewport": "laptop",
+    "resolution": "1366x768",
+    "filename": "admin_alerts_laptop_1366x768.png",
+    "sizeBytes": 231858
+  },
+  {
+    "page": "admin-alerts.html",
+    "id": "admin_alerts",
+    "role": "Admin",
+    "viewport": "tablet",
+    "resolution": "768x1024",
+    "filename": "admin_alerts_tablet_768x1024.png",
+    "sizeBytes": 181228
+  },
+  {
+    "page": "admin-alerts.html",
+    "id": "admin_alerts",
+    "role": "Admin",
+    "viewport": "mobile",
+    "resolution": "390x844",
+    "filename": "admin_alerts_mobile_390x844.png",
+    "sizeBytes": 101319
+  },
+  {
+    "page": "reports.html",
+    "id": "admin_reports",
+    "role": "Admin",
+    "viewport": "desktop",
+    "resolution": "1440x900",
+    "filename": "admin_reports_desktop_1440x900.png",
+    "sizeBytes": 188426
+  },
+  {
+    "page": "reports.html",
+    "id": "admin_reports",
+    "role": "Admin",
+    "viewport": "laptop",
+    "resolution": "1366x768",
+    "filename": "admin_reports_laptop_1366x768.png",
+    "sizeBytes": 185059
+  },
+  {
+    "page": "reports.html",
+    "id": "admin_reports",
+    "role": "Admin",
+    "viewport": "tablet",
+    "resolution": "768x1024",
+    "filename": "admin_reports_tablet_768x1024.png",
+    "sizeBytes": 160806
+  },
+  {
+    "page": "reports.html",
+    "id": "admin_reports",
+    "role": "Admin",
+    "viewport": "mobile",
+    "resolution": "390x844",
+    "filename": "admin_reports_mobile_390x844.png",
+    "sizeBytes": 67426
+  },
+  {
+    "page": "admin-tasks.html",
+    "id": "admin_tasks",
+    "role": "Admin",
+    "viewport": "desktop",
+    "resolution": "1440x900",
+    "filename": "admin_tasks_desktop_1440x900.png",
+    "sizeBytes": 190262
+  },
+  {
+    "page": "admin-tasks.html",
+    "id": "admin_tasks",
+    "role": "Admin",
+    "viewport": "laptop",
+    "resolution": "1366x768",
+    "filename": "admin_tasks_laptop_1366x768.png",
+    "sizeBytes": 156014
+  },
+  {
+    "page": "admin-tasks.html",
+    "id": "admin_tasks",
+    "role": "Admin",
+    "viewport": "tablet",
+    "resolution": "768x1024",
+    "filename": "admin_tasks_tablet_768x1024.png",
+    "sizeBytes": 130096
+  },
+  {
+    "page": "admin-tasks.html",
+    "id": "admin_tasks",
+    "role": "Admin",
+    "viewport": "mobile",
+    "resolution": "390x844",
+    "filename": "admin_tasks_mobile_390x844.png",
+    "sizeBytes": 69298
+  },
+  {
+    "page": "admin-profile.html",
+    "id": "admin_profile",
+    "role": "Admin",
+    "viewport": "desktop",
+    "resolution": "1440x900",
+    "filename": "admin_profile_desktop_1440x900.png",
+    "sizeBytes": 208342
+  },
+  {
+    "page": "admin-profile.html",
+    "id": "admin_profile",
+    "role": "Admin",
+    "viewport": "laptop",
+    "resolution": "1366x768",
+    "filename": "admin_profile_laptop_1366x768.png",
+    "sizeBytes": 202122
+  },
+  {
+    "page": "admin-profile.html",
+    "id": "admin_profile",
+    "role": "Admin",
+    "viewport": "tablet",
+    "resolution": "768x1024",
+    "filename": "admin_profile_tablet_768x1024.png",
+    "sizeBytes": 185138
+  },
+  {
+    "page": "admin-profile.html",
+    "id": "admin_profile",
+    "role": "Admin",
+    "viewport": "mobile",
+    "resolution": "390x844",
+    "filename": "admin_profile_mobile_390x844.png",
+    "sizeBytes": 94699
+  },
+  {
+    "page": "citizen-dashboard.html",
+    "id": "citizen_dashboard",
+    "role": "Citizen",
+    "viewport": "desktop",
+    "resolution": "1440x900",
+    "filename": "citizen_dashboard_desktop_1440x900.png",
+    "sizeBytes": 418265
+  },
+  {
+    "page": "citizen-dashboard.html",
+    "id": "citizen_dashboard",
+    "role": "Citizen",
+    "viewport": "laptop",
+    "resolution": "1366x768",
+    "filename": "citizen_dashboard_laptop_1366x768.png",
+    "sizeBytes": 317446
+  },
+  {
+    "page": "citizen-dashboard.html",
+    "id": "citizen_dashboard",
+    "role": "Citizen",
+    "viewport": "tablet",
+    "resolution": "768x1024",
+    "filename": "citizen_dashboard_tablet_768x1024.png",
+    "sizeBytes": 309258
+  },
+  {
+    "page": "citizen-dashboard.html",
+    "id": "citizen_dashboard",
+    "role": "Citizen",
+    "viewport": "mobile",
+    "resolution": "390x844",
+    "filename": "citizen_dashboard_mobile_390x844.png",
+    "sizeBytes": 180446
+  },
+  {
+    "page": "profile.html",
+    "id": "citizen_profile",
+    "role": "Citizen",
+    "viewport": "desktop",
+    "resolution": "1440x900",
+    "filename": "citizen_profile_desktop_1440x900.png",
+    "sizeBytes": 359304
+  },
+  {
+    "page": "profile.html",
+    "id": "citizen_profile",
+    "role": "Citizen",
+    "viewport": "laptop",
+    "resolution": "1366x768",
+    "filename": "citizen_profile_laptop_1366x768.png",
+    "sizeBytes": 295837
+  },
+  {
+    "page": "profile.html",
+    "id": "citizen_profile",
+    "role": "Citizen",
+    "viewport": "tablet",
+    "resolution": "768x1024",
+    "filename": "citizen_profile_tablet_768x1024.png",
+    "sizeBytes": 180172
+  },
+  {
+    "page": "profile.html",
+    "id": "citizen_profile",
+    "role": "Citizen",
+    "viewport": "mobile",
+    "resolution": "390x844",
+    "filename": "citizen_profile_mobile_390x844.png",
+    "sizeBytes": 71824
+  },
+  {
+    "page": "responder-dashboard.html",
+    "id": "responder_dashboard",
+    "role": "Responder",
+    "viewport": "desktop",
+    "resolution": "1440x900",
+    "filename": "responder_dashboard_desktop_1440x900.png",
+    "sizeBytes": 274994
+  },
+  {
+    "page": "responder-dashboard.html",
+    "id": "responder_dashboard",
+    "role": "Responder",
+    "viewport": "laptop",
+    "resolution": "1366x768",
+    "filename": "responder_dashboard_laptop_1366x768.png",
+    "sizeBytes": 226756
+  },
+  {
+    "page": "responder-dashboard.html",
+    "id": "responder_dashboard",
+    "role": "Responder",
+    "viewport": "tablet",
+    "resolution": "768x1024",
+    "filename": "responder_dashboard_tablet_768x1024.png",
+    "sizeBytes": 145324
+  },
+  {
+    "page": "responder-dashboard.html",
+    "id": "responder_dashboard",
+    "role": "Responder",
+    "viewport": "mobile",
+    "resolution": "390x844",
+    "filename": "responder_dashboard_mobile_390x844.png",
+    "sizeBytes": 78549
+  },
+  {
+    "page": "responder-rescue.html",
+    "id": "responder_rescue",
+    "role": "Responder",
+    "viewport": "desktop",
+    "resolution": "1440x900",
+    "filename": "responder_rescue_desktop_1440x900.png",
+    "sizeBytes": 229857
+  },
+  {
+    "page": "responder-rescue.html",
+    "id": "responder_rescue",
+    "role": "Responder",
+    "viewport": "laptop",
+    "resolution": "1366x768",
+    "filename": "responder_rescue_laptop_1366x768.png",
+    "sizeBytes": 186452
+  },
+  {
+    "page": "responder-rescue.html",
+    "id": "responder_rescue",
+    "role": "Responder",
+    "viewport": "tablet",
+    "resolution": "768x1024",
+    "filename": "responder_rescue_tablet_768x1024.png",
+    "sizeBytes": 156930
+  },
+  {
+    "page": "responder-rescue.html",
+    "id": "responder_rescue",
+    "role": "Responder",
+    "viewport": "mobile",
+    "resolution": "390x844",
+    "filename": "responder_rescue_mobile_390x844.png",
+    "sizeBytes": 94917
+  },
+  {
+    "page": "responder-tasks.html",
+    "id": "responder_tasks",
+    "role": "Responder",
+    "viewport": "desktop",
+    "resolution": "1440x900",
+    "filename": "responder_tasks_desktop_1440x900.png",
+    "sizeBytes": 125117
+  },
+  {
+    "page": "responder-tasks.html",
+    "id": "responder_tasks",
+    "role": "Responder",
+    "viewport": "laptop",
+    "resolution": "1366x768",
+    "filename": "responder_tasks_laptop_1366x768.png",
+    "sizeBytes": 90689
+  },
+  {
+    "page": "responder-tasks.html",
+    "id": "responder_tasks",
+    "role": "Responder",
+    "viewport": "tablet",
+    "resolution": "768x1024",
+    "filename": "responder_tasks_tablet_768x1024.png",
+    "sizeBytes": 98951
+  },
+  {
+    "page": "responder-tasks.html",
+    "id": "responder_tasks",
+    "role": "Responder",
+    "viewport": "mobile",
+    "resolution": "390x844",
+    "filename": "responder_tasks_mobile_390x844.png",
+    "sizeBytes": 53552
+  },
+  {
+    "page": "responder-profile.html",
+    "id": "responder_profile",
+    "role": "Responder",
+    "viewport": "desktop",
+    "resolution": "1440x900",
+    "filename": "responder_profile_desktop_1440x900.png",
+    "sizeBytes": 92606
+  },
+  {
+    "page": "responder-profile.html",
+    "id": "responder_profile",
+    "role": "Responder",
+    "viewport": "laptop",
+    "resolution": "1366x768",
+    "filename": "responder_profile_laptop_1366x768.png",
+    "sizeBytes": 83641
+  },
+  {
+    "page": "responder-profile.html",
+    "id": "responder_profile",
+    "role": "Responder",
+    "viewport": "tablet",
+    "resolution": "768x1024",
+    "filename": "responder_profile_tablet_768x1024.png",
+    "sizeBytes": 89398
+  },
+  {
+    "page": "responder-profile.html",
+    "id": "responder_profile",
+    "role": "Responder",
+    "viewport": "mobile",
+    "resolution": "390x844",
+    "filename": "responder_profile_mobile_390x844.png",
+    "sizeBytes": 58052
+  },
+  {
+    "page": "index.html",
+    "id": "portal_login",
+    "role": null,
+    "viewport": "desktop",
+    "resolution": "1440x900",
+    "filename": "portal_login_desktop_1440x900.png",
+    "sizeBytes": 356653
+  },
+  {
+    "page": "index.html",
+    "id": "portal_login",
+    "role": null,
+    "viewport": "laptop",
+    "resolution": "1366x768",
+    "filename": "portal_login_laptop_1366x768.png",
+    "sizeBytes": 301138
+  },
+  {
+    "page": "index.html",
+    "id": "portal_login",
+    "role": null,
+    "viewport": "tablet",
+    "resolution": "768x1024",
+    "filename": "portal_login_tablet_768x1024.png",
+    "sizeBytes": 204290
+  },
+  {
+    "page": "index.html",
+    "id": "portal_login",
+    "role": null,
+    "viewport": "mobile",
+    "resolution": "390x844",
+    "filename": "portal_login_mobile_390x844.png",
+    "sizeBytes": 83492
+  }
+]

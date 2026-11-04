@@ -1,0 +1,178 @@
+TABLE_NAME	COLUMN_NAME	DATA_TYPE	IS_NULLABLE	COLUMN_KEY
+admin_audit_logs	id	bigint	NO	PRI
+admin_audit_logs	action	varchar	NO	MUL
+admin_audit_logs	actor_email	varchar	NO	MUL
+admin_audit_logs	details	varchar	YES	
+admin_audit_logs	ip_address	varchar	YES	
+admin_audit_logs	status	varchar	YES	
+admin_audit_logs	target_entity	varchar	YES	
+admin_audit_logs	target_id	varchar	YES	
+admin_audit_logs	timestamp	datetime	YES	MUL
+alerts	broadcasted	bit	NO	
+alerts	latitude	double	YES	
+alerts	longitude	double	YES	
+alerts	alert_id	bigint	NO	PRI
+alerts	created_at	datetime	YES	
+alerts	created_by	varchar	YES	
+alerts	disaster_type	varchar	YES	
+alerts	media_url	varchar	YES	
+alerts	message	varchar	YES	
+alerts	region	varchar	YES	
+alerts	severity	varchar	YES	
+alerts	status	varchar	YES	
+alerts	title	varchar	YES	
+citizen_reports	report_id	bigint	NO	PRI
+citizen_reports	timestamp	datetime	YES	
+citizen_reports	citizen_email	varchar	YES	
+citizen_reports	location	varchar	YES	
+citizen_reports	message	varchar	YES	
+citizen_reports	status	varchar	YES	
+citizen_reports	photo_data	longtext	YES	
+disasters	id	int	NO	PRI
+disasters	latitude	double	YES	
+disasters	longitude	double	YES	
+disasters	timestamp	datetime	YES	
+disasters	location	varchar	YES	
+disasters	severity	varchar	YES	
+disasters	status	varchar	YES	
+disasters	type	varchar	YES	
+disasters	description	varchar	YES	
+incident_media	id	bigint	NO	PRI
+incident_media	incident_id	bigint	YES	MUL
+incident_media	incident_type	varchar	YES	
+incident_media	uploader_email	varchar	NO	MUL
+incident_media	uploader_name	varchar	YES	
+incident_media	uploader_role	varchar	NO	
+incident_media	media_type	varchar	NO	
+incident_media	file_path	varchar	NO	
+incident_media	original_filename	varchar	NO	
+incident_media	stored_filename	varchar	NO	
+incident_media	content_type	varchar	NO	
+incident_media	file_size_bytes	bigint	NO	
+incident_media	caption	text	YES	
+incident_media	capture_latitude	double	YES	
+incident_media	capture_longitude	double	YES	
+incident_media	capture_accuracy	double	YES	
+incident_media	created_at	datetime	NO	MUL
+incident_reports	latitude	double	YES	
+incident_reports	longitude	double	YES	
+incident_reports	report_id	bigint	NO	PRI
+incident_reports	timestamp	datetime	YES	
+incident_reports	description	varchar	YES	
+incident_reports	image_urls	varchar	YES	
+incident_reports	location_name	varchar	YES	
+incident_reports	report_type	varchar	YES	
+incident_reports	reported_by	varchar	YES	
+incident_reports	reporter_name	varchar	YES	
+incident_reports	status	varchar	YES	
+incident_reports	title	varchar	YES	
+incident_reports	zone	varchar	YES	
+incident_timeline_events	id	bigint	NO	PRI
+incident_timeline_events	incident_id	bigint	NO	MUL
+incident_timeline_events	incident_type	varchar	NO	
+incident_timeline_events	event_type	varchar	NO	
+incident_timeline_events	actor_email	varchar	NO	
+incident_timeline_events	actor_role	varchar	NO	
+incident_timeline_events	actor_name	varchar	YES	
+incident_timeline_events	message	text	NO	
+incident_timeline_events	media_id	bigint	YES	
+incident_timeline_events	payload_json	text	YES	
+incident_timeline_events	created_at	datetime	NO	MUL
+messages	message_id	bigint	NO	PRI
+messages	related_alert_id	bigint	YES	
+messages	sent_at	datetime	YES	
+messages	message	varchar	YES	
+messages	receiver_email	varchar	YES	
+messages	receiver_role	varchar	YES	
+messages	sender_email	varchar	YES	
+messages	sender_name	varchar	YES	
+messages	sender_role	varchar	YES	
+messages	status	varchar	YES	
+official_alerts	id	bigint	NO	PRI
+official_alerts	area_description	text	YES	
+official_alerts	cap_identifier	varchar	YES	
+official_alerts	certainty	varchar	YES	
+official_alerts	created_at	datetime	YES	
+official_alerts	description	text	YES	
+official_alerts	effective_time	datetime	YES	
+official_alerts	expires_time	datetime	YES	MUL
+official_alerts	hazard_type	varchar	YES	MUL
+official_alerts	headline	varchar	YES	
+official_alerts	instruction	text	YES	
+official_alerts	is_expired	bit	NO	MUL
+official_alerts	latitude	double	YES	
+official_alerts	location_precision	varchar	YES	
+official_alerts	longitude	double	YES	
+official_alerts	message_type	varchar	YES	
+official_alerts	onset	datetime	YES	
+official_alerts	published_time	datetime	YES	
+official_alerts	severity	varchar	YES	MUL
+official_alerts	source_agency	varchar	YES	
+official_alerts	source_alert_id	varchar	NO	UNI
+official_alerts	source_status	varchar	YES	
+official_alerts	source_url	varchar	YES	
+official_alerts	sync_timestamp	datetime	YES	MUL
+official_alerts	updated_at	datetime	YES	
+official_alerts	urgency	varchar	YES	
+rescue_tasks	latitude	double	YES	
+rescue_tasks	longitude	double	YES	
+rescue_tasks	created_at	datetime	YES	
+rescue_tasks	deadline	datetime	YES	
+rescue_tasks	task_id	bigint	NO	PRI
+rescue_tasks	assigned_responder_name	varchar	YES	
+rescue_tasks	assigned_to	varchar	YES	MUL
+rescue_tasks	created_by	varchar	YES	
+rescue_tasks	description	varchar	YES	
+rescue_tasks	location_name	varchar	YES	
+rescue_tasks	notes	text	YES	
+rescue_tasks	priority	varchar	YES	
+rescue_tasks	status	varchar	YES	MUL
+rescue_tasks	title	varchar	YES	
+rescue_tasks	zone	varchar	YES	MUL
+responder_locations	id	bigint	NO	PRI
+responder_locations	session_id	bigint	NO	MUL
+responder_locations	assignment_id	bigint	NO	MUL
+responder_locations	responder_email	varchar	NO	MUL
+responder_locations	latitude	double	NO	
+responder_locations	longitude	double	NO	
+responder_locations	accuracy	double	YES	
+responder_locations	heading	double	YES	
+responder_locations	speed	double	YES	
+responder_locations	recorded_at	datetime	NO	
+test_user	id	int	NO	PRI
+test_user	name	varchar	YES	
+tracking_sessions	id	bigint	NO	PRI
+tracking_sessions	assignment_id	bigint	NO	MUL
+tracking_sessions	responder_email	varchar	NO	MUL
+tracking_sessions	responder_name	varchar	YES	
+tracking_sessions	status	varchar	NO	MUL
+tracking_sessions	destination_latitude	double	YES	
+tracking_sessions	destination_longitude	double	YES	
+tracking_sessions	destination_address	varchar	YES	
+tracking_sessions	current_latitude	double	YES	
+tracking_sessions	current_longitude	double	YES	
+tracking_sessions	current_accuracy	double	YES	
+tracking_sessions	current_heading	double	YES	
+tracking_sessions	current_speed	double	YES	
+tracking_sessions	estimated_distance_meters	double	YES	
+tracking_sessions	estimated_duration_seconds	int	YES	
+tracking_sessions	last_heartbeat_at	datetime	YES	
+tracking_sessions	started_at	datetime	NO	
+tracking_sessions	completed_at	datetime	YES	
+users	id	bigint	NO	PRI
+users	assigned_zone	varchar	YES	
+users	email	varchar	YES	MUL
+users	location	varchar	YES	
+users	name	varchar	YES	
+users	password	varchar	YES	
+users	phone	varchar	YES	
+users	role	varchar	YES	MUL
+users	additional_details	varchar	YES	
+users	group_classification	varchar	YES	
+users	admin_pin	varchar	YES	
+users	admin_pin_enrolled	bit	YES	
+users	created_at	datetime	YES	
+users	last_login_at	datetime	YES	
+users	pin_failed_attempts	int	YES	
+users	pin_locked_until	datetime	YES	
+users	availability_status	varchar	YES	

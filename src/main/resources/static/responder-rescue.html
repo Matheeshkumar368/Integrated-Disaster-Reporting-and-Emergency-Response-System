@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Rescue Operations & Citizen SOS | NDMA Tactical Field Operations</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome & Command Center CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link rel="stylesheet" href="command-center.css?v=3"/>
+    <link rel="stylesheet" href="role-loading.css?v=2"/>
+
+    <!-- Leaflet GIS & Live Tracking Engine -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="responder-tracking.js?v=2"></script>
+
+    <style>
+        .rescue-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .rescue-card {
+            background: rgba(14, 23, 38, 0.85);
+            border: 1px solid var(--cc-border);
+            border-left: 4px solid var(--cc-alert-extreme);
+            border-radius: var(--cc-radius-lg);
+            padding: 1.25rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: transform var(--cc-transition-normal), border-color var(--cc-transition-normal);
+        }
+
+        .rescue-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--cc-accent-glow);
+        }
+
+        .evidence-img {
+            width: 100%;
+            max-height: 220px;
+            object-fit: cover;
+            border-radius: var(--cc-radius-md);
+            margin: 0.75rem 0;
+            border: 1px solid var(--cc-border);
+        }
+
+        .nav-chip-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #60a5fa;
+            border-radius: var(--cc-radius-sm);
+            padding: 0.3rem 0.6rem;
+            font-size: 0.75rem;
+            text-decoration: none;
+            font-family: var(--cc-font-mono);
+        }
+
+        .nav-chip-btn:hover {
+            background: rgba(59, 130, 246, 0.3);
+            color: #ffffff;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- =========================================================================
+         TACTICAL HUD HEADER
+         ========================================================================= -->
+    <header class="cc-hud-header">
+        <div class="cc-hud-branding">
+            <div class="cc-hud-badge-icon" style="background:linear-gradient(135deg,rgba(168,85,247,0.2),rgba(59,130,246,0.2));border-color:rgba(168,85,247,0.4);">
+                <i class="fas fa-truck-fast" style="color:var(--cc-purple);"></i>
+            </div>
+            <div class="cc-hud-title-group">
+                <h1>
+                    LIVE RESCUE OPERATIONS & CITIZEN SOS
+                    <span class="cc-badge severity-critical"><i class="fas fa-circle cc-pulse-dot"></i> SOS ACTIVE</span>
+                </h1>
+                <div class="cc-hud-subtitle">FIELD OPERATIONS COMMAND &bull; CITIZEN SOS & SCENE EVIDENCE</div>
+            </div>
+        </div>
+
+        <div class="cc-hud-telemetry">
+            <div class="cc-telemetry-pill" id="hudClockDisplay"></div>
+            <div class="cc-telemetry-pill" style="border-color:rgba(168,85,247,0.4);">
+                <i class="fas fa-id-badge" style="color:var(--cc-purple);"></i>
+                <span id="responderName">Emergency Responder</span>
+            </div>
+            <div class="cc-telemetry-pill live">
+                <i class="fas fa-location-crosshairs"></i>
+                <span id="assignedZoneBadge">Zone: Active</span>
+            </div>
+            <button class="cc-btn cc-btn-danger" onclick="AuthHelper.logout()" style="padding:0.4rem 0.85rem;font-size:0.8rem;">
+                <i class="fas fa-power-off"></i> Off Duty
+            </button>
+        </div>
+    </header>
+
+    <!-- =========================================================================
+         NAVIGATION BAR
+         ========================================================================= -->
+    <nav class="cc-nav-bar">
+        <ul class="cc-nav-links">
+            <li><a href="/responder-dashboard.html" class="cc-nav-link"><i class="fas fa-list-check"></i> Tactical Incident Queue</a></li>
+            <li><a href="/responder-rescue.html" class="cc-nav-link active"><i class="fas fa-map-location"></i> Live Rescue Operations</a></li>
+            <li><a href="/responder-tasks.html" class="cc-nav-link"><i class="fas fa-clipboard-check"></i> Assigned Field Tasks</a></li>
+            <li><a href="/emergency-videos.html" class="cc-nav-link"><i class="fas fa-film"></i> Survival Videos</a></li>
+            <li><a href="/responder-profile.html" class="cc-nav-link"><i class="fas fa-user-gear"></i> Unit Profile & Zone</a></li>
+        </ul>
+        <div class="cc-nav-user-actions">
+            <button class="cc-btn cc-btn-secondary" onclick="loadAllCitizenReports()" style="font-size:0.82rem;padding:0.45rem 0.9rem;">
+                <i class="fas fa-rotate"></i> Synchronize SOS Feed
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="cc-main-container">
+        
+        <!-- Header Banner -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h2 style="font-size: 1.5rem; font-weight: 700; color: #fff; margin: 0; display: flex; align-items: center; gap: 0.6rem;">
+                    <i class="fas fa-person-falling-burst" style="color: var(--cc-alert-extreme);"></i> Civilian Emergency Distress Dispatch
+                </h2>
+                <p style="margin: 0.25rem 0 0; color: var(--cc-text-muted); font-size: 0.85rem;">
+                    Direct emergency dispatches transmitted by civilians with geo-coordinates and scene photo evidence.
+                </p>
+            </div>
+
+            <div style="display: flex; gap: 0.75rem;">
+                <button type="button" class="cc-btn cc-btn-primary" onclick="loadAllCitizenReports()">
+                    <i class="fas fa-rotate"></i> Synchronize SOS Feed
+                </button>
+            </div>
+        </div>
+
+        <!-- 3 Stat Cards -->
+        <section class="cc-stat-grid" aria-label="Rescue Metrics">
+            <div class="cc-stat-card">
+                <div class="cc-stat-label">Pending Civilian SOS Requests</div>
+                <div class="cc-stat-value" id="citizenRequestsCount" style="color: var(--cc-alert-extreme);">--</div>
+                <div class="cc-stat-sub"><i class="fas fa-bell"></i> Requiring Dispatch</div>
+            </div>
+
+            <div class="cc-stat-card">
+                <div class="cc-stat-label">Verified Photographic Evidence</div>
+                <div class="cc-stat-value" id="citizenPhotosCount" style="color: var(--cc-accent-glow);">--</div>
+                <div class="cc-stat-sub"><i class="fas fa-camera"></i> Attached Visuals</div>
+            </div>
+
+            <div class="cc-stat-card">
+                <div class="cc-stat-label">Unit Deployments Logged</div>
+                <div class="cc-stat-value" id="completedCount" style="color: var(--cc-status-success);">--</div>
+                <div class="cc-stat-sub"><i class="fas fa-circle-check"></i> Field Interventions</div>
+            </div>
+        </section>
+
+        <!-- =========================================================================
+             FIELD GPS ROUTE & TELEMETRY NAVIGATOR (PART 3)
+             ========================================================================= -->
+        <section class="cc-card" style="margin-top:2rem; padding:0; overflow:hidden; border:1px solid var(--cc-border);">
+            <div class="cc-card-header" style="padding:1rem 1.25rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
+                <div>
+                    <h3 style="margin:0; font-size:1.15rem; color:#fff; display:flex; align-items:center; gap:0.5rem;">
+                        <i class="fas fa-location-crosshairs" style="color:#00e5ff;"></i> Field GPS Navigation & Tactical Dispatch Radar
+                    </h3>
+                    <p style="margin:0.2rem 0 0; font-size:0.8rem; color:var(--cc-text-muted);">
+                        Real-time OSRM road route navigation, live distance remaining & continuous telemetry broadcast.
+                    </p>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap;">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <label style="font-size:0.78rem; color:#94a3b8; text-transform:uppercase;">Mission Target:</label>
+                        <select id="fieldTargetSelect" onchange="handleSelectFieldTarget(this.value)" style="background:#091322; border:1px solid #38bdf8; color:#fff; padding:4px 8px; border-radius:4px; font-size:0.8rem; max-width:240px;">
+                            <option value="">-- Select Active Dispatch --</option>
+                        </select>
+                    </div>
+
+                    <button type="button" id="btnFieldStartGps" class="cc-btn cc-btn-primary" onclick="toggleFieldGpsTransmitter()" style="font-size:0.8rem; padding:0.4rem 0.85rem;">
+                        <i class="fas fa-tower-broadcast"></i> Start Sharing Location
+                    </button>
+                    <button type="button" class="cc-btn cc-btn-secondary" onclick="recenterFieldGps()" style="font-size:0.8rem; padding:0.4rem 0.8rem;">
+                        <i class="fas fa-crosshairs"></i> Recenter
+                    </button>
+                </div>
+            </div>
+
+            <!-- Telemetry Strip -->
+            <div id="fieldTelemetryStrip" style="background:rgba(2,132,199,0.1); border-top:1px solid rgba(56,189,248,0.2); border-bottom:1px solid rgba(56,189,248,0.2); padding:8px 1.25rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; font-size:0.82rem; font-family:var(--cc-font-mono);">
+                <div style="display:flex; gap:1.2rem; flex-wrap:wrap;">
+                    <span><i class="fas fa-bullseye" style="color:#ef4444;"></i> Target: <strong id="telemetryTargetName">None Selected</strong></span>
+                    <span><i class="fas fa-road" style="color:#38bdf8;"></i> Distance: <strong id="telemetryDistance">--</strong></span>
+                    <span><i class="fas fa-clock" style="color:#f59e0b;"></i> ETA: <strong id="telemetryEta">--</strong></span>
+                    <span><i class="fas fa-satellite" style="color:#10b981;"></i> GPS Accuracy: <strong id="telemetryAccuracy">--</strong></span>
+                </div>
+                <div id="telemetryStatusBadge" class="cc-badge cc-badge-minor">IDLE &bull; GPS READY</div>
+            </div>
+
+            <!-- Field Map Viewport -->
+            <div id="responderFieldMap" style="height:440px; width:100%; background:#060c17;"></div>
+
+            <!-- Map Footer Legend -->
+            <div style="padding:0.75rem 1.25rem; background:rgba(14,23,38,0.85); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.6rem; font-size:0.78rem; color:#cbd5e1;">
+                <div style="display:flex; align-items:center; gap:1.2rem; flex-wrap:wrap;">
+                    <span style="display:flex; align-items:center; gap:4px;"><span style="width:10px; height:10px; border-radius:50%; background:#10b981; display:inline-block;"></span> Your Position (Pulsing)</span>
+                    <span style="display:flex; align-items:center; gap:4px;"><span style="width:10px; height:10px; border-radius:50%; background:#ef4444; display:inline-block;"></span> Incident Target</span>
+                    <span style="display:flex; align-items:center; gap:4px;"><span style="width:14px; height:3px; background:#00e5ff; display:inline-block;"></span> Road Route (OSRM)</span>
+                </div>
+                <span id="fieldGpsCoordsNotice" style="color:#38bdf8; font-family:var(--cc-font-mono);">Waiting for target selection...</span>
+            </div>
+        </section>
+
+        <!-- Citizen SOS Requests -->
+        <div style="margin-top: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="font-size: 1.15rem; font-weight: 700; color: #ffffff; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-ambulance" style="color: #ef4444;"></i> Active Distress Signals
+                </h3>
+                <span class="cc-badge cc-badge-extreme">TACTICAL PRIORITY</span>
+            </div>
+
+            <div class="rescue-grid" id="citizenRequestsGrid">
+                <div style="text-align: center; padding: 3rem; color: var(--cc-text-muted); grid-column: 1 / -1;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 0.5rem; display: block;"></i>
+                    Scanning civilian distress signals...
+                </div>
+            </div>
+        </div>
+
+        <!-- Citizen Evidence Photos -->
+        <div style="margin-top: 3rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="font-size: 1.15rem; font-weight: 700; color: #ffffff; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-camera" style="color: #60a5fa;"></i> Visual Damage Evidence & Field Reconnaissance
+                </h3>
+                <span class="cc-badge cc-badge-official">CIVILIAN SOURCED</span>
+            </div>
+
+            <div class="rescue-grid" id="citizenPhotosGrid">
+                <div style="text-align: center; padding: 3rem; color: var(--cc-text-muted); grid-column: 1 / -1;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 0.5rem; display: block;"></i>
+                    Loading photographic evidence records...
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Scripts -->
+    <script src="toast-manager.js?v=2"></script>
+    <script src="auth-helper.js?v=2"></script>
+    <script src="command-center.js?v=3"></script>
+    <script src="role-loading.js?v=2"></script>
+
+    <script>
+        if (window.AuthHelper && window.AuthHelper.initUrlAuth) {
+            window.AuthHelper.initUrlAuth();
+        }
+        const token = localStorage.getItem('token');
+        const role = localStorage.getItem('userRole');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!token || (role !== 'Responder' && role !== 'Admin')) {
+                if (window.showToast) window.showToast('Access Restricted: Emergency responder authentication required.', 'error');
+                setTimeout(() => { window.location.href = '/index.html'; }, 600);
+                return;
+            }
+
+            if (window.CommandCenter && CommandCenter.initHudClock) {
+                CommandCenter.initHudClock('hudClockDisplay');
+            }
+            const respName = localStorage.getItem('userName') || 'Emergency Responder';
+            const nameEl = document.getElementById('responderName');
+            if (nameEl) nameEl.textContent = respName;
+
+            loadAllCitizenReports();
+            initResponderFieldMap();
+            if (window.RoleLoadingScreen) {
+                RoleLoadingScreen.hide();
+            }
+            setInterval(loadAllCitizenReports, 30000);
+        });
+
+        // =========================================================================
+        // RESPONDER FIELD GPS MAP ENGINE (PART 3)
+        // =========================================================================
+        let responderFieldMap = null;
+        let fieldLocationMarker = null;
+        let fieldAccuracyCircle = null;
+        let fieldTargetMarker = null;
+        let fieldRoutePolyline = null;
+        let currentFieldWatchId = null;
+        let isFieldGpsTransmitting = false;
+        let activeFieldTask = null;
+        let currentResponderPos = null;
+        let availableMissions = [];
+
+        function initResponderFieldMap() {
+            if (responderFieldMap) return;
+            const container = document.getElementById('responderFieldMap');
+            if (!container || typeof L === 'undefined') return;
+
+            responderFieldMap = L.map('responderFieldMap', {
+                zoomControl: true,
+                attributionControl: false
+            }).setView([20.5937, 78.9629], 5);
+
+            CommandCenter.getTacticalTileLayer().addTo(responderFieldMap);
+
+            startResponderDeviceWatch();
+            loadAvailableMissionsForFieldMap();
+        }
+
+        function startResponderDeviceWatch() {
+            if (!navigator.geolocation) {
+                const badge = document.getElementById('telemetryStatusBadge');
+                if (badge) {
+                    badge.className = 'cc-badge cc-badge-warning';
+                    badge.innerText = 'NO GPS HARDWARE';
+                }
+                return;
+            }
+
+            currentFieldWatchId = navigator.geolocation.watchPosition(
+                (pos) => {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    const accuracy = pos.coords.accuracy;
+                    const heading = pos.coords.heading;
+                    const speed = pos.coords.speed;
+
+                    currentResponderPos = { lat, lng, accuracy, heading, speed };
+
+                    document.getElementById('telemetryAccuracy').innerText = `±${Math.round(accuracy)}m`;
+                    document.getElementById('fieldGpsCoordsNotice').innerText = `Current GPS: ${lat.toFixed(5)}° N, ${lng.toFixed(5)}° E`;
+
+                    if (fieldLocationMarker) responderFieldMap.removeLayer(fieldLocationMarker);
+                    if (fieldAccuracyCircle) responderFieldMap.removeLayer(fieldAccuracyCircle);
+
+                    fieldLocationMarker = L.marker([lat, lng], {
+                        icon: L.divIcon({
+                            className: 'field-responder-gps-pin',
+                            html: `
+                                <div style="position:relative;width:34px;height:34px;background:radial-gradient(circle,#10b981 0%,#047857 100%);border:2px solid #ffffff;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(16,185,129,0.9);">
+                                    <i class="fas fa-truck-medical" style="color:#ffffff;font-size:14px;"></i>
+                                    <span style="position:absolute;top:-4px;right:-4px;width:10px;height:10px;background:#10b981;border:2px solid #fff;border-radius:50%;animation:pulse 1.6s infinite;"></span>
+                                </div>
+                            `,
+                            iconSize: [34, 34],
+                            iconAnchor: [17, 17]
+                        })
+                    }).addTo(responderFieldMap);
+
+                    fieldLocationMarker.bindPopup('<strong>Your Live Tactical Position</strong><br>Continuous field GPS active');
+
+                    if (accuracy && accuracy <= 1000) {
+                        fieldAccuracyCircle = L.circle([lat, lng], {
+                            radius: accuracy,
+                            color: '#10b981',
+                            weight: 1,
+                            fillColor: '#10b981',
+                            fillOpacity: 0.08
+                        }).addTo(responderFieldMap);
+                    }
+
+                    if (activeFieldTask && activeFieldTask.lat && activeFieldTask.lng) {
+                        recalculateFieldRoute(lat, lng, activeFieldTask.lat, activeFieldTask.lng);
+                    }
+
+                    if (isFieldGpsTransmitting && activeFieldTask) {
+                        fetch('/api/responder/location/update', {
+                            method: 'POST',
+                            headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                taskId: activeFieldTask.id,
+                                assignmentId: activeFieldTask.id,
+                                latitude: lat,
+                                longitude: lng,
+                                accuracy: accuracy,
+                                heading: heading,
+                                speed: speed
+                            })
+                        }).catch(() => {});
+                    }
+                },
+                (err) => {
+                    console.warn('Responder field GPS error:', err.message);
+                    const badge = document.getElementById('telemetryStatusBadge');
+                    if (badge) {
+                        badge.className = 'cc-badge cc-badge-extreme';
+                        badge.innerText = 'GPS PERMISSION DENIED';
+                    }
+                    if (window.showToast) window.showToast('Field GPS requires browser location permission for live mission dispatch navigation.', 'warning');
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 3000 }
+            );
+        }
+
+        async function loadAvailableMissionsForFieldMap() {
+            try {
+                const [tasksRes, sosRes] = await Promise.all([
+                    fetch('/api/tasks/my-tasks', { headers: { 'Authorization': 'Bearer ' + token } }).catch(() => null),
+                    fetch('/api/citizen-reports/pending', { headers: { 'Authorization': 'Bearer ' + token } }).catch(() => null)
+                ]);
+
+                availableMissions = [];
+
+                if (tasksRes && tasksRes.ok) {
+                    const tasks = await tasksRes.json();
+                    tasks.forEach(t => {
+                        if (t.status !== 'Completed' && t.status !== 'Resolved') {
+                            availableMissions.push({
+                                id: t.taskId,
+                                type: 'TASK',
+                                title: `Task #${t.taskId} - ${t.title || 'Rescue Mission'}`,
+                                lat: t.latitude,
+                                lng: t.longitude,
+                                address: t.locationName || t.zone
+                            });
+                        }
+                    });
+                }
+
+                if (sosRes && sosRes.ok) {
+                    const sosList = await sosRes.json();
+                    sosList.forEach(s => {
+                        availableMissions.push({
+                            id: s.reportId,
+                            type: 'SOS',
+                            title: `Civilian SOS #${s.reportId} - ${s.location || 'Distress Zone'}`,
+                            lat: s.latitude,
+                            lng: s.longitude,
+                            address: s.location
+                        });
+                    });
+                }
+
+                const select = document.getElementById('fieldTargetSelect');
+                if (select) {
+                    select.innerHTML = '<option value="">-- Select Active Dispatch --</option>' +
+                        availableMissions.map((m, idx) => `<option value="${idx}">${escapeHtml(m.title)}</option>`).join('');
+
+                    if (availableMissions.length > 0) {
+                        select.value = "0";
+                        handleSelectFieldTarget("0");
+                    }
+                }
+            } catch (err) {
+                console.warn('Could not populate field missions:', err);
+            }
+        }
+
+        function handleSelectFieldTarget(indexStr) {
+            if (indexStr === '' || isNaN(parseInt(indexStr))) {
+                activeFieldTask = null;
+                document.getElementById('telemetryTargetName').innerText = 'None Selected';
+                document.getElementById('telemetryDistance').innerText = '--';
+                document.getElementById('telemetryEta').innerText = '--';
+                if (fieldTargetMarker) responderFieldMap.removeLayer(fieldTargetMarker);
+                if (fieldRoutePolyline) responderFieldMap.removeLayer(fieldRoutePolyline);
+                return;
+            }
+
+            const mission = availableMissions[parseInt(indexStr)];
+            activeFieldTask = mission;
+
+            document.getElementById('telemetryTargetName').innerText = mission.title;
+
+            if (fieldTargetMarker) responderFieldMap.removeLayer(fieldTargetMarker);
+
+            let destLat = mission.lat;
+            let destLng = mission.lng;
+
+            if (!destLat || !destLng) {
+                if (mission.address && mission.address.toLowerCase().includes('coimbatore')) { destLat = 11.0168; destLng = 76.9558; }
+                else if (mission.address && mission.address.toLowerCase().includes('chennai')) { destLat = 13.0827; destLng = 80.2707; }
+                else if (mission.address && mission.address.toLowerCase().includes('tiruchirappalli')) { destLat = 10.7905; destLng = 78.7047; }
+                else { destLat = 11.1271; destLng = 78.6569; }
+                activeFieldTask.lat = destLat;
+                activeFieldTask.lng = destLng;
+            }
+
+            const targetIcon = L.divIcon({
+                className: 'field-target-gps-pin',
+                html: `
+                    <div style="width:34px;height:34px;background:#ef4444;border:2px solid #ffffff;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(239,68,68,0.9);">
+                        <i class="fas fa-bullseye" style="color:#ffffff;font-size:15px;"></i>
+                    </div>
+                `,
+                iconSize: [34, 34],
+                iconAnchor: [17, 17]
+            });
+
+            fieldTargetMarker = L.marker([destLat, destLng], { icon: targetIcon }).addTo(responderFieldMap);
+            fieldTargetMarker.bindPopup(`<strong>Target Incident Destination</strong><br>${escapeHtml(mission.address || mission.title)}`).openPopup();
+
+            if (currentResponderPos) {
+                recalculateFieldRoute(currentResponderPos.lat, currentResponderPos.lng, destLat, destLng);
+                responderFieldMap.fitBounds([[currentResponderPos.lat, currentResponderPos.lng], [destLat, destLng]], { padding: [50, 50] });
+            } else {
+                responderFieldMap.setView([destLat, destLng], 13);
+            }
+        }
+
+        async function recalculateFieldRoute(startLat, startLng, endLat, endLng) {
+            try {
+                const res = await fetch(`/api/routing/route?startLat=${startLat}&startLng=${startLng}&endLat=${endLat}&endLng=${endLng}`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.status === 'success') {
+                        document.getElementById('telemetryDistance').innerText = data.distanceKm ? `${data.distanceKm} km` : `${data.distanceMeters} m`;
+                        document.getElementById('telemetryEta').innerText = data.etaText || `${data.durationMinutes} mins`;
+
+                        if (fieldRoutePolyline) responderFieldMap.removeLayer(fieldRoutePolyline);
+
+                        const coords = (data.coordinates && data.coordinates.length > 0)
+                            ? data.coordinates
+                            : [[startLat, startLng], [endLat, endLng]];
+
+                        fieldRoutePolyline = L.polyline(coords, {
+                            color: '#00e5ff',
+                            weight: 4,
+                            opacity: 0.9,
+                            dashArray: '8, 8'
+                        }).addTo(responderFieldMap);
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.warn('Routing service fallback:', err);
+            }
+
+            if (fieldRoutePolyline) responderFieldMap.removeLayer(fieldRoutePolyline);
+            fieldRoutePolyline = L.polyline([[startLat, startLng], [endLat, endLng]], {
+                color: '#38bdf8',
+                weight: 3,
+                dashArray: '6, 6'
+            }).addTo(responderFieldMap);
+        }
+
+        async function toggleFieldGpsTransmitter() {
+            const btn = document.getElementById('btnFieldStartGps');
+            const badge = document.getElementById('telemetryStatusBadge');
+
+            if (!activeFieldTask) {
+                if (window.showToast) window.showToast('Select an active mission dispatch from the dropdown first.', 'warning');
+                return;
+            }
+
+            if (!currentResponderPos) {
+                if (window.showToast) window.showToast('Acquiring device GPS... please allow location access.', 'warning');
+                return;
+            }
+
+            if (isFieldGpsTransmitting) {
+                isFieldGpsTransmitting = false;
+                btn.className = 'cc-btn cc-btn-primary';
+                btn.innerHTML = '<i class="fas fa-tower-broadcast"></i> Start Sharing Location';
+                badge.className = 'cc-badge cc-badge-minor';
+                badge.innerText = 'IDLE &bull; GPS READY';
+
+                try {
+                    await fetch('/api/responder/location/stop', {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ taskId: activeFieldTask.id, assignmentId: activeFieldTask.id })
+                    });
+                } catch (e) {}
+                if (window.showToast) window.showToast('Tactical GPS telemetry broadcast concluded.', 'info');
+            } else {
+                isFieldGpsTransmitting = true;
+                btn.className = 'cc-btn cc-btn-danger';
+                btn.innerHTML = '<i class="fas fa-tower-broadcast fa-fade" style="color:#fff;"></i> Stop Sharing Location';
+                badge.className = 'cc-badge cc-badge-official';
+                badge.innerHTML = '<span class="cc-pulse-dot" style="background:#10b981;"></span> LIVE BROADCASTING';
+
+                try {
+                    await fetch('/api/responder/location/start', {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            taskId: activeFieldTask.id,
+                            assignmentId: activeFieldTask.id,
+                            latitude: currentResponderPos.lat,
+                            longitude: currentResponderPos.lng,
+                            accuracy: currentResponderPos.accuracy
+                        })
+                    });
+                } catch (e) {}
+                if (window.showToast) window.showToast('Live telemetry broadcast active. Command Center & Citizen Safety Map receiving coordinates.', 'success');
+            }
+        }
+
+        function recenterFieldGps() {
+            if (responderFieldMap && currentResponderPos) {
+                responderFieldMap.flyTo([currentResponderPos.lat, currentResponderPos.lng], 15, { duration: 1.0 });
+            }
+        }
+
+        async function loadAllCitizenReports() {
+            await Promise.all([
+                loadPendingRescueRequests(),
+                loadCitizenPhotos()
+            ]);
+        }
+
+        async function loadPendingRescueRequests() {
+            const grid = document.getElementById('citizenRequestsGrid');
+            try {
+                const response = await fetch('/api/citizen-reports/pending', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const reports = await response.json();
+
+                document.getElementById('citizenRequestsCount').innerText = reports.length;
+
+                if (reports.length === 0) {
+                    grid.innerHTML = `
+                        <div style="text-align:center; padding:3rem; color:var(--cc-text-muted); grid-column:1/-1; background:rgba(14,23,38,0.4); border-radius:var(--cc-radius-lg); border:1px dashed var(--cc-border);">
+                            <i class="fas fa-circle-check" style="font-size:2.5rem; color:#10b981; margin-bottom:0.75rem; display:block;"></i>
+                            <h4 style="color:#ffffff; margin:0 0 0.25rem;">No Active Distress Signals</h4>
+                            <p style="font-size:0.85rem; margin:0;">All registered civilian emergency reports in this sector are acknowledged or resolved.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                grid.innerHTML = '';
+                reports.forEach(report => {
+                    const card = document.createElement('div');
+                    card.className = 'rescue-card';
+                    
+                    const timeStr = report.timestamp ? new Date(report.timestamp).toLocaleString('en-IN') : 'N/A';
+                    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(report.location || 'India')}`;
+
+                    // Check for real photo (filter out dummy 1x1 pixels)
+                    const hasRealPhoto = report.photoData && report.photoData.length > 500 && !report.photoData.includes('AAAAEAAAABCAYAAAAfFcSJ');
+                    const photoSrc = hasRealPhoto ? (report.photoData.startsWith('data:') ? report.photoData : 'data:image/jpeg;base64,' + report.photoData) : null;
+
+                    card.innerHTML = `
+                        <div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                                <div style="display:flex; align-items:center; gap:0.5rem;">
+                                    <i class="fas fa-user-circle" style="font-size:1.4rem; color:var(--cc-accent-glow);"></i>
+                                    <span style="font-weight:600; font-size:0.9rem; color:#ffffff;">${escapeHtml(report.citizenEmail)}</span>
+                                </div>
+                                <span class="cc-badge cc-badge-extreme">PENDING SOS</span>
+                            </div>
+
+                            <p style="color:var(--cc-text-secondary); font-size:0.88rem; line-height:1.4; margin:0.5rem 0 0.75rem;">
+                                ${escapeHtml(report.message || 'Civilian requested urgent rescue assistance.')}
+                            </p>
+
+                            ${photoSrc ? `
+                                <div style="position:relative;overflow:hidden;border-radius:var(--cc-radius-md);margin:0.75rem 0;background:#050811;">
+                                    <img src="${photoSrc}" alt="Disaster Scene" class="evidence-img" style="cursor:pointer;" 
+                                         onclick="window.openMediaLightbox('${photoSrc}', '${escapeHtml(report.message || '')}', 'PHOTO')"
+                                         onerror="window.handleEvidenceImageError(this, '${photoSrc}')" />
+                                </div>
+                            ` : ''}
+
+                            <div style="display:flex; flex-direction:column; gap:0.4rem; font-size:0.8rem; color:var(--cc-text-muted); margin-bottom:1rem;">
+                                <div style="display:flex; align-items:center; justify-content:space-between;">
+                                    <span><i class="fas fa-location-dot" style="color:#ef4444; margin-right:4px;"></i> ${escapeHtml(report.location || 'Location Not Specified')}</span>
+                                    <a href="${mapsUrl}" target="_blank" class="nav-chip-btn">
+                                        <i class="fas fa-diamond-turn-right"></i> Navigate
+                                    </a>
+                                </div>
+                                <div><i class="fas fa-clock" style="color:var(--cc-accent-glow); margin-right:4px;"></i> Ingested: ${timeStr}</div>
+                            </div>
+                        </div>
+
+                        <button type="button" class="cc-btn cc-btn-primary" onclick="acknowledgeReport(${report.reportId})" style="width:100%; height:40px; font-size:0.85rem;">
+                            <i class="fas fa-check-to-slot"></i> Acknowledge & Deploy Unit
+                        </button>
+                    `;
+                    grid.appendChild(card);
+                });
+
+            } catch (err) {
+                grid.innerHTML = `<div style="color:#ef4444; grid-column:1/-1; padding:2rem; text-align:center;">Failed to load civilian distress feed: ${err.message}</div>`;
+            }
+
+            // Update completed counter from local telemetry
+            const acked = JSON.parse(localStorage.getItem('responderAcknowledgments') || '[]');
+            document.getElementById('completedCount').innerText = acked.length;
+        }
+
+        async function loadCitizenPhotos() {
+            const grid = document.getElementById('citizenPhotosGrid');
+            try {
+                // Fetch both recent media records and citizen reports in parallel
+                const [mediaRes, reportsRes] = await Promise.all([
+                    fetch('/api/media/recent', { headers: { 'Authorization': `Bearer ${token}` } }).catch(() => null),
+                    fetch('/api/citizen-reports', { headers: { 'Authorization': `Bearer ${token}` } }).catch(() => null)
+                ]);
+
+                const evidenceItems = [];
+
+                // 1. Process IncidentMedia records
+                if (mediaRes && mediaRes.ok) {
+                    const mediaList = await mediaRes.json();
+                    if (Array.isArray(mediaList)) {
+                        mediaList.forEach(m => {
+                            if (m.fileSizeBytes && m.fileSizeBytes > 100) {
+                                evidenceItems.push({
+                                    id: 'm-' + m.id,
+                                    mediaType: m.mediaType || 'PHOTO',
+                                    url: `/api/media/file/${encodeURIComponent(m.storedFilename)}`,
+                                    caption: m.caption || m.originalFilename || 'Field reconnaissance capture',
+                                    uploader: m.uploaderName || m.uploaderEmail || 'Field Unit',
+                                    role: m.uploaderRole || 'Responder',
+                                    timestamp: m.createdAt,
+                                    lat: m.captureLatitude,
+                                    lng: m.captureLongitude,
+                                    status: 'Verified Upload'
+                                });
+                            }
+                        });
+                    }
+                }
+
+                // 2. Process CitizenReports with genuine photos
+                if (reportsRes && reportsRes.ok) {
+                    const reports = await reportsRes.json();
+                    if (Array.isArray(reports)) {
+                        reports.forEach(r => {
+                            // Filter out null, empty, and 1x1 dummy pixels
+                            const hasRealPhoto = r.photoData && r.photoData.length > 500 && !r.photoData.includes('AAAAEAAAABCAYAAAAfFcSJ');
+                            if (hasRealPhoto) {
+                                const photoUrl = r.photoData.startsWith('data:') ? r.photoData : 'data:image/jpeg;base64,' + r.photoData;
+                                evidenceItems.push({
+                                    id: 'r-' + r.reportId,
+                                    mediaType: 'PHOTO',
+                                    url: photoUrl,
+                                    caption: r.message || 'Distress scene photograph',
+                                    uploader: r.citizenEmail || 'Civilian',
+                                    role: 'Citizen',
+                                    timestamp: r.timestamp,
+                                    location: r.location,
+                                    status: r.status || 'Pending'
+                                });
+                            }
+                        });
+                    }
+                }
+
+                // Update verified evidence counter
+                const countEl = document.getElementById('citizenPhotosCount');
+                if (countEl) countEl.innerText = evidenceItems.length;
+
+                // Empty state if zero genuine evidence found
+                if (evidenceItems.length === 0) {
+                    grid.innerHTML = `
+                        <div class="evidence-empty-state">
+                            <i class="fas fa-camera" style="font-size:2.4rem; color:#64748b; margin-bottom:0.75rem; display:block;"></i>
+                            <h4 style="color:#ffffff; margin:0 0 0.35rem; font-size:1.05rem;">No visual evidence uploaded yet.</h4>
+                            <p style="margin:0; font-size:0.85rem; color:#94a3b8;">Civilian and responder field reconnaissance photos and video transmissions will appear here.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Sort by newest first
+                evidenceItems.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+
+                grid.innerHTML = '';
+                evidenceItems.slice(0, 12).forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'rescue-card';
+                    card.style.borderLeftColor = item.mediaType === 'VIDEO' ? 'var(--cc-warning-amber)' : 'var(--cc-accent-glow)';
+
+                    const isVideo = item.mediaType === 'VIDEO';
+                    const timeStr = item.timestamp ? new Date(item.timestamp).toLocaleString('en-IN') : 'Recent';
+                    const locStr = item.location || (item.lat && item.lng ? `${item.lat.toFixed(4)}°N, ${item.lng.toFixed(4)}°E` : 'Sector Location');
+
+                    card.innerHTML = `
+                        <div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                                <span style="font-weight:600; color:#ffffff; font-size:0.85rem;">
+                                    <i class="fas ${isVideo ? 'fa-video' : 'fa-image'}" style="color:${isVideo ? '#f59e0b' : 'var(--cc-accent-glow)'};"></i>
+                                    ${isVideo ? 'Video Transmission' : 'Visual Incident Log'}
+                                </span>
+                                <span class="cc-badge ${item.status === 'Pending' ? 'cc-badge-extreme' : 'cc-badge-moderate'}">${escapeHtml(item.status)}</span>
+                            </div>
+
+                            ${isVideo ? `
+                                <div style="margin:0.75rem 0;">
+                                    <video src="${item.url}" controls preload="metadata" 
+                                           style="width:100%;height:200px;border-radius:var(--cc-radius-md);background:#000;border:1px solid var(--cc-border);object-fit:cover;display:block;">
+                                    </video>
+                                </div>
+                            ` : `
+                                <div style="position:relative;overflow:hidden;border-radius:var(--cc-radius-md);margin:0.75rem 0;background:#050811;">
+                                    <img src="${item.url}" alt="${escapeHtml(item.caption)}" class="evidence-img" 
+                                         loading="lazy"
+                                         style="width:100%;height:200px;object-fit:cover;cursor:pointer;border-radius:var(--cc-radius-md);display:block;"
+                                         onclick="window.openMediaLightbox('${item.url}', '${escapeHtml(item.caption)}', 'PHOTO')"
+                                         onerror="window.handleEvidenceImageError(this, '${item.url}')" />
+                                    <div style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,0.7);color:#38bdf8;padding:2px 8px;border-radius:4px;font-size:0.72rem;font-family:var(--cc-font-mono);pointer-events:none;">
+                                        <i class="fas fa-expand"></i> Click to Zoom
+                                    </div>
+                                </div>
+                            `}
+
+                            <p style="font-size:0.85rem; color:var(--cc-text-secondary); margin:0.5rem 0; line-height:1.4;">
+                                ${escapeHtml(item.caption || 'Field situation capture')}
+                            </p>
+
+                            <div style="font-size:0.75rem; color:var(--cc-text-muted); margin-bottom:0.75rem; display:flex; flex-direction:column; gap:0.25rem;">
+                                <div><i class="fas fa-location-dot" style="color:#ef4444; margin-right:4px;"></i> ${escapeHtml(locStr)}</div>
+                                <div><i class="fas fa-user" style="color:var(--cc-accent-glow); margin-right:4px;"></i> Sourced by: ${escapeHtml(item.uploader)} (${escapeHtml(item.role)})</div>
+                                <div><i class="fas fa-clock" style="color:var(--cc-accent-glow); margin-right:4px;"></i> ${timeStr}</div>
+                            </div>
+                        </div>
+
+                        <div style="display:flex; gap:8px;">
+                            ${!isVideo ? `
+                                <button type="button" class="cc-btn cc-btn-secondary" style="flex:1; height:36px; font-size:0.8rem;" 
+                                        onclick="window.openMediaLightbox('${item.url}', '${escapeHtml(item.caption)}', 'PHOTO')">
+                                    <i class="fas fa-magnifying-glass-plus"></i> Inspect Full Size
+                                </button>
+                            ` : `
+                                <button type="button" class="cc-btn cc-btn-secondary" style="flex:1; height:36px; font-size:0.8rem;"
+                                        onclick="window.openMediaLightbox('${item.url}', '${escapeHtml(item.caption)}', 'VIDEO')">
+                                    <i class="fas fa-expand"></i> Theater View
+                                </button>
+                            `}
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+
+            } catch (err) {
+                console.error('Error fetching visual evidence records:', err);
+                grid.innerHTML = `<div style="color:#ef4444; grid-column:1/-1; padding:1.5rem; text-align:center;">Error fetching photo records: ${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        async function acknowledgeReport(reportId) {
+            try {
+                const response = await fetch(`/api/citizen-reports/${reportId}/acknowledge`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    if (window.CommandCenterSound) CommandCenterSound.playSuccess();
+                    
+                    // Track local acknowledgment
+                    const acked = JSON.parse(localStorage.getItem('responderAcknowledgments') || '[]');
+                    acked.push({ reportId, acknowledgedAt: new Date().toISOString() });
+                    localStorage.setItem('responderAcknowledgments', JSON.stringify(acked));
+
+                    if (window.showToast) {
+                        window.showToast('Dispatch accepted — Unit is now En Route.', 'success');
+                    }
+                    loadAllCitizenReports();
+                } else {
+                    const errorText = await response.text();
+                    if (window.showToast) {
+                        window.showToast('Failed to acknowledge dispatch: ' + errorText, 'error');
+                    }
+                }
+            } catch (err) {
+                if (window.showToast) {
+                    window.showToast('Network error: ' + err.message, 'error');
+                }
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
+        }
+
+        function handleLogout() {
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.href = '/index.html';
+        }
+    </script>
+</body>
+</html>

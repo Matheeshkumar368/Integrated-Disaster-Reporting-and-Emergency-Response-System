@@ -1,0 +1,1832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover"/>
+    <meta name="theme-color" content="#050811"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+    <meta name="apple-mobile-web-app-title" content="NDMA Command"/>
+    <link rel="manifest" href="/manifest.webmanifest"/>
+    <link rel="apple-touch-icon" href="/icons/icon-192.png"/>
+    <link rel="icon" type="image/png" href="/icons/icon-192.png"/>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+    <meta http-equiv="Pragma" content="no-cache"/>
+    <meta http-equiv="Expires" content="0"/>
+    <title>Mission Control — Disaster Management & Alert System</title>
+    
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    
+    <!-- Leaflet Cartography -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Design System & Interaction Engine -->
+    <link rel="stylesheet" href="toast-manager.css?v=2" />
+    <script src="toast-manager.js?v=2"></script>
+    <script src="/js/emergency-alert.js?v=3"></script>
+    <link rel="stylesheet" href="command-center.css?v=3" />
+    <script src="command-center.js?v=3"></script>
+    <script src="pwa-manager.js"></script>
+
+    <!-- Situational Media Capture, Live Responder Tracking, Incident Room & Smart Assignment -->
+    <link rel="stylesheet" href="media-capture.css?v=1" />
+    <script src="media-capture.js?v=1"></script>
+    <link rel="stylesheet" href="responder-tracking.css?v=1" />
+    <script src="responder-tracking.js?v=1"></script>
+    <link rel="stylesheet" href="incident-room.css?v=1" />
+    <script src="incident-room.js?v=1"></script>
+    <link rel="stylesheet" href="smart-assignment.css?v=1" />
+    <script src="smart-assignment.js?v=1"></script>
+    
+    <!-- Authentication Guard & Role Loading -->
+    <link rel="stylesheet" href="role-loading.css?v=2" />
+    <script src="role-loading.js?v=2"></script>
+    <script src="auth-helper.js?v=2"></script>
+
+    <style>
+        .cc-main-container {
+            max-width: 1720px;
+            margin: 0 auto;
+            padding: 1.5rem 1.8rem;
+        }
+
+        .cc-ops-grid {
+            display: grid;
+            grid-template-columns: 1.9fr 1.1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.8rem;
+        }
+
+        @media (max-width: 1200px) {
+            .cc-ops-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .cc-map-wrapper {
+            position: relative;
+            border-radius: var(--cc-radius-lg);
+            overflow: hidden;
+            border: 1px solid var(--cc-border-medium);
+            box-shadow: var(--cc-shadow-lg);
+            background: #060a12;
+        }
+
+        #disasterMap {
+            height: 580px;
+            width: 100%;
+            z-index: 10;
+        }
+
+        .leaflet-container {
+            background: #060a12 !important;
+        }
+
+        /* Tactical Map Custom Overlays */
+        .cc-map-overlay-header {
+            position: absolute;
+            top: 14px;
+            left: 14px;
+            right: 14px;
+            z-index: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            pointer-events: none;
+        }
+
+        .cc-map-overlay-header > * {
+            pointer-events: auto;
+        }
+
+        .cc-map-glass-panel {
+            background: rgba(9, 14, 26, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--cc-border-accent);
+            border-radius: var(--cc-radius-sm);
+            padding: 0.45rem 0.9rem;
+            box-shadow: var(--cc-shadow-md);
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            font-size: 0.84rem;
+        }
+
+        .cc-map-quick-filters {
+            position: absolute;
+            bottom: 14px;
+            left: 14px;
+            z-index: 500;
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            pointer-events: auto;
+        }
+
+        .cc-quick-filter-btn {
+            background: rgba(14, 23, 38, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--cc-border-medium);
+            color: var(--cc-text-secondary);
+            font-size: 0.78rem;
+            font-weight: 600;
+            padding: 0.35rem 0.75rem;
+            border-radius: var(--cc-radius-pill);
+            cursor: pointer;
+            transition: all var(--cc-duration-fast) var(--cc-ease);
+        }
+
+        .cc-quick-filter-btn:hover,
+        .cc-quick-filter-btn.active {
+            color: var(--cc-cyan);
+            border-color: var(--cc-cyan);
+            background: rgba(56, 189, 248, 0.15);
+        }
+
+        /* Broadcast Terminal Card Styling */
+        .cc-terminal-card {
+            background: var(--cc-bg-glass);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--cc-border-subtle);
+            border-radius: var(--cc-radius-lg);
+            padding: 1.6rem;
+            box-shadow: var(--cc-shadow-lg);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .cc-terminal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.2rem;
+            border-bottom: 1px solid var(--cc-border-subtle);
+            padding-bottom: 0.8rem;
+        }
+
+        .cc-terminal-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            color: var(--cc-text-primary);
+        }
+
+        .cc-pin-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(5, 8, 17, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .cc-pin-modal-box {
+            background: var(--cc-bg-surface-1);
+            border: 2px solid var(--cc-critical-red);
+            border-radius: var(--cc-radius-lg);
+            padding: 2.2rem;
+            max-width: 440px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 0 40px var(--cc-critical-red-glow);
+        }
+
+        /* Sub Tabs & Action Clusters */
+        .cc-sub-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.2rem;
+            border-bottom: 1px solid var(--cc-border-subtle);
+            padding-bottom: 0.6rem;
+            overflow-x: auto;
+            flex-wrap: wrap;
+        }
+
+        .cc-sub-tab-btn {
+            background: transparent;
+            border: 1px solid var(--cc-border-subtle);
+            color: var(--cc-text-secondary);
+            padding: 0.45rem 0.85rem;
+            border-radius: var(--cc-radius-sm);
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all var(--cc-duration-fast) var(--cc-ease);
+        }
+
+        .cc-sub-tab-btn:hover {
+            color: #ffffff;
+            border-color: var(--cc-border-medium);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .cc-sub-tab-btn.active {
+            color: var(--cc-cyan);
+            border-color: var(--cc-cyan);
+            background: rgba(56, 189, 248, 0.15);
+        }
+
+        .cc-card-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+            align-items: center;
+            margin-top: 0.8rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .cc-card-actions .cc-btn {
+            flex: 1 1 auto;
+            min-width: 80px;
+            padding: 0.45rem 0.65rem;
+            font-size: 0.78rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.35rem;
+            text-align: center;
+        }
+
+        @media (max-width: 480px) {
+            .cc-card-actions .cc-btn {
+                flex: 1 1 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- =========================================================================
+         TACTICAL TOP HUD HEADER
+         ========================================================================= -->
+    <header class="cc-hud-header">
+        <div class="cc-hud-branding">
+            <div class="cc-hud-badge-icon">
+                <i class="fas fa-satellite-dish"></i>
+            </div>
+            <div class="cc-hud-title-group">
+                <h1>
+                    DISASTER RESPONSE MISSION CONTROL
+                    <span class="cc-badge ndma"><i class="fas fa-circle cc-pulse-dot"></i> DEFCON 1: ACTIVE</span>
+                </h1>
+                <div class="cc-hud-subtitle">NATIONAL OPERATIONS &bull; SACHET CAP 1.2 LIVE MONITORING HUB</div>
+            </div>
+        </div>
+
+        <div class="cc-hud-telemetry">
+            <div class="cc-telemetry-pill live" id="ndmaStatusPill">
+                <span class="cc-pulse-dot"></span>
+                <span>NDMA SACHET: LIVE CONNECTED</span>
+            </div>
+            <div class="cc-telemetry-pill" id="hudClockDisplay">
+                <!-- Clock auto-populated by CommandCenter.initHudClock -->
+            </div>
+            <div class="cc-telemetry-pill" style="border-color: rgba(56,189,248,0.35);">
+                <i class="fas fa-user-shield" style="color:var(--cc-cyan);"></i>
+                <span id="adminName">Admin User</span>
+            </div>
+            <button type="button" class="cc-btn cc-btn-danger" onclick="EmergencyAlertSystem.openSettingsModal()" style="padding:0.4rem 0.85rem;font-size:0.8rem;border-radius:8px;" title="Emergency SOS Sound Settings">
+                <i class="fas fa-bullhorn"></i> SOS Sound <kbd style="background:rgba(0,0,0,0.3);padding:0.1rem 0.35rem;border-radius:4px;font-size:0.75rem;margin-left:0.25rem;">TAB</kbd>
+            </button>
+            <button class="cc-btn cc-btn-danger" onclick="AuthHelper.logout()" style="padding:0.4rem 0.85rem;font-size:0.8rem;">
+                <i class="fas fa-power-off"></i> Exit
+            </button>
+        </div>
+    </header>
+
+    <!-- =========================================================================
+         TACTICAL NAVIGATION BAR
+         ========================================================================= -->
+    <nav class="cc-nav-bar">
+        <ul class="cc-nav-links">
+            <li><a href="/admin-dashboard.html" class="cc-nav-link active"><i class="fas fa-map-location-dot"></i> Mission Control</a></li>
+            <li><a href="/admin-alerts.html" class="cc-nav-link"><i class="fas fa-bullhorn"></i> Emergency Broadcasts</a></li>
+            <li><a href="/admin-tasks.html" class="cc-nav-link"><i class="fas fa-truck-medical"></i> Responder Tasks</a></li>
+            <li><a href="/reports.html" class="cc-nav-link"><i class="fas fa-chart-line"></i> Incident Telemetry</a></li>
+            <li><a href="/emergency-videos.html" class="cc-nav-link"><i class="fas fa-film"></i> Survival Videos</a></li>
+            <li><a href="/admin-profile.html" class="cc-nav-link"><i class="fas fa-shield-halved"></i> Security & 2FA PIN</a></li>
+        </ul>
+        <div class="cc-nav-user-actions" style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+            <button class="cc-btn cc-btn-secondary" onclick="openDataHygieneModal()" id="btnDataHygiene" style="font-size:0.82rem;padding:0.45rem 0.85rem;" title="Inspect and clean duplicate demonstration reports">
+                <i class="fas fa-broom"></i> Data Hygiene
+            </button>
+            <button class="cc-btn cc-btn-secondary" onclick="triggerNdmaManualSync()" id="btnManualSync" style="font-size:0.82rem;padding:0.45rem 0.9rem;">
+                <i class="fas fa-rotate" id="syncSpinnerIcon"></i> Ingest NDMA Feed Now
+            </button>
+        </div>
+    </nav>
+
+    <!-- =========================================================================
+         MAIN MISSION CONTROL VIEW
+         ========================================================================= -->
+    <main class="cc-main-container">
+
+        <!-- KEY METRICS HUD GRID -->
+        <section class="cc-stats-grid">
+            <div class="cc-stat-card critical">
+                <div class="cc-stat-header">
+                    <span class="cc-stat-label">Active Emergency Alerts</span>
+                    <i class="fas fa-triangle-exclamation cc-stat-icon" style="color:var(--cc-critical-red);"></i>
+                </div>
+                <div class="cc-stat-number" id="activeCount">0</div>
+                <div class="cc-stat-meta"><span class="cc-pulse-dot critical"></span> Broadcasted to citizens</div>
+            </div>
+
+            <div class="cc-stat-card warning">
+                <div class="cc-stat-header">
+                    <span class="cc-stat-label">Field Acknowledged</span>
+                    <i class="fas fa-clock-rotate-left cc-stat-icon" style="color:var(--cc-warning-amber);"></i>
+                </div>
+                <div class="cc-stat-number" id="acknowledgedCount">0</div>
+                <div class="cc-stat-meta">In-progress rescue operations</div>
+            </div>
+
+            <div class="cc-stat-card safe">
+                <div class="cc-stat-header">
+                    <span class="cc-stat-label">Incidents Resolved</span>
+                    <i class="fas fa-circle-check cc-stat-icon" style="color:var(--cc-safe-green);"></i>
+                </div>
+                <div class="cc-stat-number" id="resolvedCount">0</div>
+                <div class="cc-stat-meta">Safely closed & verified</div>
+            </div>
+
+            <div class="cc-stat-card telemetry">
+                <div class="cc-stat-header">
+                    <span class="cc-stat-label">Official NDMA Warnings</span>
+                    <i class="fas fa-satellite cc-stat-icon" style="color:var(--cc-cyan);"></i>
+                </div>
+                <div class="cc-stat-number" id="ndmaAlertsCount">0</div>
+                <div class="cc-stat-meta" id="ndmaSyncMetaText">Live CAP 1.2 Feed Active</div>
+            </div>
+        </section>
+
+        <!-- SPLIT VIEW: REAL-TIME INCIDENT MAP & EMERGENCY BROADCAST TERMINAL -->
+        <section class="cc-ops-grid">
+            
+            <!-- CENTRAL DISASTER MAP TERMINAL -->
+            <div class="cc-map-wrapper">
+                <div class="cc-map-overlay-header" style="flex-wrap:wrap; gap:0.5rem;">
+                    <div class="cc-map-glass-panel">
+                        <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#38bdf8;box-shadow:0 0 10px #38bdf8;"></span>
+                        <strong>TACTICAL DISASTER RADAR</strong>
+                        <span style="color:#64748b;">|</span>
+                        <span id="mapAlertCountBadge" style="color:#38bdf8;font-family:var(--cc-font-mono);">0 Active Markers</span>
+                        <span id="mapResponderBadge" style="color:#10b981;font-family:var(--cc-font-mono);font-size:0.75rem;margin-left:6px;display:none;"></span>
+                    </div>
+
+                    <!-- Tactical Layer Toggles -->
+                    <div class="cc-map-glass-panel" style="display:flex; align-items:center; gap:0.6rem; font-size:0.75rem; color:#cbd5e1;">
+                        <label style="cursor:pointer; display:flex; align-items:center; gap:3px;">
+                            <input type="checkbox" id="chkLayerIncidents" checked onchange="toggleMapLayer('incidents', this.checked)">
+                            <span style="color:#ef4444; font-weight:700;">●</span> Incidents
+                        </label>
+                        <label style="cursor:pointer; display:flex; align-items:center; gap:3px;">
+                            <input type="checkbox" id="chkLayerResponders" checked onchange="toggleMapLayer('responders', this.checked)">
+                            <span style="color:#00e5ff; font-weight:700;">●</span> Responders
+                        </label>
+                        <label style="cursor:pointer; display:flex; align-items:center; gap:3px;">
+                            <input type="checkbox" id="chkLayerAlerts" checked onchange="toggleMapLayer('alerts', this.checked)">
+                            <span style="color:#f59e0b; font-weight:700;">●</span> Warnings
+                        </label>
+                        <label style="cursor:pointer; display:flex; align-items:center; gap:3px;">
+                            <input type="checkbox" id="chkLayerShelters" checked onchange="toggleMapLayer('shelters', this.checked)">
+                            <span style="color:#a855f7; font-weight:700;">●</span> Shelters
+                        </label>
+                    </div>
+
+                    <div class="cc-map-glass-panel">
+                        <label style="color:#94a3b8;font-size:0.75rem;text-transform:uppercase;font-weight:600;margin-right:0.3rem;">Filter:</label>
+                        <select id="mapSeverityFilter" onchange="filterMapMarkers()" style="background:#0b1322;color:#f8fafc;border:1px solid #334155;border-radius:4px;padding:2px 6px;font-size:0.8rem;">
+                            <option value="ALL">All Severities</option>
+                            <option value="CRITICAL">Extreme & Severe</option>
+                            <option value="MODERATE">Moderate / Medium</option>
+                            <option value="MINOR">Minor / Advisory</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Leaflet Container -->
+                <div id="disasterMap"></div>
+
+                <!-- Quick Geographic Jump Filters -->
+                <div class="cc-map-quick-filters">
+                    <button class="cc-quick-filter-btn active" onclick="zoomMapTo([20.5937, 78.9629], 5, this)">All India</button>
+                    <button class="cc-quick-filter-btn" onclick="zoomMapTo([11.1271, 78.6569], 7, this)">Tamil Nadu</button>
+                    <button class="cc-quick-filter-btn" onclick="zoomMapTo([26.2006, 92.9376], 7, this)">Assam / NE</button>
+                    <button class="cc-quick-filter-btn" onclick="zoomMapTo([20.9517, 85.0985], 7, this)">Odisha</button>
+                    <button class="cc-quick-filter-btn" onclick="zoomMapTo([28.6139, 77.2090], 10, this)">Delhi NCR</button>
+                </div>
+            </div>
+
+            <!-- EMERGENCY BROADCAST TERMINAL -->
+            <div class="cc-terminal-card">
+                <div>
+                    <div class="cc-terminal-header">
+                        <div class="cc-terminal-title">
+                            <i class="fas fa-tower-broadcast" style="color:var(--cc-critical-red);"></i>
+                            Emergency Broadcast Terminal
+                        </div>
+                        <span class="cc-badge broadcast"><i class="fas fa-lock"></i> 2FA Guarded</span>
+                    </div>
+
+                    <div id="messageBox"></div>
+
+                    <form id="alertForm" class="cc-alert-form">
+                        <div class="cc-form-group">
+                            <label class="cc-label"><i class="fas fa-heading"></i> Alert Title</label>
+                            <input type="text" id="title" class="cc-input" placeholder="e.g., Severe Flash Flood Warning" required />
+                        </div>
+
+                        <div class="cc-form-group">
+                            <label class="cc-label"><i class="fas fa-comment-dots"></i> Public Advisory Message</label>
+                            <textarea id="message" class="cc-textarea" placeholder="Detail emergency safety protocols, evacuation routes, and official guidelines..." required></textarea>
+                        </div>
+
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                            <div class="cc-form-group">
+                                <label class="cc-label"><i class="fas fa-triangle-exclamation"></i> Hazard Type</label>
+                                <select id="disasterType" class="cc-select" required>
+                                    <option value="">Select Hazard</option>
+                                    <option value="Cyclone">Cyclone / Gale</option>
+                                    <option value="Heavy Rain">Heavy Rainfall</option>
+                                    <option value="Flood">Flood / Flash Flood</option>
+                                    <option value="Earthquake">Earthquake Tremor</option>
+                                    <option value="Dense Fog">Dense Fog Advisory</option>
+                                    <option value="Landslide">Landslide Alert</option>
+                                    <option value="Tsunami">Tsunami Warning</option>
+                                    <option value="Other">General Emergency</option>
+                                </select>
+                            </div>
+
+                            <div class="cc-form-group">
+                                <label class="cc-label"><i class="fas fa-gauge-high"></i> Severity Risk</label>
+                                <select id="severity" class="cc-select" required>
+                                    <option value="">Select Risk</option>
+                                    <option value="High" style="color:#ef4444;font-weight:700;">High (Immediate PIN Verification)</option>
+                                    <option value="Medium" style="color:#f59e0b;font-weight:600;">Medium (Elevated Caution)</option>
+                                    <option value="Low" style="color:#10b981;">Low (Public Advisory)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                            <div class="cc-form-group">
+                                <label class="cc-label"><i class="fas fa-location-dot"></i> Target Region</label>
+                                <select id="region" class="cc-select" required>
+                                    <option value="">Select Region</option>
+                                    <option value="Chennai">Chennai</option>
+                                    <option value="Coimbatore">Coimbatore</option>
+                                    <option value="Madurai">Madurai</option>
+                                    <option value="Tiruchirappalli">Tiruchirappalli</option>
+                                    <option value="Salem">Salem</option>
+                                    <option value="Tirunelveli">Tirunelveli</option>
+                                    <option value="Dindigul">Dindigul</option>
+                                    <option value="Vellore">Vellore</option>
+                                    <option value="Erode">Erode</option>
+                                    <option value="Thoothukudi">Thoothukudi</option>
+                                    <option value="Tamil Nadu">Tamil Nadu (Statewide)</option>
+                                </select>
+                            </div>
+
+                            <div class="cc-form-group">
+                                <label class="cc-label"><i class="fas fa-link"></i> Media Link (Optional)</label>
+                                <input type="url" id="mediaUrl" class="cc-input" placeholder="https://example.com/map.jpg" />
+                            </div>
+                        </div>
+
+                        <button type="submit" class="cc-btn cc-btn-danger" id="submitBtn" style="width:100%;padding:0.9rem;font-size:1rem;margin-top:0.4rem;">
+                            <i class="fas fa-paper-plane"></i> Broadcast Emergency Alert to Citizens
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- LIVE ALERTS BROADCAST STREAM & AUTO-DISPATCH -->
+        <section class="cc-card" style="margin-top:1.5rem;">
+            <div class="cc-card-header">
+                <div class="cc-card-title">
+                    <i class="fas fa-bullhorn" style="color:var(--cc-critical-red);"></i>
+                    <span id="feedSectionTitle">Live Broadcasted Emergency Alerts</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+                    <!-- Auto Broadcast Toggle -->
+                    <label style="display:inline-flex;align-items:center;gap:0.5rem;font-size:0.82rem;color:var(--cc-text-secondary);cursor:pointer;">
+                        <input type="checkbox" id="autoBroadcastToggle" onchange="toggleAutoBroadcast()">
+                        <span>Auto-Broadcast High Severity Disasters</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Tactical Feed Filter Sub-Tabs -->
+            <div class="cc-sub-tabs">
+                <button type="button" class="cc-sub-tab-btn active" id="tabAlertsActive" onclick="switchFeedView('alerts', 'Active')">
+                    <i class="fas fa-tower-broadcast"></i> Active Broadcasts (<span id="tabActiveCount">0</span>)
+                </button>
+                <button type="button" class="cc-sub-tab-btn" id="tabAlertsAck" onclick="switchFeedView('alerts', 'Acknowledged')">
+                    <i class="fas fa-check-circle"></i> Acknowledged (<span id="tabAckCount">0</span>)
+                </button>
+                <button type="button" class="cc-sub-tab-btn" id="tabAlertsResolved" onclick="switchFeedView('alerts', 'Resolved')">
+                    <i class="fas fa-circle-check"></i> Resolved (<span id="tabResolvedCount">0</span>)
+                </button>
+                <button type="button" class="cc-sub-tab-btn" id="tabAlertsAll" onclick="switchFeedView('alerts', 'ALL')">
+                    <i class="fas fa-layer-group"></i> All Alerts (<span id="tabTotalCount">0</span>)
+                </button>
+                <button type="button" class="cc-sub-tab-btn" id="tabActiveTasks" onclick="switchFeedView('tasks', 'ALL')">
+                    <i class="fas fa-truck-medical"></i> Field Mission Cards (<span id="tabMissionCount">0</span>)
+                </button>
+            </div>
+
+            <div id="liveAlertsGrid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(360px, 1fr));gap:1.2rem;">
+                <!-- Populated dynamically via loadLiveAlerts() -->
+            </div>
+
+            <div id="noAlerts" style="display:none;text-align:center;padding:3rem;color:var(--cc-text-muted);">
+                <i class="fas fa-bell-slash" style="font-size:3rem;margin-bottom:0.8rem;opacity:0.4;"></i>
+                <p>No emergency broadcasts active at this moment.</p>
+            </div>
+        </section>
+
+        <!-- TWO-COLUMN SECTION: FIELD RESPONDER AVAILABILITY & INCIDENT ANALYTICS -->
+        <section style="display:grid;grid-template-columns:1.2fr 0.8fr;gap:1.5rem;margin-top:1.5rem;" class="cc-bottom-ops-grid">
+            
+            <!-- RESPONDER AVAILABILITY & FIELD DEPLOYMENT -->
+            <div class="cc-card">
+                <div class="cc-card-header">
+                    <div class="cc-card-title">
+                        <i class="fas fa-truck-medical" style="color:var(--cc-cyan);"></i>
+                        Field Responder Units & Zone Availability
+                    </div>
+                    <a href="/admin-tasks.html" class="cc-btn cc-btn-secondary" style="font-size:0.78rem;padding:0.35rem 0.75rem;">
+                        <i class="fas fa-list-check"></i> Task Allocation
+                    </a>
+                </div>
+                
+                <div id="responderRosterList" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:1rem;">
+                    <!-- Populated dynamically via loadResponderRosterAndAnalytics() -->
+                </div>
+            </div>
+
+            <!-- INCIDENT SEVERITY & RESOLUTION ANALYTICS -->
+            <div class="cc-card">
+                <div class="cc-card-header">
+                    <div class="cc-card-title">
+                        <i class="fas fa-chart-pie" style="color:var(--cc-warning-amber);"></i>
+                        Incident Resolution & Threat Metrics
+                    </div>
+                    <a href="/reports.html" class="cc-btn cc-btn-secondary" style="font-size:0.78rem;padding:0.35rem 0.75rem;">
+                        <i class="fas fa-chart-line"></i> Full Telemetry
+                    </a>
+                </div>
+
+                <div id="incidentMetricsSummary" style="display:flex;flex-direction:column;gap:1rem;">
+                    <!-- Populated dynamically via loadResponderRosterAndAnalytics() -->
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- =========================================================================
+         STEP-UP SECURITY PIN MODAL (ADMIN PRIVILEGED OPERATIONS)
+         ========================================================================= -->
+    <div id="adminPinModal" class="cc-pin-modal-overlay">
+        <div class="cc-pin-modal-box">
+            <div style="width:58px;height:58px;border-radius:50%;background:rgba(239,68,68,0.2);color:#ef4444;display:flex;align-items:center;justify-content:center;font-size:1.8rem;margin:0 auto 1rem;">
+                <i class="fas fa-shield-halved"></i>
+            </div>
+            <h3 style="color:#ffffff;font-size:1.35rem;font-weight:700;margin-bottom:0.4rem;">Security PIN Required</h3>
+            <p style="color:#94a3b8;font-size:0.88rem;margin-bottom:1.5rem;">
+                Broadcasting high-severity emergency alerts requires administrative 2FA step-up authentication.
+            </p>
+
+            <div style="margin-bottom:1.5rem;">
+                <input type="password" id="adminPinInput" maxlength="6" autofocus
+                       placeholder="••••••"
+                       style="width:100%;padding:1rem;font-size:1.8rem;text-align:center;letter-spacing:10px;background:#060a12;border:2px solid var(--cc-border-medium);border-radius:8px;color:#38bdf8;font-family:var(--cc-font-mono);" />
+                <div id="adminPinError" style="color:#ef4444;font-size:0.85rem;margin-top:0.6rem;min-height:20px;"></div>
+            </div>
+
+            <div style="display:flex;gap:1rem;">
+                <button type="button" onclick="closeAdminPinModal()" class="cc-btn cc-btn-secondary" style="flex:1;">Cancel</button>
+                <button type="button" id="verifyPinSubmitBtn" onclick="submitAdminPinVerification()" class="cc-btn cc-btn-danger" style="flex:1;">Verify & Broadcast</button>
+            </div>
+            <p style="color:#64748b;font-size:0.78rem;margin-top:1.2rem;">Default academic demo PIN: <strong>123456</strong></p>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         DATA HYGIENE & DUPLICATE CLEANUP MODAL
+         ========================================================================= -->
+    <div id="dataHygieneModal" class="cc-pin-modal-overlay">
+        <div class="cc-pin-modal-box" style="max-width:520px; text-align:left;">
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:1rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:0.75rem;">
+                <div style="width:42px;height:42px;border-radius:50%;background:rgba(56,189,248,0.2);color:#38bdf8;display:flex;align-items:center;justify-content:center;font-size:1.3rem;">
+                    <i class="fas fa-broom"></i>
+                </div>
+                <div>
+                    <h3 style="color:#ffffff;font-size:1.15rem;font-weight:700;margin:0;">Database Hygiene & Deduplication</h3>
+                    <p style="color:#94a3b8;font-size:0.78rem;margin:2px 0 0;">Inspect and archive duplicate or test incident reports</p>
+                </div>
+            </div>
+
+            <div id="hygieneStatsLoading" style="text-align:center; padding:1.5rem; color:#94a3b8;">
+                <i class="fas fa-spinner fa-spin"></i> Analyzing database records...
+            </div>
+
+            <div id="hygieneStatsBody" style="display:none;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.6rem; margin-bottom:1rem;">
+                    <div style="background:rgba(255,255,255,0.04); padding:8px 12px; border-radius:6px; border:1px solid rgba(255,255,255,0.08);">
+                        <div style="font-size:0.72rem; color:#94a3b8; text-transform:uppercase;">Citizen Reports</div>
+                        <div id="statTotalReports" style="font-size:1.2rem; font-weight:700; color:#fff;">--</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.04); padding:8px 12px; border-radius:6px; border:1px solid rgba(255,255,255,0.08);">
+                        <div style="font-size:0.72rem; color:#ef4444; text-transform:uppercase;">Duplicates Detected</div>
+                        <div id="statDuplicateReports" style="font-size:1.2rem; font-weight:700; color:#ef4444;">--</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.04); padding:8px 12px; border-radius:6px; border:1px solid rgba(255,255,255,0.08);">
+                        <div style="font-size:0.72rem; color:#38bdf8; text-transform:uppercase;">Active Missions</div>
+                        <div id="statRescueTasks" style="font-size:1.2rem; font-weight:700; color:#38bdf8;">--</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.04); padding:8px 12px; border-radius:6px; border:1px solid rgba(255,255,255,0.08);">
+                        <div style="font-size:0.72rem; color:#10b981; text-transform:uppercase;">Live Telemetry Sessions</div>
+                        <div id="statActiveTracking" style="font-size:1.2rem; font-weight:700; color:#10b981;">--</div>
+                    </div>
+                </div>
+
+                <div style="background:rgba(245,158,11,0.08); border-left:3px solid #f59e0b; padding:10px 12px; border-radius:4px; font-size:0.8rem; color:#cbd5e1; margin-bottom:1.25rem; line-height:1.45;">
+                    <i class="fas fa-shield-halved" style="color:#f59e0b;"></i> Deduplication leaves one genuine copy of each citizen submission active. Redundant test runs are archived with an audit trail and removed from the active tactical radar.
+                </div>
+
+                <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
+                    <button type="button" onclick="closeDataHygieneModal()" class="cc-btn cc-btn-secondary">Close</button>
+                    <button type="button" id="btnExecuteDeduplication" onclick="triggerCleanDuplicates()" class="cc-btn cc-btn-primary">
+                        <i class="fas fa-broom"></i> Clean Duplicate Reports
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script>
+        // Initialize loading screen
+        RoleLoadingScreen.initOnLoad('Admin');
+
+        // Global Variables
+        let map;
+        let allDisastersCache = [];
+        let autoBroadcastEnabled = localStorage.getItem('autoBroadcast') === 'true';
+        let stepUpSuccessCallback = null;
+
+        // Initialize Tactical HUD Clock
+        CommandCenter.initHudClock('hudClockDisplay');
+
+        // Async Auth Check
+        (async function() {
+            const token = localStorage.getItem('token');
+            const userRole = localStorage.getItem('userRole');
+
+            RoleLoadingScreen.hide();
+
+            if (!token) {
+                window.location.href = '/index.html';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/profile', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+
+                if (!response.ok) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('userRole');
+                    window.location.href = '/index.html';
+                    return;
+                }
+            } catch (e) {
+                console.error('Token validation failed:', e);
+            }
+
+            if (userRole !== 'Admin') {
+                if (window.showToast) {
+                    window.showToast('Access Denied: Only Admin can access Mission Control', 'error');
+                }
+                setTimeout(() => {
+                    window.location.href = '/citizen-dashboard.html';
+                }, 1000);
+                return;
+            }
+
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                document.getElementById('adminName').innerText = payload.sub || 'Admin';
+            } catch (e) {}
+        })();
+
+        // Map Coordinates Gazetteer
+        const locationCoords = {
+            'Chennai': [13.0827, 80.2707],
+            'Coimbatore': [11.0168, 76.9558],
+            'Madurai': [9.9252, 78.1198],
+            'Tiruchirappalli': [10.7905, 78.7047],
+            'Salem': [11.6643, 78.1460],
+            'Tirunelveli': [8.7139, 77.7567],
+            'Dindigul': [10.3673, 77.9803],
+            'Vellore': [12.9165, 79.1325],
+            'Erode': [11.3410, 77.7172],
+            'Thoothukudi': [8.7642, 78.1348],
+            'Tamil Nadu': [11.1271, 78.6569]
+        };
+
+        let alertsLayerGroup = null;
+        let respondersLayerGroup = null;
+        let incidentsLayerGroup = null;
+        let sheltersLayerGroup = null;
+
+        function toggleMapLayer(layerName, isVisible) {
+            if (!map) return;
+            if (layerName === 'incidents' && incidentsLayerGroup) {
+                if (isVisible) map.addLayer(incidentsLayerGroup);
+                else map.removeLayer(incidentsLayerGroup);
+            } else if (layerName === 'responders' && respondersLayerGroup) {
+                if (isVisible) map.addLayer(respondersLayerGroup);
+                else map.removeLayer(respondersLayerGroup);
+            } else if (layerName === 'alerts' && alertsLayerGroup) {
+                if (isVisible) map.addLayer(alertsLayerGroup);
+                else map.removeLayer(alertsLayerGroup);
+            } else if (layerName === 'shelters' && sheltersLayerGroup) {
+                if (isVisible) map.addLayer(sheltersLayerGroup);
+                else map.removeLayer(sheltersLayerGroup);
+            }
+        }
+
+        // Initialize Leaflet Map with CartoDB Dark Matter
+        function initMap() {
+            map = L.map('disasterMap', {
+                center: [20.5937, 78.9629],
+                zoom: 5,
+                zoomControl: true
+            });
+
+            CommandCenter.getTacticalTileLayer().addTo(map);
+
+            alertsLayerGroup = L.layerGroup().addTo(map);
+            respondersLayerGroup = L.layerGroup().addTo(map);
+            incidentsLayerGroup = L.layerGroup().addTo(map);
+            sheltersLayerGroup = L.layerGroup().addTo(map);
+
+            loadDisastersOnMap();
+            loadActiveRespondersOnMap();
+            loadIncidentsOnMap();
+            setInterval(loadActiveRespondersOnMap, 4000);
+            setInterval(loadIncidentsOnMap, 10000);
+        }
+
+        async function loadIncidentsOnMap() {
+            if (!map || !incidentsLayerGroup) return;
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            try {
+                const res = await fetch('/api/citizen-reports', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) return;
+
+                const reports = await res.json();
+                incidentsLayerGroup.clearLayers();
+
+                if (!reports || reports.length === 0) return;
+
+                reports.forEach(r => {
+                    if (r.isDeleted) return;
+
+                    let lat = r.latitude;
+                    let lon = r.longitude;
+
+                    // Fallback to gazetteer if coordinates missing
+                    if (!lat || !lon) {
+                        for (const [cityName, coords] of Object.entries(locationCoords)) {
+                            if (r.location && r.location.toLowerCase().includes(cityName.toLowerCase())) {
+                                lat = coords[0];
+                                lon = coords[1];
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!lat || !lon) return;
+
+                    const isPending = !r.status || r.status.toLowerCase() === 'pending';
+                    const markerColor = isPending ? '#ef4444' : (r.status.toLowerCase() === 'acknowledged' ? '#f59e0b' : '#10b981');
+
+                    const incidentIcon = L.divIcon({
+                        className: 'tactical-incident-marker',
+                        html: `
+                            <div style="position:relative;width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:${markerColor};border:2px solid #ffffff;border-radius:50%;box-shadow:0 0 16px ${markerColor};cursor:pointer;">
+                                <i class="fas fa-bullseye" style="color:#ffffff;font-size:14px;"></i>
+                                ${isPending ? '<span style="position:absolute;top:-4px;right:-4px;width:10px;height:10px;background:#ef4444;border:2px solid #fff;border-radius:50%;animation:pulse 1.5s infinite;"></span>' : ''}
+                            </div>
+                        `,
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 16],
+                        popupAnchor: [0, -16]
+                    });
+
+                    const marker = L.marker([lat, lon], { icon: incidentIcon }).addTo(incidentsLayerGroup);
+
+                    const timeFormatted = r.timestamp ? (window.CommandCenter ? CommandCenter.formatIst(r.timestamp) : r.timestamp) : 'Recent';
+                    const popupHtml = `
+                        <div style="font-family:Inter,sans-serif;color:#fff;background:#091322;padding:12px;border-radius:8px;border:1px solid ${markerColor};min-width:240px;font-size:0.85rem;">
+                            <div style="font-weight:700;color:${markerColor};font-size:0.95rem;margin-bottom:4px;display:flex;align-items:center;gap:6px;">
+                                <i class="fas fa-triangle-exclamation"></i> ${escapeHtml(r.incidentType || 'Citizen SOS')} #${r.reportId}
+                            </div>
+                            <div style="font-size:0.8rem;color:#cbd5e1;margin-bottom:4px;">
+                                <b>Status:</b> <span style="color:${markerColor};font-weight:700;">${r.status || 'Pending'}</span>
+                            </div>
+                            <div style="font-size:0.78rem;color:#94a3b8;margin-bottom:4px;">
+                                <i class="fas fa-location-dot"></i> ${escapeHtml(r.location || 'Coordinates on file')}
+                            </div>
+                            <div style="font-size:0.75rem;color:#94a3b8;margin-bottom:4px;">
+                                <i class="fas fa-user"></i> ${escapeHtml(r.citizenEmail || 'Anonymous')}
+                            </div>
+                            <div style="font-size:0.75rem;color:#64748b;margin-bottom:8px;">
+                                <i class="fas fa-clock"></i> Reported: ${timeFormatted}
+                            </div>
+                            <div style="background:rgba(255,255,255,0.05);padding:6px;border-radius:4px;font-size:0.78rem;color:#e2e8f0;margin-bottom:8px;max-height:80px;overflow-y:auto;">
+                                "${escapeHtml(r.message || '')}"
+                            </div>
+                            <div style="display:flex;gap:6px;">
+                                <button onclick="window.location.href='/admin-tasks.html?reportId=${r.reportId}'" style="flex:1;background:linear-gradient(135deg,#0284c7,#00e5ff);color:#030a16;border:none;padding:5px 8px;border-radius:4px;font-weight:700;font-size:0.78rem;cursor:pointer;">
+                                    <i class="fas fa-plus"></i> Assign Task
+                                </button>
+                                <button onclick="window.IncidentRoom.open(${r.reportId}, 'CITIZEN_REPORT')" style="background:rgba(255,255,255,0.12);color:#fff;border:none;padding:5px 8px;border-radius:4px;font-size:0.78rem;cursor:pointer;">
+                                    <i class="fas fa-comments"></i> Room
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    marker.bindPopup(popupHtml);
+                });
+            } catch (err) {
+                console.warn('Could not load citizen incidents on map:', err);
+            }
+        }
+
+        async function loadActiveRespondersOnMap() {
+            if (!map || !respondersLayerGroup) return;
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            try {
+                const res = await fetch('/api/tracking/active', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) return;
+
+                const sessions = await res.json();
+                respondersLayerGroup.clearLayers();
+
+                const badge = document.getElementById('mapResponderBadge');
+                if (badge) {
+                    if (sessions && sessions.length > 0) {
+                        badge.style.display = 'inline';
+                        badge.innerHTML = `• <i class="fas fa-truck-medical"></i> ${sessions.length} Live Unit(s)`;
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+
+                if (!sessions || sessions.length === 0) return;
+
+                sessions.forEach(s => {
+                    if (!s.latitude || !s.longitude) return;
+
+                    const isStale = Boolean(s.isStale);
+                    const borderColor = isStale ? '#f59e0b' : '#38bdf8';
+                    const glowColor = isStale ? 'rgba(245,158,11,0.7)' : 'rgba(0,229,255,0.6)';
+
+                    const responderIcon = L.divIcon({
+                        className: 'tactical-responder-marker',
+                        html: `
+                            <div style="position:relative;width:34px;height:34px;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,#00e5ff 0%,#0369a1 70%,#021b35 100%);border:2px solid ${borderColor};border-radius:50%;box-shadow:0 0 16px ${glowColor};cursor:pointer;">
+                                <i class="fas fa-truck-medical" style="color:#030a16;font-size:14px;"></i>
+                                <span style="position:absolute;top:-3px;right:-3px;width:9px;height:9px;background:${isStale ? '#f59e0b' : '#10b981'};border:1.5px solid #030a16;border-radius:50%;animation:pulse 1.8s infinite;"></span>
+                            </div>
+                        `,
+                        iconSize: [34, 34],
+                        iconAnchor: [17, 17],
+                        popupAnchor: [0, -17]
+                    });
+
+                    const marker = L.marker([s.latitude, s.longitude], { icon: responderIcon }).addTo(respondersLayerGroup);
+
+                    const popupContent = `
+                        <div style="font-family:Inter,sans-serif;color:#fff;background:#091322;padding:10px 14px;border-radius:8px;border:1px solid ${borderColor};min-width:220px;font-size:0.85rem;">
+                            <div style="font-weight:700;color:#00e5ff;font-size:0.95rem;margin-bottom:4px;display:flex;align-items:center;gap:6px;">
+                                <i class="fas fa-truck-medical"></i> ${escapeHtml(s.responderName || s.responderEmail)}
+                            </div>
+                            ${isStale ? `
+                                <div style="background:rgba(245,158,11,0.15);border:1px solid #f59e0b;color:#fbbf24;padding:3px 6px;border-radius:4px;font-size:0.72rem;margin-bottom:6px;">
+                                    <i class="fas fa-triangle-exclamation"></i> Stale Signal (>60s) — Location may be outdated
+                                </div>
+                            ` : ''}
+                            <div style="font-size:0.8rem;color:#cbd5e1;margin-bottom:4px;">
+                                Mission <b>#TASK-${s.assignmentId}</b> • <span style="color:#10b981;">${s.status || 'ACTIVE'}</span>
+                            </div>
+                            <div style="font-size:0.75rem;color:#94a3b8;margin-bottom:4px;">
+                                <i class="fas fa-location-crosshairs"></i> GPS Accuracy: ±${Math.round(s.accuracy || 10)}m
+                            </div>
+                            <div style="font-size:0.75rem;color:#94a3b8;margin-bottom:6px;">
+                                Target: ${escapeHtml(s.destinationAddress || 'Coordinates on file')}
+                            </div>
+                            ${s.etaText ? `<div style="font-size:0.75rem;color:#f59e0b;font-weight:600;margin-bottom:8px;"><i class="fas fa-clock"></i> ETA: ${s.etaText}</div>` : ''}
+                            <div style="display:flex;gap:6px;margin-top:6px;">
+                                <button onclick="window.ResponderTracking.open(${s.assignmentId})" style="flex:1;background:linear-gradient(135deg,#0284c7,#00e5ff);color:#030a16;border:none;padding:5px 8px;border-radius:4px;font-weight:700;font-size:0.78rem;cursor:pointer;">
+                                    <i class="fas fa-crosshairs"></i> Radar HUD
+                                </button>
+                                <button onclick="window.IncidentRoom.open(${s.assignmentId}, 'RESCUE_TASK')" style="background:rgba(255,255,255,0.12);color:#fff;border:none;padding:5px 8px;border-radius:4px;font-size:0.78rem;cursor:pointer;">
+                                    <i class="fas fa-comments"></i> Room
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    marker.bindPopup(popupContent);
+
+                    if (s.accuracy && s.accuracy > 0 && s.accuracy <= 500) {
+                        L.circle([s.latitude, s.longitude], {
+                            radius: s.accuracy,
+                            color: borderColor,
+                            weight: 1,
+                            fillColor: borderColor,
+                            fillOpacity: 0.08
+                        }).addTo(respondersLayerGroup);
+                    }
+                });
+            } catch (err) {
+                console.warn('Responder tracking map update error:', err);
+            }
+        }
+
+        function zoomMapTo(coords, zoomLevel, btn) {
+            if (map) {
+                map.flyTo(coords, zoomLevel, { duration: 1.2 });
+            }
+            if (btn) {
+                document.querySelectorAll('.cc-quick-filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            }
+        }
+
+        // Load genuine NDMA official alerts and plot on map
+        function loadDisastersOnMap() {
+            fetch('/api/official-alerts/active')
+                .then(res => res.json())
+                .then(officialAlerts => {
+                    if (officialAlerts && officialAlerts.length > 0) {
+                        allDisastersCache = officialAlerts;
+                        plotAlertsOnMap(officialAlerts, true);
+                        const countEl = document.getElementById('ndmaAlertsCount');
+                        if (countEl) countEl.textContent = officialAlerts.length;
+                        document.getElementById('mapAlertCountBadge').textContent = `${officialAlerts.length} Active Warnings`;
+                    } else {
+                        fetch('/api/disasters')
+                            .then(res => res.json())
+                            .then(disasters => {
+                                allDisastersCache = disasters;
+                                plotAlertsOnMap(disasters, false);
+                            });
+                    }
+                })
+                .catch(() => {
+                    fetch('/api/disasters')
+                        .then(res => res.json())
+                        .then(disasters => {
+                            allDisastersCache = disasters;
+                            plotAlertsOnMap(disasters, false);
+                        });
+                });
+        }
+
+        function plotAlertsOnMap(items, isOfficial) {
+            if (!map || !alertsLayerGroup) return;
+            alertsLayerGroup.clearLayers();
+
+            if (!items || items.length === 0) return;
+
+            items.forEach(item => {
+                const hazard = item.hazardType || item.type || 'Advisory';
+                const locationName = item.areaDescription || item.location || 'India';
+                const severity = item.severity || 'Moderate';
+                const lat = item.latitude || (locationCoords[locationName] ? locationCoords[locationName][0] : 11.1271);
+                const lon = item.longitude || (locationCoords[locationName] ? locationCoords[locationName][1] : 78.6569);
+
+                const icon = CommandCenter.createTacticalMarker(hazard, severity);
+                const marker = L.marker([lat, lon], { icon: icon }).addTo(alertsLayerGroup);
+
+                // Clicking marker slides open the tactical incident inspection drawer
+                marker.on('click', () => {
+                    CommandCenter.openIncidentDrawer(item, (clickedItem) => {
+                        // Pre-populate broadcast form from drawer action
+                        document.getElementById('title').value = `${hazard} Alert - ${locationName}`;
+                        document.getElementById('message').value = clickedItem.headline || clickedItem.description || `Emergency warning for ${locationName}. Follow safety instructions.`;
+                        
+                        let matchedType = 'Other';
+                        if (/rain/i.test(hazard)) matchedType = 'Heavy Rain';
+                        else if (/flood/i.test(hazard)) matchedType = 'Flood';
+                        else if (/cyclone/i.test(hazard)) matchedType = 'Cyclone';
+                        else if (/earthquake/i.test(hazard)) matchedType = 'Earthquake';
+                        document.getElementById('disasterType').value = matchedType;
+                        document.getElementById('severity').value = /high|extreme|severe/i.test(severity) ? 'High' : 'Medium';
+                        
+                        // Select region if in list
+                        for (let opt of document.getElementById('region').options) {
+                            if (locationName.toLowerCase().includes(opt.value.toLowerCase())) {
+                                document.getElementById('region').value = opt.value;
+                                break;
+                            }
+                        }
+
+                        document.getElementById('alertForm').scrollIntoView({ behavior: 'smooth' });
+                    });
+                });
+            });
+        }
+
+        function filterMapMarkers() {
+            const filterVal = document.getElementById('mapSeverityFilter').value;
+            if (filterVal === 'ALL') {
+                plotAlertsOnMap(allDisastersCache, true);
+                return;
+            }
+
+            const filtered = allDisastersCache.filter(item => {
+                const sev = (item.severity || '').toUpperCase();
+                if (filterVal === 'CRITICAL') return sev === 'HIGH' || sev === 'EXTREME' || sev === 'SEVERE';
+                if (filterVal === 'MODERATE') return sev === 'MEDIUM' || sev === 'MODERATE';
+                if (filterVal === 'MINOR') return sev === 'LOW' || sev === 'MINOR';
+                return true;
+            });
+            plotAlertsOnMap(filtered, true);
+        }
+
+        // Live Feed Telemetry Check
+        async function loadNdmaFeedStatus() {
+            try {
+                const res = await fetch('/api/official-alerts/status');
+                if (res.ok) {
+                    const data = await res.json();
+                    const lastSync = data.lastSuccessfulSync ? new Date(data.lastSuccessfulSync).toLocaleTimeString('en-IN') : 'Active';
+                    document.getElementById('ndmaSyncMetaText').textContent = `Synced: ${lastSync} • Ingested: ${data.totalRecordsImported || 0}`;
+                    document.getElementById('ndmaAlertsCount').textContent = data.activeOfficialAlertsCount || 0;
+                }
+            } catch (e) {}
+        }
+
+        async function triggerNdmaManualSync() {
+            const btn = document.getElementById('btnManualSync');
+            const icon = document.getElementById('syncSpinnerIcon');
+            try {
+                btn.disabled = true;
+                icon.classList.add('fa-spin');
+                const token = localStorage.getItem('token');
+                const res = await fetch('/api/admin/ndma/sync', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    CommandCenter.showToast('NDMA SACHET feed ingested successfully!', 'success');
+                    await loadNdmaFeedStatus();
+                    loadDisastersOnMap();
+                } else {
+                    CommandCenter.showToast(data.message || 'Sync failed', 'error');
+                }
+            } catch (err) {
+                CommandCenter.showToast('Network error: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                icon.classList.remove('fa-spin');
+            }
+        }
+
+        // Tactical Feed Mode & Cache
+        let currentFeedMode = 'alerts'; // 'alerts' | 'tasks'
+        let currentAlertStatusFilter = 'Active';
+        let cachedAlerts = [];
+        let cachedTasks = [];
+
+        function switchFeedView(mode, filter) {
+            currentFeedMode = mode;
+            document.querySelectorAll('.cc-sub-tab-btn').forEach(b => b.classList.remove('active'));
+
+            if (mode === 'alerts') {
+                currentAlertStatusFilter = filter || 'Active';
+                const btnId = filter === 'Active' ? 'tabAlertsActive' :
+                              filter === 'Acknowledged' ? 'tabAlertsAck' :
+                              filter === 'Resolved' ? 'tabAlertsResolved' : 'tabAlertsAll';
+                const el = document.getElementById(btnId);
+                if (el) el.classList.add('active');
+                const titleEl = document.getElementById('feedSectionTitle');
+                if (titleEl) titleEl.textContent = 'Live Broadcasted Emergency Alerts';
+                renderAlertCards();
+            } else {
+                const el = document.getElementById('tabActiveTasks');
+                if (el) el.classList.add('active');
+                const titleEl = document.getElementById('feedSectionTitle');
+                if (titleEl) titleEl.textContent = 'Field Rescue Operations & Missions';
+                loadActiveMissions();
+            }
+        }
+
+        // Load Live Broadcasted Alerts
+        function loadLiveAlerts() {
+            const token = localStorage.getItem('token');
+            const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+            fetch('/api/alerts', { headers: headers })
+                .then(res => res.json())
+                .then(alerts => {
+                    cachedAlerts = Array.isArray(alerts) ? alerts : [];
+                    cachedAlerts.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+                    const activeCount = cachedAlerts.filter(a => (a.status || 'Active').toLowerCase() === 'active').length;
+                    const ackCount = cachedAlerts.filter(a => (a.status || '').toLowerCase() === 'acknowledged').length;
+                    const resCount = cachedAlerts.filter(a => (a.status || '').toLowerCase() === 'resolved').length;
+                    const totalCount = cachedAlerts.length;
+
+                    // Update Top Stats & Tab Badges
+                    const topActive = document.getElementById('activeCount');
+                    if (topActive) topActive.innerText = activeCount;
+                    const topAck = document.getElementById('acknowledgedCount');
+                    if (topAck) topAck.innerText = ackCount;
+                    const topRes = document.getElementById('resolvedCount');
+                    if (topRes) topRes.innerText = resCount;
+
+                    const tbActive = document.getElementById('tabActiveCount');
+                    if (tbActive) tbActive.innerText = activeCount;
+                    const tbAck = document.getElementById('tabAckCount');
+                    if (tbAck) tbAck.innerText = ackCount;
+                    const tbRes = document.getElementById('tabResolvedCount');
+                    if (tbRes) tbRes.innerText = resCount;
+                    const tbTotal = document.getElementById('tabTotalCount');
+                    if (tbTotal) tbTotal.innerText = totalCount;
+
+                    if (currentFeedMode === 'alerts') {
+                        renderAlertCards();
+                    }
+                })
+                .catch(err => console.error('Error loading live alerts:', err));
+        }
+
+        function renderAlertCards() {
+            const grid = document.getElementById('liveAlertsGrid');
+            const noAlerts = document.getElementById('noAlerts');
+            if (!grid) return;
+
+            let alertsToShow = cachedAlerts;
+            if (currentAlertStatusFilter !== 'ALL') {
+                alertsToShow = cachedAlerts.filter(a => (a.status || 'Active').toLowerCase() === currentAlertStatusFilter.toLowerCase());
+            }
+
+            if (alertsToShow.length === 0) {
+                grid.innerHTML = '';
+                noAlerts.style.display = 'block';
+                noAlerts.innerHTML = `
+                    <i class="fas fa-bell-slash" style="font-size:3rem;margin-bottom:0.8rem;opacity:0.4;"></i>
+                    <p>No ${currentAlertStatusFilter === 'ALL' ? '' : currentAlertStatusFilter.toLowerCase()} emergency broadcasts found.</p>
+                `;
+                return;
+            }
+
+            noAlerts.style.display = 'none';
+            grid.innerHTML = '';
+
+            alertsToShow.forEach(alert => {
+                const item = document.createElement('div');
+                const sev = (alert.severity || 'Medium').toLowerCase();
+                const st = (alert.status || 'Active').toLowerCase();
+                item.className = `cc-alert-feed-item ${sev}`;
+
+                const formattedTime = (window.formatIndianDateTime ? window.formatIndianDateTime(alert.createdAt) : (window.formatIndianTime ? window.formatIndianTime(alert.createdAt) : new Date(alert.createdAt).toLocaleString('en-IN')));
+
+                const isAck = st === 'acknowledged';
+                const isRes = st === 'resolved';
+
+                let ackBtnHtml = '';
+                if (!isAck && !isRes) {
+                    ackBtnHtml = `<button type="button" class="cc-btn cc-btn-secondary" onclick="acknowledgeAlert(${alert.alertId})"><i class="fas fa-check"></i> Acknowledge</button>`;
+                } else if (isAck) {
+                    ackBtnHtml = `<span class="cc-badge cc-badge-moderate" style="padding:0.35rem 0.6rem;font-size:0.75rem;"><i class="fas fa-check-circle"></i> Acknowledged</span>`;
+                }
+
+                let resolveBtnHtml = '';
+                if (!isRes) {
+                    resolveBtnHtml = `<button type="button" class="cc-btn cc-btn-success" onclick="resolveAlertPrompt(${alert.alertId})"><i class="fas fa-check-double"></i> Resolve</button>`;
+                } else {
+                    resolveBtnHtml = `<span class="cc-badge cc-badge-safe" style="padding:0.35rem 0.6rem;font-size:0.75rem;"><i class="fas fa-shield-halved"></i> Resolved</span>`;
+                }
+
+                item.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;">
+                        <span class="cc-badge broadcast"><i class="fas fa-tower-broadcast"></i> BROADCAST #${alert.alertId}</span>
+                        <span class="cc-badge severity-${sev}">${alert.severity || 'Moderate'}</span>
+                    </div>
+                    <h3 style="color:#ffffff;font-size:1.05rem;font-weight:700;margin-bottom:0.4rem;line-height:1.3;">${alert.title}</h3>
+                    <p style="color:#94a3b8;font-size:0.86rem;line-height:1.45;margin-bottom:0.8rem;">${alert.message || 'Emergency broadcast warning.'}</p>
+                    <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.78rem;color:#64748b;font-family:var(--cc-font-mono);">
+                        <span><i class="fas fa-location-dot" style="color:var(--cc-cyan);"></i> ${alert.region || 'Regional Sector'}</span>
+                        <span><i class="fas fa-clock"></i> ${formattedTime}</span>
+                    </div>
+                    <!-- Card Action Cluster -->
+                    <div class="cc-card-actions">
+                        <button type="button" class="cc-btn cc-btn-secondary" onclick="window.IncidentRoom.open(${alert.alertId}, 'ALERT_BROADCAST', '${escapeJs(alert.title || '')}')">
+                            <i class="fas fa-comments"></i> Room
+                        </button>
+                        <button type="button" class="cc-btn cc-btn-secondary" onclick="window.MediaCapture.open({ incidentId: ${alert.alertId}, incidentType: 'ALERT_BROADCAST' })">
+                            <i class="fas fa-camera"></i> Evidence
+                        </button>
+                        ${ackBtnHtml}
+                        ${resolveBtnHtml}
+                        <button type="button" class="cc-btn cc-btn-danger" style="flex:0 0 auto;min-width:36px;padding:0.45rem 0.6rem;" onclick="deleteAlertPrompt(${alert.alertId})" title="Delete Broadcast Alert">
+                            <i class="fas fa-trash-can"></i>
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(item);
+            });
+        }
+
+        async function loadActiveMissions() {
+            const token = localStorage.getItem('token');
+            const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+            try {
+                const res = await fetch('/api/tasks', { headers: headers });
+                if (res.ok) {
+                    const data = await res.json();
+                    cachedTasks = data.tasks || (Array.isArray(data) ? data : []);
+                    const mCount = document.getElementById('tabMissionCount');
+                    if (mCount) mCount.innerText = cachedTasks.length;
+                    if (currentFeedMode === 'tasks') {
+                        renderTaskCards();
+                    }
+                }
+            } catch (e) {
+                console.warn('Error loading active missions:', e);
+            }
+        }
+
+        function renderTaskCards() {
+            const grid = document.getElementById('liveAlertsGrid');
+            const noAlerts = document.getElementById('noAlerts');
+            if (!grid) return;
+
+            if (!cachedTasks || cachedTasks.length === 0) {
+                grid.innerHTML = '';
+                noAlerts.style.display = 'block';
+                noAlerts.innerHTML = `
+                    <i class="fas fa-clipboard-check" style="font-size:3rem;margin-bottom:0.8rem;opacity:0.4;"></i>
+                    <p>No active rescue mission tasks at this moment.</p>
+                `;
+                return;
+            }
+
+            noAlerts.style.display = 'none';
+            grid.innerHTML = '';
+
+            cachedTasks.forEach(task => {
+                const item = document.createElement('div');
+                const prio = (task.priority || 'Medium').toLowerCase();
+                const st = (task.status || 'Pending').toLowerCase();
+                item.className = `cc-alert-feed-item ${prio}`;
+
+                const formattedTime = (window.formatIndianDateTime ? window.formatIndianDateTime(task.createdAt) : (window.formatIndianTime ? window.formatIndianTime(task.createdAt) : new Date(task.createdAt || Date.now()).toLocaleString('en-IN')));
+
+                const isCompleted = st === 'completed' || st === 'resolved';
+                const isAck = st === 'acknowledged';
+
+                let ackBtnHtml = '';
+                if (st === 'pending') {
+                    ackBtnHtml = `<button type="button" class="cc-btn cc-btn-secondary" onclick="acknowledgeTask(${task.taskId})"><i class="fas fa-check"></i> Acknowledge</button>`;
+                } else if (isAck) {
+                    ackBtnHtml = `<span class="cc-badge cc-badge-moderate" style="padding:0.35rem 0.6rem;font-size:0.75rem;"><i class="fas fa-check-circle"></i> Acknowledged</span>`;
+                }
+
+                let resolveBtnHtml = '';
+                if (!isCompleted) {
+                    resolveBtnHtml = `<button type="button" class="cc-btn cc-btn-success" onclick="resolveTaskPrompt(${task.taskId})"><i class="fas fa-check-double"></i> Resolve</button>`;
+                } else {
+                    resolveBtnHtml = `<span class="cc-badge cc-badge-safe" style="padding:0.35rem 0.6rem;font-size:0.75rem;"><i class="fas fa-shield-halved"></i> Resolved</span>`;
+                }
+
+                item.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;">
+                        <span class="cc-badge ndma"><i class="fas fa-truck-medical"></i> MISSION #${task.taskId}</span>
+                        <span class="cc-badge severity-${prio}">${task.priority || 'Medium'}</span>
+                    </div>
+                    <h3 style="color:#ffffff;font-size:1.05rem;font-weight:700;margin-bottom:0.4rem;line-height:1.3;">${task.title}</h3>
+                    <p style="color:#94a3b8;font-size:0.86rem;line-height:1.45;margin-bottom:0.8rem;">${task.description || 'Rescue operation deployment.'}</p>
+                    <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.78rem;color:#64748b;font-family:var(--cc-font-mono);">
+                        <span><i class="fas fa-map-pin" style="color:var(--cc-cyan);"></i> ${task.zone || 'Field Sector'} • <strong>${task.assignedTo ? (task.assignedResponderName || task.assignedTo) : 'Unassigned'}</strong></span>
+                        <span><i class="fas fa-clock"></i> ${formattedTime}</span>
+                    </div>
+                    <!-- Action Cluster -->
+                    <div class="cc-card-actions">
+                        <button type="button" class="cc-btn" style="background:linear-gradient(135deg, #00e5ff, #0077ff);color:#030a16;font-weight:700;" onclick="window.SmartAssignment.open(${task.taskId}, function(){ loadActiveMissions(); })">
+                            <i class="fas fa-brain"></i> Smart Dispatch
+                        </button>
+                        <button type="button" class="cc-btn cc-btn-secondary" onclick="window.IncidentRoom.open(${task.taskId}, 'RESCUE_TASK', '${escapeJs(task.title || '')}')">
+                            <i class="fas fa-comments"></i> Room
+                        </button>
+                        <button type="button" class="cc-btn cc-btn-secondary" onclick="window.MediaCapture.open({ incidentId: ${task.taskId}, incidentType: 'RESCUE_TASK', onSuccess: function(){ loadActiveMissions(); } })">
+                            <i class="fas fa-camera"></i> Evidence
+                        </button>
+                        ${task.assignedTo ? `<button type="button" class="cc-btn" style="background:rgba(0,229,255,0.15);border:1px solid #00e5ff;color:#00e5ff;" onclick="window.ResponderTracking.open(${task.taskId})"><i class="fas fa-satellite-dish"></i> Track Live</button>` : ''}
+                        ${ackBtnHtml}
+                        ${resolveBtnHtml}
+                        <button type="button" class="cc-btn cc-btn-danger" style="flex:0 0 auto;min-width:36px;padding:0.45rem 0.6rem;" onclick="deleteTaskPrompt(${task.taskId})" title="Delete Rescue Mission">
+                            <i class="fas fa-trash-can"></i>
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(item);
+            });
+        }
+
+        async function acknowledgeAlert(alertId) {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/alerts/${alertId}/acknowledge`, {
+                method: 'PUT',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (res.ok) {
+                CommandCenter.showToast('Alert marked as Acknowledged', 'success');
+                loadLiveAlerts();
+            }
+        }
+
+        async function resolveAlert(alertId) {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/alerts/${alertId}/resolve`, {
+                method: 'PUT',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (res.ok) {
+                CommandCenter.showToast('Alert safely Resolved', 'success');
+                loadLiveAlerts();
+            }
+        }
+
+        async function resolveAlertPrompt(alertId) {
+            let confirmed = false;
+            if (window.showConfirm) {
+                confirmed = await window.showConfirm({
+                    title: 'Resolve Broadcast Alert',
+                    message: `Mark Emergency Alert #${alertId} as safely resolved? This notifies citizens that the danger has passed.`,
+                    confirmText: 'Mark Resolved',
+                    type: 'success'
+                });
+            } else {
+                confirmed = confirm(`Mark Alert #${alertId} as safely resolved?`);
+            }
+            if (!confirmed) return;
+            await resolveAlert(alertId);
+        }
+
+        async function deleteAlertPrompt(alertId) {
+            let confirmed = false;
+            if (window.showConfirm) {
+                confirmed = await window.showConfirm({
+                    title: 'Delete Broadcast Alert',
+                    message: `Are you sure you want to delete Emergency Alert #${alertId}? This will remove it from public and responder feeds.`,
+                    confirmText: 'Delete Alert',
+                    type: 'danger'
+                });
+            } else {
+                confirmed = confirm(`Are you sure you want to delete Alert #${alertId}?`);
+            }
+            if (!confirmed) return;
+
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch(`/api/alerts/${alertId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    CommandCenter.showToast(`Alert #${alertId} deleted successfully`, 'success');
+                    loadLiveAlerts();
+                } else {
+                    const err = await res.json().catch(() => ({}));
+                    CommandCenter.showToast(err.message || 'Failed to delete alert', 'error');
+                }
+            } catch (e) {
+                CommandCenter.showToast('Network error: ' + e.message, 'error');
+            }
+        }
+
+        async function acknowledgeTask(taskId) {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/tasks/${taskId}/acknowledge`, {
+                method: 'PUT',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (res.ok) {
+                CommandCenter.showToast(`Mission #${taskId} acknowledged`, 'success');
+                loadActiveMissions();
+            }
+        }
+
+        async function resolveTaskPrompt(taskId) {
+            let summary = '';
+            if (window.showPrompt) {
+                summary = await window.showPrompt({
+                    title: 'Resolve Rescue Mission',
+                    message: `Provide an operational summary for completing Mission #${taskId}:`,
+                    placeholder: 'e.g., Evacuation completed safely. All civilians assisted.',
+                    confirmText: 'Resolve Mission'
+                });
+            } else {
+                summary = prompt(`Enter resolution summary for Mission #${taskId}:`);
+            }
+            if (summary === null) return;
+
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/tasks/${taskId}/resolve?summary=${encodeURIComponent(summary || 'Mission marked completed by admin')}`, {
+                method: 'PUT',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (res.ok) {
+                CommandCenter.showToast(`Mission #${taskId} marked Resolved`, 'success');
+                if (currentFeedMode === 'tasks') loadActiveMissions();
+                else loadLiveAlerts();
+            }
+        }
+
+        async function deleteTaskPrompt(taskId) {
+            let confirmed = false;
+            if (window.showConfirm) {
+                confirmed = await window.showConfirm({
+                    title: 'Delete Task',
+                    message: `Permanently delete Rescue Mission #${taskId}?`,
+                    confirmText: 'Delete Mission',
+                    type: 'danger'
+                });
+            } else {
+                confirmed = confirm(`Delete Mission #${taskId}?`);
+            }
+            if (!confirmed) return;
+
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/tasks/${taskId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (res.ok) {
+                CommandCenter.showToast(`Mission #${taskId} deleted`, 'success');
+                loadActiveMissions();
+            }
+        }
+
+        // Handle Broadcast Form Submission with Step-Up PIN Guard
+        document.getElementById('alertForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/index.html';
+                return;
+            }
+
+            const alertData = {
+                title: document.getElementById('title').value.trim(),
+                message: document.getElementById('message').value.trim(),
+                disasterType: document.getElementById('disasterType').value,
+                severity: document.getElementById('severity').value,
+                region: document.getElementById('region').value,
+                mediaUrl: document.getElementById('mediaUrl').value.trim() || null,
+                broadcasted: true
+            };
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Broadcasting...';
+
+            async function executeBroadcast(stepUpToken = null) {
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                };
+                if (stepUpToken) {
+                    headers['X-Admin-Step-Up-Token'] = stepUpToken;
+                }
+
+                try {
+                    const response = await fetch('/api/alerts', {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify(alertData)
+                    });
+
+                    if (response.status === 428) {
+                        openAdminPinModal(async (newPinToken) => {
+                            await executeBroadcast(newPinToken);
+                        });
+                        return;
+                    }
+
+                    if (response.ok) {
+                        CommandCenter.showToast('Emergency alert broadcasted successfully to all citizens!', 'success');
+                        document.getElementById('alertForm').reset();
+                        loadLiveAlerts();
+                    } else {
+                        const err = await response.json();
+                        CommandCenter.showToast(err.message || 'Broadcast failed', 'error');
+                    }
+                } catch (err) {
+                    CommandCenter.showToast('Network error: ' + err.message, 'error');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Broadcast Alert to Citizens';
+                }
+            }
+
+            await executeBroadcast();
+        });
+
+        // Step-Up PIN Modal
+        function openAdminPinModal(callback) {
+            stepUpSuccessCallback = callback;
+            document.getElementById('adminPinModal').style.display = 'flex';
+            document.getElementById('adminPinInput').value = '';
+            document.getElementById('adminPinError').innerText = '';
+            document.getElementById('adminPinInput').focus();
+        }
+
+        function closeAdminPinModal() {
+            document.getElementById('adminPinModal').style.display = 'none';
+            stepUpSuccessCallback = null;
+        }
+
+        async function submitAdminPinVerification() {
+            const pin = document.getElementById('adminPinInput').value.trim();
+            const errEl = document.getElementById('adminPinError');
+            const token = localStorage.getItem('token');
+
+            if (!pin || pin.length < 6) {
+                errEl.innerText = 'Please enter your complete 6-digit PIN';
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/auth/admin/verify-pin', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ pin: pin })
+                });
+
+                const data = await res.json();
+                if (res.ok && data.status === 'success') {
+                    closeAdminPinModal();
+                    if (stepUpSuccessCallback) {
+                        stepUpSuccessCallback(data.stepUpToken);
+                    }
+                } else {
+                    errEl.innerText = data.message || 'Incorrect PIN. Please re-enter.';
+                }
+            } catch (err) {
+                errEl.innerText = 'Network error verifying PIN: ' + err.message;
+            }
+        }
+
+        function toggleAutoBroadcast() {
+            autoBroadcastEnabled = document.getElementById('autoBroadcastToggle').checked;
+            localStorage.setItem('autoBroadcast', autoBroadcastEnabled);
+            CommandCenter.showToast(`Auto-Broadcast mode is ${autoBroadcastEnabled ? 'ACTIVATED' : 'DISABLED'}`, 'info');
+        }
+
+        function escapeJs(str) {
+            if (!str) return '';
+            return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
+        }
+
+        async function loadResponderRosterAndAnalytics() {
+            const token = localStorage.getItem('token');
+            const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+
+            try {
+                const [respRes, tasksRes, alertsRes] = await Promise.allSettled([
+                    fetch('/api/auth/responders/all', { headers: headers }),
+                    fetch('/api/tasks', { headers: headers }),
+                    fetch('/api/alerts', { headers: headers })
+                ]);
+
+                const responders = (respRes.status === 'fulfilled' && respRes.value.ok) ?
+                    (await respRes.value.json()).responders || [] : [];
+
+                const tasks = (tasksRes.status === 'fulfilled' && tasksRes.value.ok) ?
+                    (await tasksRes.value.json()).tasks || [] : [];
+
+                const alerts = (alertsRes.status === 'fulfilled' && alertsRes.value.ok) ?
+                    await alertsRes.value.json() : [];
+
+                // 1. Populate Responder Roster
+                const rosterEl = document.getElementById('responderRosterList');
+                if (rosterEl) {
+                    if (responders.length === 0) {
+                        rosterEl.innerHTML = '<div style="color:var(--cc-text-muted);grid-column:1/-1;padding:1.5rem;text-align:center;">No field responders registered in directory.</div>';
+                    } else {
+                        rosterEl.innerHTML = responders.map(r => {
+                            const activeTaskCount = tasks.filter(t => t.assignedTo && t.assignedTo.toLowerCase() === r.email.toLowerCase() && t.status !== 'Completed').length;
+                            const isAvailable = activeTaskCount === 0;
+
+                            return `
+                                <div style="background:var(--cc-bg-surface-0);border:1px solid var(--cc-border-subtle);border-radius:var(--cc-radius-md);padding:1rem;display:flex;flex-direction:column;gap:0.5rem;position:relative;overflow:hidden;">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <div style="font-weight:700;font-size:0.92rem;color:#ffffff;display:flex;align-items:center;gap:0.4rem;">
+                                            <i class="fas fa-user-shield" style="color:var(--cc-purple);"></i>
+                                            ${r.name || 'Emergency Responder'}
+                                        </div>
+                                        <span class="cc-badge ${isAvailable ? 'severity-minor' : 'severity-moderate'}" style="font-size:0.7rem;padding:0.15rem 0.5rem;">
+                                            <span class="cc-pulse-dot ${isAvailable ? '' : 'critical'}"></span>
+                                            ${isAvailable ? 'FIELD READY' : 'ACTIVE MISSION'}
+                                        </span>
+                                    </div>
+
+                                    <div style="font-size:0.8rem;color:var(--cc-text-secondary);display:flex;flex-direction:column;gap:0.25rem;">
+                                        <div><i class="fas fa-location-crosshairs" style="color:var(--cc-cyan);width:16px;"></i> Zone: <strong>${r.assignedZone || r.location || 'All Zones'}</strong></div>
+                                        <div><i class="fas fa-envelope" style="color:#94a3b8;width:16px;"></i> ${r.email}</div>
+                                        <div><i class="fas fa-list-check" style="color:#f59e0b;width:16px;"></i> Active Tasks: <strong>${activeTaskCount}</strong></div>
+                                    </div>
+
+                                    <div style="margin-top:0.4rem;display:flex;gap:0.5rem;">
+                                        <a href="/admin-tasks.html" class="cc-btn cc-btn-secondary" style="flex:1;text-align:center;padding:0.35rem;font-size:0.75rem;text-decoration:none;">
+                                            <i class="fas fa-paper-plane"></i> Dispatch / Assign Task
+                                        </a>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                    }
+                }
+
+                // 2. Populate Incident Metrics Summary
+                const metricsEl = document.getElementById('incidentMetricsSummary');
+                if (metricsEl) {
+                    const totalAlerts = alerts.length || 1;
+                    const highCount = alerts.filter(a => (a.severity || '').toLowerCase() === 'high').length;
+                    const medCount = alerts.filter(a => (a.severity || '').toLowerCase() === 'medium').length;
+                    const lowCount = alerts.filter(a => (a.severity || '').toLowerCase() === 'low').length;
+                    const resCount = alerts.filter(a => a.status === 'Resolved').length;
+
+                    const resPercent = Math.round((resCount / totalAlerts) * 100);
+
+                    metricsEl.innerHTML = `
+                        <div>
+                            <div style="display:flex;justify-content:space-between;font-size:0.85rem;color:var(--cc-text-secondary);margin-bottom:0.4rem;">
+                                <span>Overall Mitigation & Resolution Rate</span>
+                                <strong style="color:var(--cc-safe-green);">${resPercent}% Resolved</strong>
+                            </div>
+                            <div style="background:var(--cc-bg-surface-0);border-radius:var(--cc-radius-pill);height:8px;overflow:hidden;border:1px solid var(--cc-border-subtle);">
+                                <div style="background:linear-gradient(90deg, #10b981, #38bdf8);width:${resPercent}%;height:100%;border-radius:var(--cc-radius-pill);"></div>
+                            </div>
+                        </div>
+
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;margin-top:0.5rem;">
+                            <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:var(--cc-radius-sm);padding:0.75rem;text-align:center;">
+                                <div style="font-size:1.4rem;font-weight:700;color:var(--cc-critical-red);font-family:var(--cc-font-mono);">${highCount}</div>
+                                <div style="font-size:0.75rem;color:#fca5a5;text-transform:uppercase;">High Risk</div>
+                            </div>
+                            <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:var(--cc-radius-sm);padding:0.75rem;text-align:center;">
+                                <div style="font-size:1.4rem;font-weight:700;color:var(--cc-warning-amber);font-family:var(--cc-font-mono);">${medCount}</div>
+                                <div style="font-size:0.75rem;color:#fcd34d;text-transform:uppercase;">Medium Risk</div>
+                            </div>
+                            <div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:var(--cc-radius-sm);padding:0.75rem;text-align:center;">
+                                <div style="font-size:1.4rem;font-weight:700;color:var(--cc-safe-green);font-family:var(--cc-font-mono);">${lowCount}</div>
+                                <div style="font-size:0.75rem;color:#86efac;text-transform:uppercase;">Low Advisory</div>
+                            </div>
+                        </div>
+
+                        <div style="background:var(--cc-bg-surface-0);border:1px solid var(--cc-border-subtle);border-radius:var(--cc-radius-sm);padding:0.8rem 1rem;display:flex;align-items:center;justify-content:space-between;font-size:0.82rem;">
+                            <span style="color:var(--cc-text-muted);"><i class="fas fa-shield-halved" style="color:var(--cc-cyan);"></i> System Defcon Posture:</span>
+                            <span style="color:#38bdf8;font-weight:700;font-family:var(--cc-font-mono);">DEFCON 1 ACTIVE</span>
+                        </div>
+                    `;
+                }
+
+            } catch (err) {
+                console.warn('Error loading responder roster & analytics:', err);
+            }
+        }
+
+        // Data Hygiene & Duplicate Submissions Management
+        async function openDataHygieneModal() {
+            const modal = document.getElementById('dataHygieneModal');
+            if (!modal) return;
+            modal.style.display = 'flex';
+            document.getElementById('hygieneStatsLoading').style.display = 'block';
+            document.getElementById('hygieneStatsBody').style.display = 'none';
+
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch('/api/admin/data/hygiene-stats', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    const stats = await res.json();
+                    document.getElementById('statTotalReports').innerText = stats.totalReports || 0;
+                    document.getElementById('statDuplicateReports').innerText = stats.duplicateReportsDetected || 0;
+                    document.getElementById('statRescueTasks').innerText = stats.totalRescueTasks || 0;
+                    document.getElementById('statActiveTracking').innerText = stats.activeTrackingSessions || 0;
+
+                    const btnDedupe = document.getElementById('btnExecuteDeduplication');
+                    if (btnDedupe) {
+                        if (stats.duplicateReportsDetected === 0) {
+                            btnDedupe.disabled = true;
+                            btnDedupe.innerHTML = '<i class="fas fa-check"></i> Database Clean (0 Duplicates)';
+                        } else {
+                            btnDedupe.disabled = false;
+                            btnDedupe.innerHTML = `<i class="fas fa-broom"></i> Clean ${stats.duplicateReportsDetected} Duplicate(s)`;
+                        }
+                    }
+
+                    document.getElementById('hygieneStatsLoading').style.display = 'none';
+                    document.getElementById('hygieneStatsBody').style.display = 'block';
+                }
+            } catch (err) {
+                console.warn('Failed to load hygiene statistics:', err);
+                closeDataHygieneModal();
+            }
+        }
+
+        function closeDataHygieneModal() {
+            const modal = document.getElementById('dataHygieneModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        async function triggerCleanDuplicates() {
+            const token = localStorage.getItem('token');
+            const btn = document.getElementById('btnExecuteDeduplication');
+            if (btn) btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/admin/data/clean-duplicates', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+                });
+                if (res.ok) {
+                    const result = await res.json();
+                    if (window.showToast) {
+                        window.showToast(`Cleaned and archived ${result.duplicatesCleaned} duplicate submissions.`, 'success');
+                    }
+                    closeDataHygieneModal();
+                    loadIncidentsOnMap();
+                    loadLiveAlerts();
+                } else {
+                    throw new Error('HTTP ' + res.status);
+                }
+            } catch (err) {
+                if (window.showToast) window.showToast('Data hygiene run failed: ' + err.message, 'error');
+            }
+        }
+
+        // Initialize Page
+        window.addEventListener('DOMContentLoaded', () => {
+            initMap();
+            loadLiveAlerts();
+            loadNdmaFeedStatus();
+            loadResponderRosterAndAnalytics();
+            setInterval(loadLiveAlerts, 25000);
+            setInterval(loadNdmaFeedStatus, 30000);
+            setInterval(loadDisastersOnMap, 60000);
+            setInterval(loadResponderRosterAndAnalytics, 30000);
+        });
+    </script>
+</body>
+</html>

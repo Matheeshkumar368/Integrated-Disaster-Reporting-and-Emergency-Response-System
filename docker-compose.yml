@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: disaster_mysql_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: disaster_management
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-disaster_secure_password}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./DATABASE_SETUP.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - disaster_network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: disaster_management_app
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "${PORT:-8080}:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:mysql://mysql:3306/disaster_management?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DB_USERNAME: root
+      DB_PASSWORD: ${DB_PASSWORD:-disaster_secure_password}
+      JWT_SECRET: ${JWT_SECRET:-disaster-management-production-secure-jwt-secret-placeholder-key-368}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
+      ADMIN_STEP_UP_MINUTES: ${ADMIN_STEP_UP_MINUTES:-15}
+      NDMA_RSS_URL: ${NDMA_RSS_URL:-https://sachet.ndma.gov.in/cap_public_website/rss/rss_india.xml}
+      NDMA_SYNC_ENABLED: ${NDMA_SYNC_ENABLED:-true}
+      NDMA_SYNC_INTERVAL_MS: ${NDMA_SYNC_INTERVAL_MS:-300000}
+      NDMA_SYNC_MAX_ITEMS: ${NDMA_SYNC_MAX_ITEMS:-30}
+      IMD_API_KEY: ${IMD_API_KEY:-}
+      IMD_JWT_TOKEN: ${IMD_JWT_TOKEN:-}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    networks:
+      - disaster_network
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  disaster_network:
+    driver: bridge
+

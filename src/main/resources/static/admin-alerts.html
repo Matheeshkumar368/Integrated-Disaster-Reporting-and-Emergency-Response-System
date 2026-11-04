@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+    <meta http-equiv="Pragma" content="no-cache"/>
+    <meta http-equiv="Expires" content="0"/>
+    <title>Emergency Broadcast Console | NDMA Mission Control</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome & Command Center CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link rel="stylesheet" href="toast-manager.css?v=2" />
+    <script src="toast-manager.js?v=2"></script>
+    <link rel="stylesheet" href="command-center.css?v=3" />
+    <link rel="stylesheet" href="role-loading.css?v=2" />
+
+    <style>
+        .broadcast-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        @media (max-width: 992px) {
+            .broadcast-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .preview-phone {
+            background: #050811;
+            border: 2px solid var(--cc-border);
+            border-radius: 28px;
+            padding: 1.25rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            position: sticky;
+            top: 6rem;
+        }
+
+        .preview-phone-notch {
+            width: 100px;
+            height: 14px;
+            background: #142034;
+            border-radius: 0 0 10px 10px;
+            margin: -1.25rem auto 1rem;
+        }
+
+        .preview-card {
+            background: rgba(20, 32, 52, 0.9);
+            border-left: 4px solid var(--cc-alert-extreme);
+            border-radius: var(--cc-radius-md);
+            padding: 1rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
+
+        .char-counter {
+            font-family: var(--cc-font-mono);
+            font-size: 0.75rem;
+            color: var(--cc-text-muted);
+            text-align: right;
+            margin-top: 0.25rem;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- =========================================================================
+         TACTICAL TOP HUD HEADER
+         ========================================================================= -->
+    <header class="cc-hud-header">
+        <div class="cc-hud-branding">
+            <div class="cc-hud-badge-icon">
+                <i class="fas fa-bullhorn"></i>
+            </div>
+            <div class="cc-hud-title-group">
+                <h1>
+                    EMERGENCY BROADCAST CONSOLE
+                    <span class="cc-badge cc-badge-extreme"><i class="fas fa-shield-halved"></i> 2FA SECURED</span>
+                </h1>
+                <div class="cc-hud-subtitle">NATIONAL OPERATIONS &bull; HIGH-PRIORITY MULTI-CHANNEL DISPATCH</div>
+            </div>
+        </div>
+
+        <div class="cc-hud-telemetry">
+            <div class="cc-telemetry-pill live" id="ndmaStatusPill">
+                <span class="cc-pulse-dot"></span>
+                <span>SYSTEM: READY TO BROADCAST</span>
+            </div>
+            <div class="cc-telemetry-pill" id="hudClockDisplay"></div>
+            <div class="cc-telemetry-pill" style="border-color: rgba(56,189,248,0.35);">
+                <i class="fas fa-user-shield" style="color:var(--cc-cyan);"></i>
+                <span id="adminName">Admin User</span>
+            </div>
+            <button class="cc-btn cc-btn-danger" onclick="AuthHelper.logout()" style="padding:0.4rem 0.85rem;font-size:0.8rem;">
+                <i class="fas fa-power-off"></i> Exit
+            </button>
+        </div>
+    </header>
+
+    <!-- =========================================================================
+         TACTICAL NAVIGATION BAR
+         ========================================================================= -->
+    <nav class="cc-nav-bar">
+        <ul class="cc-nav-links">
+            <li><a href="/admin-dashboard.html" class="cc-nav-link"><i class="fas fa-map-location-dot"></i> Mission Control</a></li>
+            <li><a href="/admin-alerts.html" class="cc-nav-link active"><i class="fas fa-bullhorn"></i> Emergency Broadcasts</a></li>
+            <li><a href="/admin-tasks.html" class="cc-nav-link"><i class="fas fa-truck-medical"></i> Responder Tasks</a></li>
+            <li><a href="/reports.html" class="cc-nav-link"><i class="fas fa-chart-line"></i> Incident Telemetry</a></li>
+            <li><a href="/admin-profile.html" class="cc-nav-link"><i class="fas fa-shield-halved"></i> Security & 2FA PIN</a></li>
+        </ul>
+        <div class="cc-nav-user-actions">
+            <button class="cc-btn cc-btn-secondary" onclick="window.location.href='/admin-dashboard.html'" style="font-size:0.82rem;padding:0.45rem 0.9rem;">
+                <i class="fas fa-satellite"></i> Live Tactical Map
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="cc-main-container">
+        
+        <!-- Header Banner -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h2 style="font-size: 1.5rem; font-weight: 700; color: #fff; margin: 0; display: flex; align-items: center; gap: 0.6rem;">
+                    <i class="fas fa-broadcast-tower" style="color: var(--cc-alert-extreme);"></i> High-Priority Emergency Broadcast Dispatch
+                </h2>
+                <p style="margin: 0.25rem 0 0; color: var(--cc-text-muted); font-size: 0.85rem;">
+                    Alerts published here are transmitted immediately across civilian dashboards, responder queues, and public feeds.
+                </p>
+            </div>
+
+            <div style="display: flex; gap: 0.75rem;">
+                <button type="button" class="cc-btn cc-btn-secondary" onclick="testEmergencySiren()" title="Test audio alarm siren (F12)">
+                    <i class="fas fa-volume-high"></i> Test Emergency Siren
+                </button>
+            </div>
+        </div>
+
+        <div class="broadcast-grid">
+            
+            <!-- Left: Broadcast Formulation Form -->
+            <div class="cc-card">
+                <div class="cc-card-header">
+                    <div class="cc-card-title">
+                        <i class="fas fa-pen-nib"></i> Broadcast Alert Parameters
+                    </div>
+                    <span class="cc-badge cc-badge-extreme">STEP-UP 2FA PROTECTED</span>
+                </div>
+
+                <div id="statusMessageBox" style="margin-bottom: 1rem; display: none;"></div>
+
+                <form id="broadcastAlertForm" onsubmit="handleBroadcastSubmit(event)">
+                    
+                    <div class="cc-form-group">
+                        <label class="cc-label" for="alertTitle">
+                            <span>ALERT HEADLINE / TITLE</span>
+                            <span style="font-family: var(--cc-font-mono); font-size: 0.75rem; color: var(--cc-text-muted);">REQUIRED</span>
+                        </label>
+                        <input type="text" id="alertTitle" class="cc-input" placeholder="e.g., Extreme Cyclone Warning - Severe Coastal Surge" required oninput="updateLivePreview()">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="cc-form-group">
+                            <label class="cc-label" for="disasterType">DISASTER CATEGORY</label>
+                            <select id="disasterType" class="cc-select" required onchange="updateLivePreview()">
+                                <option value="Cyclone">Cyclone / Storm Surge</option>
+                                <option value="Heavy Rain">Heavy Rainfall / Flash Floods</option>
+                                <option value="Flood">Riverine Flood Inundation</option>
+                                <option value="Earthquake">Earthquake Seismic Event</option>
+                                <option value="Landslide">Landslide / Mudflow Hazard</option>
+                                <option value="Dense Fog">Dense Fog / Aviation Hazard</option>
+                                <option value="Tsunami">Tsunami Coastal Alert</option>
+                                <option value="Industrial Hazard">Chemical / Industrial Hazard</option>
+                                <option value="Other">General Emergency Advisory</option>
+                            </select>
+                        </div>
+
+                        <div class="cc-form-group">
+                            <label class="cc-label" for="severity">SEVERITY LEVEL</label>
+                            <select id="severity" class="cc-select" required onchange="updateLivePreview()">
+                                <option value="High" selected>High (Extreme Danger - PIN Required)</option>
+                                <option value="Medium">Medium (Severe Threat)</option>
+                                <option value="Low">Low (Advisory Notice)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="cc-form-group">
+                        <label class="cc-label" for="region">AFFECTED JURISDICTION / REGION</label>
+                        <select id="region" class="cc-select" required onchange="updateLivePreview()">
+                            <option value="All India">All India (National Public Broadcast)</option>
+                            <option value="Tamil Nadu" selected>Tamil Nadu (Statewide)</option>
+                            <option value="Chennai">Chennai Metropolitan District</option>
+                            <option value="Coimbatore">Coimbatore District</option>
+                            <option value="Madurai">Madurai District</option>
+                            <option value="Tiruchirappalli">Tiruchirappalli District</option>
+                            <option value="Salem">Salem District</option>
+                            <option value="Cuddalore">Cuddalore Coastal Zone</option>
+                            <option value="Nagapattinam">Nagapattinam Coastal Belt</option>
+                            <option value="Kerala">Kerala (Statewide)</option>
+                            <option value="Andhra Pradesh">Andhra Pradesh (Coastal)</option>
+                            <option value="Odisha">Odisha Coastal Corridor</option>
+                            <option value="West Bengal">West Bengal Delta</option>
+                            <option value="Assam">Assam / Brahmaputra Basin</option>
+                        </select>
+                    </div>
+
+                    <div class="cc-form-group">
+                        <label class="cc-label" for="alertMessage">
+                            <span>OPERATIONAL DIRECTIVES & EVACUATION INSTRUCTIONS</span>
+                            <span id="charCount" class="char-counter">0 / 500</span>
+                        </label>
+                        <textarea id="alertMessage" class="cc-textarea" style="min-height: 120px;" placeholder="Provide specific actionable instructions (e.g., Evacuate low-lying areas, keep emergency kits ready, stay indoors away from windows)..." required oninput="updateLivePreview()" maxlength="500"></textarea>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; align-items: center; margin-top: 1.5rem;">
+                        <button type="submit" class="cc-btn cc-btn-danger" id="submitBroadcastBtn" style="flex: 1; height: 46px; font-size: 0.95rem;">
+                            <i class="fas fa-paper-plane"></i> Authorize & Transmit Broadcast
+                        </button>
+                        <button type="reset" class="cc-btn cc-btn-secondary" onclick="setTimeout(updateLivePreview, 50)" style="height: 46px;">
+                            <i class="fas fa-rotate-left"></i> Reset
+                        </button>
+                    </div>
+
+                </form>
+
+            </div>
+
+            <!-- Right: Real-Time Mobile Simulation Preview -->
+            <div>
+                <div class="preview-phone">
+                    <div class="preview-phone-notch"></div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--cc-text-muted); margin-bottom: 1rem; font-family: var(--cc-font-mono);">
+                        <span>CIVILIAN LOCKSCREEN PREVIEW</span>
+                        <span>LIVE HUD</span>
+                    </div>
+
+                    <div class="preview-card" id="phonePreviewCard">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <span class="cc-badge cc-badge-extreme" id="previewBadge">HIGH SEVERITY</span>
+                            <span style="font-family: var(--cc-font-mono); font-size: 0.7rem; color: var(--cc-text-muted);" id="previewTime">NOW</span>
+                        </div>
+                        <h4 id="previewTitleText" style="color: #ffffff; font-size: 1rem; margin: 0 0 0.5rem; font-weight: 700;">
+                            Extreme Cyclone Warning - Severe Coastal Surge
+                        </h4>
+                        <div style="font-size: 0.75rem; color: var(--cc-accent-glow); margin-bottom: 0.5rem; font-family: var(--cc-font-mono);">
+                            <i class="fas fa-location-dot"></i> <span id="previewRegionText">Tamil Nadu (Statewide)</span>
+                            &bull; <i class="fas fa-shield"></i> <span id="previewCategoryText">Cyclone</span>
+                        </div>
+                        <p id="previewDescText" style="font-size: 0.82rem; color: var(--cc-text-secondary); line-height: 1.4; margin: 0;">
+                            Provide specific actionable instructions to civilians in affected zones.
+                        </p>
+                    </div>
+
+                    <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(14, 23, 38, 0.6); border-radius: var(--cc-radius-md); border: 1px dashed var(--cc-border);">
+                        <div style="font-size: 0.75rem; font-weight: 600; color: var(--cc-accent-primary); margin-bottom: 0.35rem;">
+                            <i class="fas fa-info-circle"></i> SECURITY GOVERNANCE NOTE
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--cc-text-muted); line-height: 1.4;">
+                            Dispatches with <strong>High Severity</strong> enforce Step-Up 2FA verification. The backend requires your 6-digit administrator PIN before committing the transmission to avoid false alarms.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Admin Step-Up PIN Modal (2FA) -->
+    <div id="adminPinModal" class="cc-modal-backdrop" style="display: none; align-items: center; justify-content: center; z-index: 2000;" role="dialog" aria-modal="true" aria-labelledby="pinModalTitle">
+        <div class="cc-modal-card" style="max-width: 440px;">
+            <div class="cc-modal-header">
+                <div class="cc-modal-title" id="pinModalTitle" style="color: var(--cc-alert-extreme);">
+                    <i class="fas fa-shield-halved"></i> 2FA Step-Up Verification
+                </div>
+                <button type="button" class="cc-drawer-close" onclick="closePinModal()" aria-label="Close modal">&times;</button>
+            </div>
+            
+            <p style="font-size: 0.85rem; color: var(--cc-text-secondary); margin: 0.5rem 0 1rem; line-height: 1.4;">
+                CRITICAL SECURITY CHECK: Broadcasting a high-severity emergency alert requires authentication with your 6-digit Admin Security PIN.
+            </p>
+
+            <div id="pinModalStatus" style="display: none; padding: 0.5rem; border-radius: var(--cc-radius-sm); font-size: 0.8rem; margin-bottom: 1rem;"></div>
+
+            <div class="cc-form-group">
+                <label class="cc-label" for="adminPinInput">ENTER 6-DIGIT ADMIN PIN</label>
+                <input type="password" id="adminPinInput" class="cc-input" maxlength="6" placeholder="••••••" style="font-size: 1.4rem; letter-spacing: 0.5em; text-align: center; font-family: var(--cc-font-mono);">
+            </div>
+
+            <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+                <button type="button" class="cc-btn cc-btn-secondary" onclick="closePinModal()" style="flex: 1;">Cancel</button>
+                <button type="button" class="cc-btn cc-btn-danger" id="confirmPinBtn" onclick="verifyAdminPinAndProceed()" style="flex: 1;">
+                    <i class="fas fa-key"></i> Verify & Dispatch
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="auth-helper.js?v=2"></script>
+    <script src="command-center.js?v=3"></script>
+    <script src="role-loading.js?v=2"></script>
+    <script src="/js/emergency-alert.js?v=2"></script>
+
+    <script>
+        let cachedBroadcastData = null;
+
+        // Ensure user is authorized Admin
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('token');
+            const role = localStorage.getItem('userRole');
+
+            if (!token || role !== 'Admin') {
+                if (window.showToast) {
+                    window.showToast('Restricted Access: Admin privileges required.', 'error');
+                }
+                setTimeout(() => {
+                    window.location.href = '/index.html';
+                }, 1000);
+                return;
+            }
+
+            if (window.CommandCenter && CommandCenter.initHudClock) {
+                CommandCenter.initHudClock('hudClockDisplay');
+            }
+
+            const adminName = localStorage.getItem('userName') || 'Admin User';
+            const nameEl = document.getElementById('adminName');
+            if (nameEl) nameEl.textContent = adminName;
+
+            updateLivePreview();
+
+            if (window.RoleLoadingScreen) {
+                RoleLoadingScreen.hide();
+            }
+        });
+
+        // Live Preview Renderer
+        function updateLivePreview() {
+            const title = document.getElementById('alertTitle').value.trim() || 'Extreme Cyclone Warning - Severe Coastal Surge';
+            const type = document.getElementById('disasterType').value;
+            const severity = document.getElementById('severity').value;
+            const region = document.getElementById('region').value;
+            const msg = document.getElementById('alertMessage').value.trim() || 'Provide specific actionable instructions to civilians in affected zones.';
+
+            document.getElementById('previewTitleText').innerText = title;
+            document.getElementById('previewCategoryText').innerText = type;
+            document.getElementById('previewRegionText').innerText = region;
+            document.getElementById('previewDescText').innerText = msg;
+            document.getElementById('charCount').innerText = `${document.getElementById('alertMessage').value.length} / 500`;
+
+            const previewCard = document.getElementById('phonePreviewCard');
+            const previewBadge = document.getElementById('previewBadge');
+
+            if (severity === 'High') {
+                previewCard.style.borderLeftColor = 'var(--cc-alert-extreme)';
+                previewBadge.className = 'cc-badge cc-badge-extreme';
+                previewBadge.innerText = 'HIGH SEVERITY';
+            } else if (severity === 'Medium') {
+                previewCard.style.borderLeftColor = 'var(--cc-alert-severe)';
+                previewBadge.className = 'cc-badge cc-badge-severe';
+                previewBadge.innerText = 'MEDIUM SEVERITY';
+            } else {
+                previewCard.style.borderLeftColor = 'var(--cc-status-success)';
+                previewBadge.className = 'cc-badge cc-badge-moderate';
+                previewBadge.innerText = 'LOW ADVISORY';
+            }
+        }
+
+        // Test emergency siren
+        function testEmergencySiren() {
+            if (window.EmergencyAlertSystem) {
+                EmergencyAlertSystem.testAlarm();
+            } else if (window.CommandCenterSound) {
+                CommandCenterSound.playAlert();
+            }
+        }
+
+        // Handle Broadcast Submission
+        async function handleBroadcastSubmit(event) {
+            event.preventDefault();
+
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/index.html';
+                return;
+            }
+
+            const alertData = {
+                title: document.getElementById('alertTitle').value.trim(),
+                message: document.getElementById('alertMessage').value.trim(),
+                disasterType: document.getElementById('disasterType').value,
+                severity: document.getElementById('severity').value,
+                region: document.getElementById('region').value
+            };
+
+            cachedBroadcastData = alertData;
+
+            const submitBtn = document.getElementById('submitBroadcastBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Authorizing & Transmitting...';
+
+            try {
+                await executeBroadcastDispatch(alertData, null);
+            } catch (err) {
+                showStatusMessage('Network error: ' + err.message, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Authorize & Transmit Broadcast';
+            }
+        }
+
+        async function executeBroadcastDispatch(alertData, stepUpTokenOverride) {
+            const token = localStorage.getItem('token');
+            const stepUpToken = stepUpTokenOverride || sessionStorage.getItem('adminStepUpToken');
+
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            };
+            if (stepUpToken) {
+                headers['X-Admin-Step-Up-Token'] = stepUpToken;
+            }
+
+            const response = await fetch('/api/alerts', {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(alertData)
+            });
+
+            if (response.status === 428) {
+                // Step-Up PIN required
+                openPinModal();
+                return;
+            }
+
+            if (response.ok) {
+                showStatusMessage('✓ Emergency alert broadcast successfully transmitted to national network!', 'success');
+                if (window.CommandCenterSound) CommandCenterSound.playSuccess();
+                document.getElementById('broadcastAlertForm').reset();
+                updateLivePreview();
+            } else {
+                const errorText = await response.text();
+                showStatusMessage('✗ Failed to transmit broadcast: ' + errorText, 'error');
+                if (window.CommandCenterSound) CommandCenterSound.playAlert();
+            }
+        }
+
+        // 2FA PIN Modal Management
+        function openPinModal() {
+            document.getElementById('adminPinModal').style.display = 'flex';
+            const pinInput = document.getElementById('adminPinInput');
+            pinInput.value = '';
+            pinInput.focus();
+            hidePinStatus();
+        }
+
+        function closePinModal() {
+            document.getElementById('adminPinModal').style.display = 'none';
+        }
+
+        function showPinStatus(msg, isError = true) {
+            const status = document.getElementById('pinModalStatus');
+            status.style.display = 'block';
+            status.style.background = isError ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)';
+            status.style.color = isError ? '#fca5a5' : '#86efac';
+            status.style.border = isError ? '1px solid rgba(239,68,68,0.4)' : '1px solid rgba(16,185,129,0.4)';
+            status.innerText = msg;
+        }
+
+        function hidePinStatus() {
+            document.getElementById('pinModalStatus').style.display = 'none';
+        }
+
+        async function verifyAdminPinAndProceed() {
+            const pin = document.getElementById('adminPinInput').value.trim();
+            const token = localStorage.getItem('token');
+
+            if (!pin || pin.length < 4) {
+                showPinStatus('Please enter your valid 6-digit Admin Security PIN.');
+                return;
+            }
+
+            const confirmBtn = document.getElementById('confirmPinBtn');
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+
+            try {
+                const response = await fetch('/api/auth/admin/pin/verify', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ pin })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success && data.stepUpToken) {
+                    sessionStorage.setItem('adminStepUpToken', data.stepUpToken);
+                    closePinModal();
+                    showStatusMessage('Security PIN verified. Dispatching alert...', 'success');
+                    if (cachedBroadcastData) {
+                        await executeBroadcastDispatch(cachedBroadcastData, data.stepUpToken);
+                    }
+                } else {
+                    showPinStatus(data.message || 'Incorrect Security PIN. Authorization rejected.');
+                    if (window.CommandCenterSound) CommandCenterSound.playAlert();
+                }
+            } catch (err) {
+                showPinStatus('PIN verification error: ' + err.message);
+            } finally {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<i class="fas fa-key"></i> Verify & Dispatch';
+            }
+        }
+
+        function showStatusMessage(text, type) {
+            if (window.showToast) {
+                window.showToast(text, type === 'success' ? 'success' : 'error');
+            }
+            const box = document.getElementById('statusMessageBox');
+            box.style.display = 'block';
+            box.style.padding = '0.75rem 1rem';
+            box.style.borderRadius = 'var(--cc-radius-md)';
+            box.style.fontSize = '0.85rem';
+            box.style.lineHeight = '1.4';
+            
+            if (type === 'success') {
+                box.style.background = 'rgba(16, 185, 129, 0.15)';
+                box.style.border = '1px solid rgba(16, 185, 129, 0.4)';
+                box.style.color = '#86efac';
+            } else {
+                box.style.background = 'rgba(239, 68, 68, 0.15)';
+                box.style.border = '1px solid rgba(239, 68, 68, 0.4)';
+                box.style.color = '#fca5a5';
+            }
+
+            box.innerText = text;
+            setTimeout(() => {
+                box.style.display = 'none';
+            }, 6000);
+        }
+
+        function handleLogout() {
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.href = '/index.html';
+        }
+    </script>
+</body>
+</html>

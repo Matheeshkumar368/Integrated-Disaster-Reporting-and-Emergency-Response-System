@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Disaster Management & Alert System</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="../role-loading.css?v=2"/>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- Earth Background -->
+<div class="earth-bg"></div>
+<div class="horizon-glow"></div>
+<div class="pattern-overlay"></div>
+
+<!-- Main Login Card -->
+<main class="login-card" id="main-content" role="main" aria-labelledby="formTitle">
+
+  <!-- Brand Area -->
+  <div class="brand-area">
+    <div class="brand-icon">
+      <i class="fas fa-hands-helping" aria-hidden="true"></i>
+    </div>
+    <h1 id="formTitle" class="login-title">Terra Nova</h1>
+    <p class="login-subtitle">Disaster Management Portal</p>
+  </div>
+
+  <!-- ROLE SELECTION -->
+  <section id="roleSelection" class="form-section active" aria-labelledby="role-heading">
+    <h2 id="role-heading" class="visually-hidden">Select your role</h2>
+    
+    <button type="button" class="role-btn admin" onclick="selectRole('Admin')" aria-label="Login as Administrator">
+      <i class="fas fa-shield-alt" aria-hidden="true"></i>
+      <span>Administrator</span>
+    </button>
+    
+    <button type="button" class="role-btn responder" onclick="selectRole('Responder')" aria-label="Login as Emergency Responder">
+      <i class="fas fa-ambulance" aria-hidden="true"></i>
+      <span>Responder</span>
+    </button>
+    
+    <button type="button" class="role-btn citizen" onclick="selectRole('Citizen')" aria-label="Login as Citizen">
+      <i class="fas fa-user" aria-hidden="true"></i>
+      <span>Citizen</span>
+    </button>
+
+    <div class="extra-links">
+      <p>New here? <a href="#" onclick="showRegisterForm()">Create account</a></p>
+      <a href="/responder-register.html" class="secondary-link">
+        <i class="fas fa-user-plus" aria-hidden="true"></i> Join as Responder
+      </a>
+    </div>
+  </section>
+
+  <!-- LOGIN FORM -->
+  <section id="loginForm" class="form-section" aria-labelledby="login-heading">
+    <h2 id="login-heading" class="visually-hidden">Login</h2>
+
+    <div class="role-badge" id="selectedRoleDisplay" role="status">
+      <i class="fas fa-user-circle" id="roleIcon" aria-hidden="true"></i>
+      <span id="roleText">Citizen</span>
+    </div>
+
+    <button type="button" class="btn btn-secondary" onclick="backToRoleSelection()">
+      <i class="fas fa-arrow-left" aria-hidden="true"></i> Switch Role
+    </button>
+
+    <form id="loginFormElement" onsubmit="return false;" novalidate>
+      <div class="form-group">
+        <label for="loginEmail" class="form-label">Email Address</label>
+        <input 
+          type="email" 
+          id="loginEmail" 
+          class="form-input" 
+          placeholder="you@example.com"
+          autocomplete="email"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="loginPassword" class="form-label">Password</label>
+        <div class="password-wrapper">
+          <input 
+            type="password" 
+            id="loginPassword" 
+            class="form-input" 
+            placeholder="Your password"
+            autocomplete="current-password"
+            required
+          >
+          <button 
+            type="button" 
+            class="password-toggle" 
+            onclick="togglePassword('loginPassword', 'loginPasswordToggle')"
+            aria-label="Show password"
+            id="loginPasswordToggle"
+          >
+            <i class="fas fa-eye" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="checkbox-group">
+        <input type="checkbox" id="rememberMe" class="checkbox-input">
+        <label for="rememberMe" class="checkbox-label">Keep me signed in</label>
+      </div>
+
+      <div class="form-links">
+        <a href="#" class="form-link" onclick="alert('Password recovery feature coming soon')">Forgot password?</a>
+      </div>
+
+      <button type="submit" class="btn btn-primary" id="loginBtn" onclick="handleLogin()">
+        Sign In
+      </button>
+
+      <div class="social-divider">Or continue with</div>
+      <div class="social-buttons">
+        <button type="button" class="social-btn" aria-label="Google">
+          <i class="fab fa-google"></i>
+        </button>
+        <button type="button" class="social-btn" aria-label="Apple">
+          <i class="fab fa-apple"></i>
+        </button>
+        <button type="button" class="social-btn" aria-label="Microsoft">
+          <i class="fab fa-microsoft"></i>
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <!-- REGISTER FORM -->
+  <section id="registerForm" class="form-section" aria-labelledby="register-heading">
+    <h2 id="register-heading" class="visually-hidden">Create Account</h2>
+
+    <form id="registerFormElement" onsubmit="return false;" novalidate>
+      <div class="form-group">
+        <label for="name" class="form-label">Full Name</label>
+        <input type="text" id="name" class="form-input" placeholder="Your full name" autocomplete="name" required>
+      </div>
+
+      <div class="form-group">
+        <label for="registerEmail" class="form-label">Email Address</label>
+        <input type="email" id="registerEmail" class="form-input" placeholder="you@example.com" autocomplete="email" required>
+      </div>
+
+      <div class="form-group">
+        <label for="registerPassword" class="form-label">Create Password</label>
+        <div class="password-wrapper">
+          <input type="password" id="registerPassword" class="form-input" placeholder="Min 6 characters" autocomplete="new-password" required minlength="6">
+          <button type="button" class="password-toggle" onclick="togglePassword('registerPassword', 'registerPasswordToggle')" aria-label="Toggle">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="phone" class="form-label">Phone Number</label>
+        <input type="tel" id="phone" class="form-input" placeholder="Your phone" autocomplete="tel">
+      </div>
+
+      <div class="form-group">
+        <label for="location" class="form-label">Location</label>
+        <input type="text" id="location" class="form-input" placeholder="City or District" autocomplete="address-level2">
+      </div>
+
+      <fieldset class="radio-group">
+        <legend class="visually-hidden">Choose your role</legend>
+        <label><input type="radio" name="role" value="Admin"> Admin</label>
+        <label><input type="radio" name="role" value="Responder"> Responder</label>
+        <label><input type="radio" name="role" value="Citizen" checked> Citizen</label>
+      </fieldset>
+
+      <button type="submit" class="btn btn-primary" onclick="handleRegister()">
+        Create Account
+      </button>
+    </form>
+
+    <div class="extra-links">
+      <p>Already have an account? <a href="#" onclick="backToRoleSelection()">Sign in</a></p>
+    </div>
+  </section>
+
+  <p id="status" role="status" aria-live="polite"></p>
+
+</main>
+
+<script>
+/* ==========================================================================
+   VARIANT 3: TERRA NOVA - JavaScript
+   All original logic preserved + new features
+   ========================================================================== */
+
+let selectedRole = '';
+
+function togglePassword(inputId, toggleBtnId) {
+  const input = document.getElementById(inputId);
+  const btn = document.getElementById(toggleBtnId);
+  const icon = btn.querySelector('i');
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    input.type = 'password';
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+
+function selectRole(role) {
+  selectedRole = role;
+  document.getElementById('roleSelection').classList.remove('active');
+  document.getElementById('loginForm').classList.add('active');
+  document.getElementById('formTitle').textContent = role + ' Portal';
+  
+  const roleIcon = document.getElementById('roleIcon');
+  const roleDisplay = document.getElementById('selectedRoleDisplay');
+  
+  if (role === 'Admin') {
+    roleIcon.className = 'fas fa-shield-alt';
+    roleDisplay.className = 'role-badge admin';
+  } else if (role === 'Responder') {
+    roleIcon.className = 'fas fa-ambulance';
+    roleDisplay.className = 'role-badge responder';
+  } else {
+    roleIcon.className = 'fas fa-user';
+    roleDisplay.className = 'role-badge citizen';
+  }
+}
+
+function backToRoleSelection() {
+  document.getElementById('roleSelection').classList.add('active');
+  document.getElementById('loginForm').classList.remove('active');
+  document.getElementById('registerForm').classList.remove('active');
+  document.getElementById('formTitle').textContent = 'Terra Nova';
+  document.getElementById('status').textContent = '';
+  selectedRole = '';
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPassword').value = '';
+}
+
+function showRegisterForm() {
+  document.getElementById('roleSelection').classList.remove('active');
+  document.getElementById('registerForm').classList.add('active');
+  document.getElementById('formTitle').textContent = 'Create Account';
+}
+
+function handleRegister() {
+  const data = {
+    name: document.getElementById("name").value,
+    email: document.getElementById("registerEmail").value,
+    password: document.getElementById("registerPassword").value,
+    phone: document.getElementById("phone").value,
+    location: document.getElementById("location").value,
+    role: document.querySelector('input[name="role"]:checked')?.value || 'Citizen'
+  };
+
+  if (!data.name || !data.email || !data.password) {
+    alert('Please fill in required fields');
+    return;
+  }
+
+  fetch("http://localhost:8080/api/auth/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  })
+  .then(res => res.json())
+  .then(response => {
+    if (response.status === "success") {
+      alert("Account created! Please sign in.");
+      backToRoleSelection();
+    } else {
+      alert(response.message || "Registration failed");
+    }
+  })
+  .catch(err => {
+    console.error("Error:", err);
+    alert("Could not connect to server");
+  });
+}
+
+function handleLogin() {
+  const email = document.getElementById('loginEmail').value;
+  const password = document.getElementById('loginPassword').value;
+  
+  if (!email || !password) {
+    alert('Please enter email and password');
+    return;
+  }
+
+  const data = { email, password };
+  const loginBtn = document.getElementById('loginBtn');
+  
+  loginBtn.disabled = true;
+  loginBtn.classList.add('loading');
+  loginBtn.textContent = '';
+
+  fetch("http://localhost:8080/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  })
+  .then(res => res.json())
+  .then(response => {
+    loginBtn.disabled = false;
+    loginBtn.classList.remove('loading');
+    loginBtn.textContent = 'Sign In';
+    
+    if (response.status === "success" && response.token) {
+      const actualRole = response.role || 'Citizen';
+      
+      if (selectedRole !== actualRole) {
+        alert('Access denied: Please select your correct role');
+        return;
+      }
+      
+      localStorage.setItem("token", response.token);
+      localStorage.setItem("userRole", actualRole);
+      
+      setTimeout(() => {
+        let targetUrl = actualRole === 'Admin' ? "admin-dashboard.html" : 
+                       actualRole === 'Responder' ? "responder-dashboard.html" : 
+                       "citizen-dashboard.html";
+        RoleLoadingScreen.showAndNavigate(actualRole, targetUrl);
+      }, 50);
+    } else {
+      alert(response.message || 'Invalid credentials');
+    }
+  })
+  .catch(err => {
+    loginBtn.disabled = false;
+    loginBtn.classList.remove('loading');
+    loginBtn.textContent = 'Sign In';
+    alert('Server unavailable');
+  });
+}
+
+// Keyboard support
+document.getElementById('loginFormElement')?.addEventListener('keypress', e => {
+  if (e.key === 'Enter') { e.preventDefault(); handleLogin(); }
+});
+document.getElementById('registerFormElement')?.addEventListener('keypress', e => {
+  if (e.key === 'Enter') { e.preventDefault(); handleRegister(); }
+});
+</script>
+
+<script src="../role-loading.js"></script>
+
+</body>
+</html>

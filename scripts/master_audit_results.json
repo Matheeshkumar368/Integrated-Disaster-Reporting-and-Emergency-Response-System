@@ -1,0 +1,252 @@
+{
+  "timestamp": "2026-11-01T10:00:14.653Z",
+  "passed": 49,
+  "failed": 0,
+  "log": [
+    {
+      "name": "Admin Login & JWT Issuance",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Citizen Login & JWT Issuance",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Responder Login & JWT Issuance",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Admin 2FA PIN Verification & Step-Up Token",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "RBAC Enforcement (Citizen Blocked from Admin Audit Logs)",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Citizen Submits Distress Report with Photo",
+      "status": "PASS",
+      "details": "Report ID: 28"
+    },
+    {
+      "name": "Citizen Retrieves \"My Reports\" List",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Media File Stored to Disk & Indexed in MySQL",
+      "status": "PASS",
+      "details": "File: 44aebdb6-24a9-4083-8b79-816bf1117f18_velachery_flood_evidence.jpg"
+    },
+    {
+      "name": "Public Streaming of Stored Evidence File",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Citizen Cancels Own Pending Report (DELETE /api/citizen-reports/{id})",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Admin Emergency Broadcast with 2FA Step-Up Authorization",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Admin Creates Incident Task in MySQL",
+      "status": "PASS",
+      "details": "Task ID: 17"
+    },
+    {
+      "name": "Smart Assignment Engine Evaluates Responder Roster",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Admin Assigns Task to Responder Unit",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Assignment Blocked When Responder Is Unavailable / Offline",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Admin Invalidates Report with Mandatory Audit Reason",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Immutable Audit Trail Persisted in MySQL (admin_audit_logs)",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Responder Accepts Dispatch (\"Dispatch accepted — Unit is now En Route.\")",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Responder Initiates GPS Telemetry Streaming",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Real-Time Position Updates Transmitted to Central Command",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Citizen Views Live Responder Tracking Radar & Speed/Coords",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Field SitRep Note Recorded & Operational Stepper Advances to \"In Progress\"",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Mission Marked Completed & Closed",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Citizen Sends Tactical Message in Comms Room",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Responder Sends Coordination Update",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Comms Room Chronological Stream Persisted in MySQL",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Official NDMA SACHET Disaster Warnings Feed",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "NDMA Sync Health & CAP Ingestion Telemetry",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Administrative Ingestion Trigger (POST /api/admin/ndma/sync)",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Captured audit_admin_mission_control_desktop_1440x900.png",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Captured audit_admin_mission_control_laptop_1366x768.png",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Captured audit_admin_mission_control_tablet_768x1024.png",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Captured audit_admin_mission_control_mobile_390x844.png",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Captured audit_admin_tasks_and_validation_desktop_1440x900.png",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Captured audit_admin_tasks_and_validation_laptop_1366x768.png",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Captured audit_admin_tasks_and_validation_tablet_768x1024.png",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Captured audit_admin_tasks_and_validation_mobile_390x844.png",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Captured audit_citizen_safety_hub_desktop_1440x900.png",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Captured audit_citizen_safety_hub_laptop_1366x768.png",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Captured audit_citizen_safety_hub_tablet_768x1024.png",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Captured audit_citizen_safety_hub_mobile_390x844.png",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Captured audit_responder_command_desktop_1440x900.png",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Captured audit_responder_command_laptop_1366x768.png",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Captured audit_responder_command_tablet_768x1024.png",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Captured audit_responder_command_mobile_390x844.png",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Captured audit_incident_telemetry_desktop_1440x900.png",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Captured audit_incident_telemetry_laptop_1366x768.png",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Captured audit_incident_telemetry_tablet_768x1024.png",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Captured audit_incident_telemetry_mobile_390x844.png",
+      "status": "PASS",
+      "details": ""
+    }
+  ]
+}

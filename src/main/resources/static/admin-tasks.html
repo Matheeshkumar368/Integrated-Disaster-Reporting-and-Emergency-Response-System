@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rescue Task Management - Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="toast-manager.css?v=2" />
+    <script src="toast-manager.js?v=2"></script>
+    <link rel="stylesheet" href="command-center.css?v=3" />
+    <link rel="stylesheet" href="role-loading.css?v=2" />
+    <script src="auth-helper.js?v=2"></script>
+    <script src="role-loading.js?v=2"></script>
+    <script src="command-center.js?v=3"></script>
+
+    <!-- Leaflet & Map Engine -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Situational Media Capture, Live Responder Tracking, Incident Room & Smart Assignment -->
+    <link rel="stylesheet" href="media-capture.css?v=1" />
+    <script src="media-capture.js?v=1"></script>
+    <link rel="stylesheet" href="responder-tracking.css?v=1" />
+    <script src="responder-tracking.js?v=1"></script>
+    <link rel="stylesheet" href="incident-room.css?v=1" />
+    <script src="incident-room.js?v=1"></script>
+    <link rel="stylesheet" href="smart-assignment.css?v=1" />
+    <script src="smart-assignment.js?v=1"></script>
+    <script src="/js/emergency-alert.js?v=3"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #050811;
+            min-height: 100vh;
+            color: #fff;
+        }
+        
+        .header {
+            background: rgba(0,0,0,0.3);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        .header h1 {
+            font-size: 1.5rem;
+            color: #60a5fa;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-primary { background: #3b82f6; color: white; }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-warning:hover { background: #d97706; }
+        
+        .container {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: var(--cc-bg-glass, rgba(14, 23, 38, 0.7));
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--cc-border-subtle, rgba(255,255,255,0.1));
+            border-radius: var(--cc-radius-md, 12px);
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        
+        .stat-card h3 { font-size: 2rem; margin-bottom: 0.5rem; font-family: var(--cc-font-mono, monospace); font-weight: 700; }
+        .stat-card p { color: #94a3b8; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        .stat-card.high h3 { color: var(--cc-critical-red, #ef4444); }
+        .stat-card.medium h3 { color: var(--cc-warning-amber, #f59e0b); }
+        .stat-card.low h3 { color: var(--cc-safe-green, #10b981); }
+        
+        .section {
+            background: var(--cc-bg-glass, rgba(14, 23, 38, 0.7));
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--cc-border-subtle, rgba(255,255,255,0.1));
+            border-radius: var(--cc-radius-lg, 16px);
+            padding: 1.8rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+        }
+        
+        .section h2 {
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+            color: #60a5fa;
+        }
+        
+        .task-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            margin-bottom: 0.3rem;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+        
+        .form-group input, .form-group select, .form-group textarea {
+            padding: 0.7rem;
+            border: 1px solid rgba(255,255,255,0.4);
+            border-radius: 8px;
+            background: rgba(30, 41, 59, 0.9);
+            color: #ffffff;
+            font-size: 0.95rem;
+            width: 100%;
+        }
+        
+        .form-group input::placeholder { color: rgba(255,255,255,0.5); }
+        .form-group select option { background: #1e293b; color: white; padding: 10px; }
+        .form-group textarea { min-height: 80px; resize: vertical; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none; border-color: #60a5fa;
+        }
+        
+        .tasks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1rem;
+        }
+        
+        .task-card {
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 1.2rem;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .task-card.high { border-left-color: #ef4444; }
+        .task-card.medium { border-left-color: #f59e0b; }
+        .task-card.low { border-left-color: #10b981; }
+        
+        .task-card h3 { margin-bottom: 0.5rem; font-size: 1.1rem; }
+        .task-card .meta { display: flex; flex-wrap: wrap; gap: 0.8rem; margin: 0.8rem 0; font-size: 0.85rem; color: #94a3b8; }
+        .task-card .meta span { display: flex; align-items: center; gap: 0.3rem; }
+        .task-card p { font-size: 0.9rem; color: #cbd5e1; margin: 0.5rem 0; }
+        .task-card .status { display: inline-block; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; margin-right: 0.5rem; }
+        .status.pending { background: #f59e0b; color: white; }
+        .status.in-progress { background: #3b82f6; color: white; }
+        .status.completed { background: #10b981; color: white; }
+        .task-card .actions { margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .task-card .actions .btn { padding: 0.4rem 0.8rem; font-size: 0.8rem; }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal.active { display: flex; }
+        
+        .modal-content {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .modal-content h2 { margin-bottom: 1.5rem; color: #60a5fa; }
+        .modal-content.large { max-width: 800px; }
+        
+        .responder-list { max-height: 300px; overflow-y: auto; margin: 1rem 0; }
+        
+        .responder-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        
+        .responder-item:hover { background: rgba(59,130,246,0.2); }
+        .responder-item.selected { background: rgba(59,130,246,0.3); border: 1px solid #3b82f6; }
+        .responder-info h4 { font-size: 0.95rem; }
+        .responder-info p { font-size: 0.8rem; color: #94a3b8; }
+        
+        .empty-state { text-align: center; padding: 3rem; color: #94a3b8; }
+        .empty-state i { font-size: 3rem; margin-bottom: 1rem; color: #475569; }
+        
+        .filter-bar { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+        .filter-bar select {
+            padding: 0.5rem 1rem;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+        
+        #notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 2000;
+            transform: translateX(150%);
+            transition: transform 0.3s;
+        }
+        
+        #notification.show { transform: translateX(0); }
+        #notification.success { background: #10b981; }
+        #notification.error { background: #ef4444; }
+    </style>
+</head>
+<body>
+    <div id="notification"></div>
+    
+    <!-- =========================================================================
+         TACTICAL TOP HUD HEADER
+         ========================================================================= -->
+    <header class="cc-hud-header">
+        <div class="cc-hud-branding">
+            <div class="cc-hud-badge-icon">
+                <i class="fas fa-truck-medical"></i>
+            </div>
+            <div class="cc-hud-title-group">
+                <h1>
+                    RESCUE TASK DISPATCH & FIELD UNITS
+                    <span class="cc-badge"><i class="fas fa-satellite cc-pulse-dot"></i> ACTIVE ALLOCATION</span>
+                </h1>
+                <div class="cc-hud-subtitle">NATIONAL OPERATIONS &bull; RESPONDER DEPLOYMENT & INCIDENT DISPATCH</div>
+            </div>
+        </div>
+
+        <div class="cc-hud-telemetry">
+            <div class="cc-telemetry-pill live" id="tasksStatusPill">
+                <span class="cc-pulse-dot"></span>
+                <span>DISPATCH: LIVE</span>
+            </div>
+            <div class="cc-telemetry-pill" id="hudClockDisplay"></div>
+            <div class="cc-telemetry-pill" style="border-color: rgba(56,189,248,0.35);">
+                <i class="fas fa-user-shield" style="color:var(--cc-cyan);"></i>
+                <span id="adminName">Admin User</span>
+            </div>
+            <button class="cc-btn cc-btn-danger" onclick="AuthHelper.logout()" style="padding:0.4rem 0.85rem;font-size:0.8rem;">
+                <i class="fas fa-power-off"></i> Exit
+            </button>
+        </div>
+    </header>
+
+    <!-- =========================================================================
+         TACTICAL NAVIGATION BAR
+         ========================================================================= -->
+    <nav class="cc-nav-bar">
+        <ul class="cc-nav-links">
+            <li><a href="/admin-dashboard.html" class="cc-nav-link"><i class="fas fa-map-location-dot"></i> Mission Control</a></li>
+            <li><a href="/admin-alerts.html" class="cc-nav-link"><i class="fas fa-bullhorn"></i> Emergency Broadcasts</a></li>
+            <li><a href="/admin-tasks.html" class="cc-nav-link active"><i class="fas fa-truck-medical"></i> Responder Tasks</a></li>
+            <li><a href="/reports.html" class="cc-nav-link"><i class="fas fa-chart-line"></i> Incident Telemetry</a></li>
+            <li><a href="/admin-profile.html" class="cc-nav-link"><i class="fas fa-shield-halved"></i> Security & 2FA PIN</a></li>
+        </ul>
+        <div class="cc-nav-user-actions">
+            <button class="cc-btn cc-btn-secondary" onclick="window.location.href='/admin-dashboard.html'" style="font-size:0.82rem;padding:0.45rem 0.9rem;">
+                <i class="fas fa-satellite"></i> Live Tactical Map
+            </button>
+        </div>
+    </nav>
+    
+    <main class="cc-main-container">
+        <div class="stats-grid">
+            <div class="stat-card high">
+                <h3 id="highPriorityCount">0</h3>
+                <p>High Priority</p>
+            </div>
+            <div class="stat-card medium">
+                <h3 id="mediumPriorityCount">0</h3>
+                <p>Medium Priority</p>
+            </div>
+            <div class="stat-card low">
+                <h3 id="lowPriorityCount">0</h3>
+                <p>Low Priority</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="totalTasks">0</h3>
+                <p>Total Tasks</p>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2><i class="fas fa-users"></i> Responders by Zone</h2>
+            <div id="responderZoneStats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+            </div>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <button class="btn btn-primary" onclick="openRespondersModal()">
+                    <i class="fas fa-list"></i> View All Responders
+                </button>
+                <button class="btn btn-success" onclick="refreshResponderStats()">
+                    <i class="fas fa-sync-alt"></i> Refresh Stats
+                </button>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2><i class="fas fa-plus-circle"></i> Create New Task</h2>
+            <div id="linkedReportNotice" style="display:none;background:rgba(56,189,248,0.15);border:1px solid #38bdf8;padding:0.6rem 1rem;border-radius:8px;margin-bottom:1rem;justify-content:space-between;align-items:center;">
+                <span style="color:#38bdf8;font-size:0.85rem;"><i class="fas fa-link"></i> Linked to Citizen Distress Report <strong id="linkedReportIdText">#0</strong></span>
+                <button type="button" class="btn btn-secondary" onclick="clearLinkedReport()" style="padding:0.2rem 0.6rem;font-size:0.75rem;">&times; Unlink</button>
+            </div>
+            <div class="task-form">
+                <div class="form-group">
+                    <label>Task Title *</label>
+                    <input type="text" id="taskTitle" placeholder="Enter task title">
+                </div>
+                <div class="form-group">
+                    <label>Zone *</label>
+                    <select id="taskZone">
+                        <option value="Chennai">Chennai</option>
+                        <option value="Coimbatore">Coimbatore</option>
+                        <option value="Madurai">Madurai</option>
+                        <option value="Tiruchirappalli">Tiruchirappalli</option>
+                        <option value="Salem">Salem</option>
+                        <option value="Tirunelveli">Tirunelveli</option>
+                        <option value="Erode">Erode</option>
+                        <option value="Vellore">Vellore</option>
+                        <option value="Thoothukudi">Thoothukudi</option>
+                        <option value="Dindigul">Dindigul</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Priority *</label>
+                    <select id="taskPriority">
+                        <option value="High">High</option>
+                        <option value="Medium" selected>Medium</option>
+                        <option value="Low">Low</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Deadline</label>
+                    <input type="datetime-local" id="taskDeadline">
+                </div>
+                <div class="form-group">
+                    <label>Latitude</label>
+                    <input type="number" step="any" id="taskLat" placeholder="e.g., 13.0827">
+                </div>
+                <div class="form-group">
+                    <label>Longitude</label>
+                    <input type="number" step="any" id="taskLng" placeholder="e.g., 80.2707">
+                </div>
+                <div class="form-group">
+                    <label>Location Name</label>
+                    <input type="text" id="taskLocation" placeholder="Location description">
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label>Task Description *</label>
+                <textarea id="taskDescription" placeholder="Describe the rescue task in detail..."></textarea>
+            </div>
+            <button class="btn btn-primary" id="createTaskBtn">
+                <i class="fas fa-plus"></i> Create Task
+            </button>
+        </div>
+        
+        <div class="section">
+            <h2><i class="fas fa-list"></i> All Tasks</h2>
+            <div class="filter-bar">
+                <select id="filterZone" onchange="filterTasks()">
+                    <option value="">All Zones</option>
+                    <option value="Chennai">Chennai</option>
+                    <option value="Coimbatore">Coimbatore</option>
+                    <option value="Madurai">Madurai</option>
+                    <option value="Tiruchirappalli">Tiruchirappalli</option>
+                    <option value="Salem">Salem</option>
+                </select>
+                <select id="filterStatus" onchange="filterTasks()">
+                    <option value="">All Status</option>
+                    <option value="Pending">Pending</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                </select>
+                <select id="filterPriority" onchange="filterTasks()">
+                    <option value="">All Priorities</option>
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                </select>
+            </div>
+            <div id="tasksContainer" class="tasks-grid">
+                <div class="empty-state">
+                    <i class="fas fa-clipboard-list"></i>
+                    <p>No tasks found. Create a new task above.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- CITIZEN DISTRESS REPORTS & FIELD EVIDENCE AUDIT -->
+        <div class="section" id="citizenReportsSection">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin-bottom:1rem;">
+                <h2>
+                    <i class="fas fa-hand-holding-hand" style="color:#ef4444;"></i> Citizen Distress Reports & Field Evidence
+                    <span class="badge" id="citizenReportsTotalBadge" style="margin-left:0.6rem;background:rgba(56,189,248,0.2);color:#38bdf8;border:1px solid #38bdf8;font-size:0.78rem;padding:0.2rem 0.6rem;border-radius:12px;">0 Reports</span>
+                </h2>
+                <div style="display:flex;gap:0.75rem;">
+                    <button class="btn btn-primary" onclick="loadCitizenReports()">
+                        <i class="fas fa-sync-alt"></i> Refresh Reports
+                    </button>
+                </div>
+            </div>
+            
+            <div class="filters" style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1.2rem;">
+                <input type="text" id="searchCitizenReports" placeholder="Search report text, location or email..." oninput="handleCitizenSearchInput()" style="flex:2;min-width:220px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.2);padding:0.6rem 1rem;border-radius:8px;color:#fff;">
+                <select id="filterCitizenStatus" onchange="handleCitizenStatusChange()" style="flex:1;min-width:180px;">
+                    <option value="">All Statuses</option>
+                    <option value="Pending">Pending Validation</option>
+                    <option value="Acknowledged">Acknowledged / Assigned</option>
+                    <option value="Resolved">Resolved</option>
+                    <option value="Cancelled">Cancelled / Invalidated</option>
+                </select>
+                <select id="citizenPageSizeSelect" onchange="handleCitizenPageSizeChange(this.value)" style="width:140px;">
+                    <option value="6">6 per page</option>
+                    <option value="12" selected>12 per page</option>
+                    <option value="24">24 per page</option>
+                    <option value="50">50 per page</option>
+                </select>
+            </div>
+
+            <div id="citizenReportsContainer" class="tasks-grid">
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <p>Loading citizen reports...</p>
+                </div>
+            </div>
+
+            <!-- Pagination Bar -->
+            <div id="citizenPaginationBar" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin-top:1.5rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,0.1);">
+                <div style="font-size:0.85rem;color:#94a3b8;" id="citizenPaginationInfo">
+                    Showing 0 of 0 reports
+                </div>
+                <div style="display:flex;align-items:center;gap:0.5rem;">
+                    <button type="button" class="btn btn-secondary" id="btnCitizenPrevPage" onclick="changeCitizenPage(-1)" style="padding:0.4rem 0.8rem;font-size:0.8rem;">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </button>
+                    <span id="citizenPageIndicator" style="font-family:var(--cc-font-mono, monospace);font-size:0.85rem;color:#fff;padding:0 0.5rem;">
+                        Page 1 of 1
+                    </span>
+                    <button type="button" class="btn btn-secondary" id="btnCitizenNextPage" onclick="changeCitizenPage(1)" style="padding:0.4rem 0.8rem;font-size:0.8rem;">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Modals -->
+    <div id="respondersModal" class="modal">
+        <div class="modal-content large">
+            <h2><i class="fas fa-users"></i> Registered Responders</h2>
+            <p style="margin-bottom: 1rem; color: #94a3b8;">View all registered responders</p>
+            <div id="allRespondersList" class="responder-list" style="max-height: 400px;"></div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1rem;">
+                <button class="btn" style="background: rgba(255,255,255,0.1); color: white;" onclick="closeRespondersModal()">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="responderDetailModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <h2><i class="fas fa-user-circle"></i> Responder Details</h2>
+            <div id="responderDetailContent" style="margin: 1rem 0;"></div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button class="btn" style="background: rgba(255,255,255,0.1); color: white;" onclick="closeResponderDetailModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="assignModal" class="modal">
+        <div class="modal-content">
+            <h2><i class="fas fa-user-plus"></i> Assign Task</h2>
+            <p style="margin-bottom: 1rem; color: #94a3b8;">Select a responder:</p>
+            <div id="respondersList" class="responder-list"></div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button class="btn" style="background: rgba(255,255,255,0.1); color: white;" onclick="closeAssignModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="confirmAssign()">Assign</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Global variables
+        var tasks = [];
+        var responders = [];
+        var selectedTaskId = null;
+        var selectedResponder = null;
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Page loaded, checking authentication...');
+            checkAuth();
+        });
+
+        // Also attach to button directly
+        document.getElementById('createTaskBtn').addEventListener('click', function() {
+            console.log('Create Task button clicked');
+            createTask();
+        });
+
+        function checkAuth() {
+            var token = localStorage.getItem('token');
+            var storedRole = localStorage.getItem('userRole');
+            
+            if (!token) {
+                console.log('No token found, redirecting to login');
+                window.location.href = '/index.html';
+                return;
+            }
+            
+            try {
+                var payload = JSON.parse(atob(token.split('.')[1]));
+                var role = storedRole || payload.role;
+                
+                console.log('User role:', role);
+                
+                if (role !== 'Admin') {
+                    if (window.showToast) {
+                        window.showToast('Access denied. Admin only.', 'error');
+                    }
+                    setTimeout(() => {
+                        window.location.href = '/index.html';
+                    }, 1000);
+                    return;
+                }
+
+                if (window.CommandCenter && CommandCenter.initHudClock) {
+                    CommandCenter.initHudClock('hudClockDisplay');
+                }
+                var adminName = localStorage.getItem('userName') || 'Admin User';
+                var nameEl = document.getElementById('adminName');
+                if (nameEl) nameEl.textContent = adminName;
+                if (window.RoleLoadingScreen) {
+                    RoleLoadingScreen.hide();
+                }
+                
+                // Load data
+                loadTasks();
+                loadResponders();
+                loadResponderStats();
+                loadCitizenReports();
+            } catch(e) {
+                console.error('Error decoding token:', e);
+                localStorage.removeItem('token');
+                localStorage.removeItem('userRole');
+                window.location.href = '/index.html';
+            }
+        }
+        
+        function showNotification(message, type) {
+            if (window.showToast) {
+                window.showToast(message, type);
+            } else {
+                var notif = document.getElementById('notification');
+                if (notif) {
+                    notif.textContent = message;
+                    notif.className = type + ' show';
+                    setTimeout(function() {
+                        notif.classList.remove('show');
+                    }, 3000);
+                }
+            }
+        }
+        
+        async function loadTasks() {
+            console.log('Loading tasks...');
+            try {
+                var token = localStorage.getItem('token');
+                var res = await fetch('/api/tasks', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                var data = await res.json();
+                
+                console.log('Tasks response:', data);
+                
+                if (data.status === 'success') {
+                    tasks = data.tasks;
+                    updateStats();
+                    renderTasks();
+                } else {
+                    showNotification(data.message || 'Error loading tasks', 'error');
+                }
+            } catch(e) {
+                console.error('Error loading tasks:', e);
+                showNotification('Error loading tasks: ' + e.message, 'error');
+            }
+        }
+        
+        async function loadResponders() {
+            console.log('Loading responders...');
+            try {
+                var token = localStorage.getItem('token');
+                var res = await fetch('/api/tasks/responders', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                var data = await res.json();
+                
+                console.log('Responders response:', data);
+                
+                if (data.status === 'success') {
+                    responders = data.responders;
+                }
+            } catch(e) {
+                console.error('Error loading responders:', e);
+            }
+        }
+        
+        function updateStats() {
+            document.getElementById('totalTasks').textContent = tasks.length;
+            document.getElementById('highPriorityCount').textContent = tasks.filter(function(t) { return t.priority === 'High'; }).length;
+            document.getElementById('mediumPriorityCount').textContent = tasks.filter(function(t) { return t.priority === 'Medium'; }).length;
+            document.getElementById('lowPriorityCount').textContent = tasks.filter(function(t) { return t.priority === 'Low'; }).length;
+        }
+        
+        function filterTasks() {
+            var zone = document.getElementById('filterZone').value;
+            var status = document.getElementById('filterStatus').value;
+            var priority = document.getElementById('filterPriority').value;
+            
+            renderTasks(zone, status, priority);
+        }
+        
+        function renderTasks(zoneFilter, statusFilter, priorityFilter) {
+            zoneFilter = zoneFilter || '';
+            statusFilter = statusFilter || '';
+            priorityFilter = priorityFilter || '';
+            
+            var container = document.getElementById('tasksContainer');
+            
+            var filtered = tasks;
+            if (zoneFilter) filtered = filtered.filter(function(t) { return t.zone === zoneFilter; });
+            if (statusFilter) filtered = filtered.filter(function(t) { return t.status === statusFilter; });
+            if (priorityFilter) filtered = filtered.filter(function(t) { return t.priority === priorityFilter; });
+            
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-clipboard-list"></i><p>No tasks found.</p></div>';
+                return;
+            }
+            
+            container.innerHTML = filtered.map(function(task) {
+                var priorityClass = task.priority ? task.priority.toLowerCase() : 'medium';
+                var statusClass = task.status ? task.status.toLowerCase().replace(' ', '-') : 'pending';
+                var assignedHtml = task.assignedTo 
+                    ? '<span><i class="fas fa-user"></i> ' + (task.assignedResponderName || task.assignedTo) + '</span>'
+                    : '<span style="color:#f59e0b"><i class="fas fa-user-clock"></i> Unassigned</span>';
+                var locationHtml = (task.latitude && task.longitude) 
+                    ? '<p style="font-size:0.8rem;color:#60a5fa"><i class="fas fa-crosshairs"></i> ' + task.latitude + ', ' + task.longitude + '</p>' 
+                    : '';
+                var assignBtn = !task.assignedTo 
+                    ? '<button class="btn btn-primary" data-task-id="' + task.taskId + '"><i class="fas fa-user-plus"></i> Assign</button>' 
+                    : '';
+                var completeBtn = task.status !== 'Completed' 
+                    ? '<button class="btn btn-success" data-status-id="' + task.taskId + '"><i class="fas fa-check"></i> Complete</button>' 
+                    : '';
+                
+                var formattedDeadline = task.deadline 
+                    ? (window.formatIndianDateTime ? window.formatIndianDateTime(task.deadline) : new Date(task.deadline).toLocaleString('en-IN'))
+                    : '';
+                var formattedCreated = task.createdAt
+                    ? (window.formatIndianDateTime ? window.formatIndianDateTime(task.createdAt) : new Date(task.createdAt).toLocaleString('en-IN'))
+                    : '';
+
+                return '<div class="task-card ' + priorityClass + '">' +
+                    '<h3>' + task.title + '</h3>' +
+                    '<span class="status ' + statusClass + '">' + (task.status || 'Pending') + '</span>' +
+                    '<p>' + (task.description || 'No description') + '</p>' +
+                    '<div class="meta">' +
+                        '<span><i class="fas fa-map-marker-alt"></i> ' + (task.zone || 'N/A') + '</span>' +
+                        '<span><i class="fas fa-flag"></i> ' + (task.priority || 'Medium') + '</span>' +
+                        (formattedDeadline ? '<span><i class="fas fa-clock"></i> ' + formattedDeadline + '</span>' : '') +
+                        assignedHtml +
+                    '</div>' +
+                    locationHtml +
+                    '<div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.6rem;padding-top:0.6rem;border-top:1px solid rgba(255,255,255,0.08);">' +
+                        '<button type="button" class="btn" style="background:linear-gradient(135deg, #00e5ff, #0077ff);color:#030a16;font-weight:700;font-size:0.78rem;" onclick="window.SmartAssignment.open(' + task.taskId + ', function(){ loadTasks(); })"><i class="fas fa-brain"></i> Smart Dispatch</button>' +
+                        '<button type="button" class="btn btn-secondary" style="font-size:0.78rem;" onclick="window.IncidentRoom.open(' + task.taskId + ', \'RESCUE_TASK\', \'' + escapeJs(task.title || '') + '\')"><i class="fas fa-comments"></i> Incident Room</button>' +
+                        '<button type="button" class="btn btn-secondary" style="font-size:0.78rem;" onclick="window.MediaCapture.open({ incidentId: ' + task.taskId + ', incidentType: \'RESCUE_TASK\', onSuccess: function(){ loadTasks(); } })"><i class="fas fa-camera"></i> Field Evidence</button>' +
+                        (task.assignedTo ? '<button type="button" class="btn" style="font-size:0.78rem;background:rgba(0,229,255,0.15);border:1px solid #00e5ff;color:#00e5ff;" onclick="window.ResponderTracking.open(' + task.taskId + ')"><i class="fas fa-satellite-dish"></i> Track Live</button>' : '') +
+                    '</div>' +
+                    '<div class="actions">' +
+                        assignBtn +
+                        completeBtn +
+                        '<button class="btn btn-danger" data-delete-id="' + task.taskId + '"><i class="fas fa-trash"></i></button>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+            
+            // Attach event listeners
+            container.querySelectorAll('.btn-primary[data-task-id]').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    openAssignModal(parseInt(this.getAttribute('data-task-id')));
+                });
+            });
+            
+            container.querySelectorAll('.btn-success[data-status-id]').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    updateStatus(parseInt(this.getAttribute('data-status-id')), 'Completed');
+                });
+            });
+            
+            container.querySelectorAll('.btn-danger[data-delete-id]').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    deleteTask(parseInt(this.getAttribute('data-delete-id')));
+                });
+            });
+        }
+        
+        function createTask() {
+            console.log('createTask function called');
+            
+            var title = document.getElementById('taskTitle').value.trim();
+            var description = document.getElementById('taskDescription').value.trim();
+            var zone = document.getElementById('taskZone').value;
+            var priority = document.getElementById('taskPriority').value;
+            var deadline = document.getElementById('taskDeadline').value;
+            var lat = document.getElementById('taskLat').value;
+            var lng = document.getElementById('taskLng').value;
+            var locationName = document.getElementById('taskLocation').value.trim();
+            
+            if (!title || !description) {
+                showNotification('Please fill in required fields', 'error');
+                return;
+            }
+            
+            console.log('Creating task:', title);
+            
+            fetch('/api/tasks', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                },
+                body: JSON.stringify({
+                    title: title,
+                    description: description,
+                    zone: zone,
+                    priority: priority,
+                    deadline: deadline || null,
+                    latitude: lat ? parseFloat(lat) : null,
+                    longitude: lng ? parseFloat(lng) : null,
+                    locationName: locationName || null,
+                    citizenReportId: linkedCitizenReportId || null
+                })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                console.log('Create task response:', data);
+                if (data.status === 'success') {
+                    showNotification('Task created successfully', 'success');
+                    clearLinkedReport();
+                    document.getElementById('taskTitle').value = '';
+                    document.getElementById('taskDescription').value = '';
+                    document.getElementById('taskDeadline').value = '';
+                    document.getElementById('taskLat').value = '';
+                    document.getElementById('taskLng').value = '';
+                    document.getElementById('taskLocation').value = '';
+                    loadTasks();
+                    loadCitizenReports();
+                } else {
+                    showNotification(data.message || 'Error creating task', 'error');
+                }
+            })
+            .catch(function(e) {
+                console.error('Error creating task:', e);
+                showNotification('Error creating task: ' + e.message, 'error');
+            });
+        }
+        
+        function openAssignModal(taskId) {
+            console.log('Opening assign modal for task:', taskId);
+            selectedTaskId = taskId;
+            selectedResponder = null;
+            
+            var modal = document.getElementById('assignModal');
+            var list = document.getElementById('respondersList');
+            
+            if (responders.length === 0) {
+                list.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><p>No responders available</p></div>';
+            } else {
+                list.innerHTML = responders.map(function(r) {
+                    return '<div class="responder-item" data-email="' + r.email + '">' +
+                        '<div class="responder-info">' +
+                            '<h4>' + r.name + '</h4>' +
+                            '<p>' + r.email + '</p>' +
+                            '<p style="font-size:0.75rem;color:#60a5fa;">Zone: ' + (r.assignedZone || 'Not assigned') + '</p>' +
+                        '</div>' +
+                        '<div style="color: #60a5fa;"><i class="fas fa-chevron-right"></i></div>' +
+                    '</div>';
+                }).join('');
+                
+                list.querySelectorAll('.responder-item').forEach(function(item) {
+                    item.addEventListener('click', function() {
+                        list.querySelectorAll('.responder-item').forEach(function(i) { i.classList.remove('selected'); });
+                        this.classList.add('selected');
+                        selectedResponder = this.getAttribute('data-email');
+                    });
+                });
+            }
+            
+            modal.classList.add('active');
+        }
+        
+        function closeAssignModal() {
+            document.getElementById('assignModal').classList.remove('active');
+        }
+        
+        function confirmAssign() {
+            if (!selectedResponder) {
+                showNotification('Please select a responder', 'error');
+                return;
+            }
+            
+            console.log('Assigning task', selectedTaskId, 'to', selectedResponder);
+            
+            fetch('/api/tasks/' + selectedTaskId + '/assign?responderEmail=' + encodeURIComponent(selectedResponder), {
+                method: 'PUT',
+                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                console.log('Assign response:', data);
+                if (data.status === 'success') {
+                    showNotification('Task assigned successfully', 'success');
+                    closeAssignModal();
+                    loadTasks();
+                } else {
+                    showNotification(data.message || 'Error assigning task', 'error');
+                }
+            })
+            .catch(function(e) {
+                console.error('Error assigning task:', e);
+                showNotification('Error assigning task', 'error');
+            });
+        }
+        
+        function updateStatus(taskId, status) {
+            console.log('Updating task', taskId, 'to status', status);
+            
+            fetch('/api/tasks/' + taskId + '/status', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                },
+                body: JSON.stringify({ status: status })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.status === 'success') {
+                    showNotification('Status updated', 'success');
+                    loadTasks();
+                } else {
+                    showNotification(data.message || 'Error updating status', 'error');
+                }
+            })
+            .catch(function(e) {
+                showNotification('Error updating status', 'error');
+            });
+        }
+        
+        async function deleteTask(taskId) {
+            let confirmed = false;
+            if (window.showConfirm) {
+                confirmed = await window.showConfirm({
+                    title: 'Delete Task',
+                    message: 'Are you sure you want to permanently delete task #' + taskId + '?',
+                    confirmText: 'Delete Task',
+                    type: 'danger'
+                });
+            } else {
+                confirmed = false;
+            }
+            if (!confirmed) return;
+            
+            console.log('Deleting task:', taskId);
+            
+            fetch('/api/tasks/' + taskId, {
+                method: 'DELETE',
+                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.status === 'success') {
+                    showNotification('Task deleted', 'success');
+                    loadTasks();
+                } else {
+                    showNotification(data.message || 'Error deleting task', 'error');
+                }
+            })
+            .catch(function(e) {
+                showNotification('Error deleting task', 'error');
+            });
+        }
+        
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('userRole');
+            window.location.href = '/index.html';
+        }
+        
+        async function loadResponderStats() {
+            console.log('Loading responder stats...');
+            try {
+                var token = localStorage.getItem('token');
+                var res = await fetch('/api/auth/responders/by-zone', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                var data = await res.json();
+                
+                console.log('Responder stats:', data);
+                
+                var container = document.getElementById('responderZoneStats');
+                
+                if (data.status === 'success') {
+                    var total = data.totalResponders || 0;
+                    
+                    if (total === 0) {
+                        container.innerHTML = '<div class="stat-card" style="background: rgba(59,130,246,0.2);"><h3>0</h3><p>Total Responders</p></div><div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: #94a3b8;"><i class="fas fa-users-slash" style="font-size: 2rem; margin-bottom: 0.5rem;"></i><p>No responders registered yet</p></div>';
+                        return;
+                    }
+                    
+                    var html = '<div class="stat-card" style="background: linear-gradient(135deg, rgba(59,130,246,0.3), rgba(59,130,246,0.1));"><h3 style="color: #60a5fa;">' + total + '</h3><p>Total Responders</p></div>';
+                    
+                    if (data.zoneCounts) {
+                        var colors = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#14b8a6'];
+                        Object.keys(data.zoneCounts).forEach(function(zone, idx) {
+                            var colorIndex = idx % colors.length;
+                            html += '<div class="stat-card" style="background: linear-gradient(135deg, rgba(' + hexToRgb(colors[colorIndex]) + ',0.3), rgba(' + hexToRgb(colors[colorIndex]) + ',0.1)); border-left: 3px solid ' + colors[colorIndex] + ';"><h3 style="color: ' + colors[colorIndex] + ';">' + data.zoneCounts[zone] + '</h3><p>' + zone + '</p></div>';
+                        });
+                    }
+                    container.innerHTML = html;
+                }
+            } catch(e) {
+                console.error('Error loading responder stats:', e);
+            }
+        }
+        
+        function hexToRgb(hex) {
+            var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? parseInt(result[1], 16) + ',' + parseInt(result[2], 16) + ',' + parseInt(result[3], 16) : '59,130,246';
+        }
+        
+        function refreshResponderStats() {
+            loadResponderStats();
+            loadResponders();
+            showNotification('Stats refreshed', 'success');
+        }
+        
+        function openRespondersModal() {
+            loadAllResponders();
+            document.getElementById('respondersModal').classList.add('active');
+        }
+        
+        function closeRespondersModal() {
+            document.getElementById('respondersModal').classList.remove('active');
+        }
+        
+        function closeResponderDetailModal() {
+            document.getElementById('responderDetailModal').classList.remove('active');
+        }
+        
+        async function loadAllResponders() {
+            try {
+                var token = localStorage.getItem('token');
+                var res = await fetch('/api/auth/responders/all', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                var data = await res.json();
+                
+                var container = document.getElementById('allRespondersList');
+                
+                if (data.status === 'success' && data.responders && data.responders.length > 0) {
+                    container.innerHTML = data.responders.map(function(r) {
+                        return '<div class="responder-item" data-email="' + r.email + '">' +
+                            '<div class="responder-info">' +
+                                '<h4>' + (r.name || 'Unknown') + '</h4>' +
+                                '<p>' + r.email + '</p>' +
+                                '<p style="font-size: 0.75rem; color: #60a5fa;"><i class="fas fa-map-marker-alt"></i> Zone: ' + (r.assignedZone || 'Not assigned') + '</p>' +
+                            '</div>' +
+                            '<div style="color: #60a5fa;"><i class="fas fa-chevron-right"></i></div>' +
+                        '</div>';
+                    }).join('');
+                    
+                    container.querySelectorAll('.responder-item').forEach(function(item) {
+                        item.addEventListener('click', function() {
+                            viewResponderDetails(this.getAttribute('data-email'));
+                        });
+                    });
+                } else {
+                    container.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><p>No responders registered yet.</p></div>';
+                }
+            } catch(e) {
+                console.error('Error loading all responders:', e);
+            }
+        }
+        
+        function viewResponderDetails(email) {
+            var token = localStorage.getItem('token');
+            fetch('/api/auth/responders/all', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.status === 'success') {
+                    var responder = data.responders.find(function(r) { return r.email === email; });
+                    if (responder) {
+                        var content = document.getElementById('responderDetailContent');
+                        content.innerHTML = '<div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px;">' +
+                            '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">' +
+                                '<div><label style="color: #94a3b8; font-size: 0.85rem;">Name</label><p style="font-size: 1.1rem; font-weight: 600;">' + (responder.name || 'N/A') + '</p></div>' +
+                                '<div><label style="color: #94a3b8; font-size: 0.85rem;">Email</label><p style="font-size: 1.1rem; font-weight: 600;">' + (responder.email || 'N/A') + '</p></div>' +
+                                '<div><label style="color: #94a3b8; font-size: 0.85rem;">Phone</label><p style="font-size: 1.1rem; font-weight: 600;">' + (responder.phone || 'N/A') + '</p></div>' +
+                                '<div><label style="color: #94a3b8; font-size: 0.85rem;">Location</label><p style="font-size: 1.1rem; font-weight: 600;">' + (responder.location || 'N/A') + '</p></div>' +
+                                '<div><label style="color: #94a3b8; font-size: 0.85rem;">Assigned Zone</label><p style="font-size: 1.1rem; font-weight: 600;">' + (responder.assignedZone || 'Not assigned') + '</p></div>' +
+                                '<div><label style="color: #94a3b8; font-size: 0.85rem;">Group</label><p style="font-size: 1.1rem; font-weight: 600; color: #60a5fa;">' + (responder.groupClassification || 'Not specified') + '</p></div>' +
+                            '</div></div>';
+                        document.getElementById('responderDetailModal').classList.add('active');
+                    }
+                }
+            });
+        }
+
+        function escapeJs(str) {
+            if (!str) return '';
+            return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
+        }
+
+        // =========================================================================
+        // CITIZEN DISTRESS REPORTS & FIELD EVIDENCE AUDIT (PAGINATED & MANAGED)
+        // =========================================================================
+        var cachedCitizenReports = [];
+        var citizenCurrentPage = 0;
+        var citizenPageSize = 12;
+        var citizenTotalPages = 1;
+        var citizenTotalElements = 0;
+        var citizenSearchTerm = '';
+        var citizenStatusFilter = '';
+        var searchDebounceTimer = null;
+        var linkedCitizenReportId = null;
+
+        function handleCitizenSearchInput() {
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(function() {
+                citizenSearchTerm = (document.getElementById('searchCitizenReports').value || '').trim();
+                citizenCurrentPage = 0;
+                loadCitizenReports();
+            }, 300);
+        }
+
+        function handleCitizenStatusChange() {
+            citizenStatusFilter = document.getElementById('filterCitizenStatus').value || '';
+            citizenCurrentPage = 0;
+            loadCitizenReports();
+        }
+
+        function handleCitizenPageSizeChange(val) {
+            citizenPageSize = parseInt(val, 10) || 12;
+            citizenCurrentPage = 0;
+            loadCitizenReports();
+        }
+
+        function changeCitizenPage(delta) {
+            var targetPage = citizenCurrentPage + delta;
+            if (targetPage >= 0 && targetPage < citizenTotalPages) {
+                citizenCurrentPage = targetPage;
+                loadCitizenReports();
+            }
+        }
+
+        async function loadCitizenReports() {
+            var token = localStorage.getItem('token');
+            var container = document.getElementById('citizenReportsContainer');
+            if (!container) return;
+
+            try {
+                var url = '/api/citizen-reports/paged?page=' + citizenCurrentPage +
+                          '&size=' + citizenPageSize +
+                          '&search=' + encodeURIComponent(citizenSearchTerm) +
+                          '&status=' + encodeURIComponent(citizenStatusFilter);
+
+                var res = await fetch(url, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    var data = await res.json();
+                    cachedCitizenReports = data.reports || data.content || [];
+                    citizenTotalPages = data.totalPages || 1;
+                    citizenTotalElements = data.totalElements || 0;
+                    citizenCurrentPage = data.currentPage || 0;
+
+                    // Update UI counters
+                    var badge = document.getElementById('citizenReportsTotalBadge');
+                    if (badge) badge.textContent = citizenTotalElements + ' Reports';
+
+                    var info = document.getElementById('citizenPaginationInfo');
+                    if (info) {
+                        var start = citizenTotalElements === 0 ? 0 : (citizenCurrentPage * citizenPageSize) + 1;
+                        var end = Math.min((citizenCurrentPage + 1) * citizenPageSize, citizenTotalElements);
+                        info.textContent = 'Showing ' + start + ' - ' + end + ' of ' + citizenTotalElements + ' reports';
+                    }
+
+                    var ind = document.getElementById('citizenPageIndicator');
+                    if (ind) ind.textContent = 'Page ' + (citizenCurrentPage + 1) + ' of ' + Math.max(citizenTotalPages, 1);
+
+                    var prevBtn = document.getElementById('btnCitizenPrevPage');
+                    if (prevBtn) prevBtn.disabled = citizenCurrentPage === 0;
+
+                    var nextBtn = document.getElementById('btnCitizenNextPage');
+                    if (nextBtn) nextBtn.disabled = citizenCurrentPage >= citizenTotalPages - 1;
+
+                    renderCitizenReports(cachedCitizenReports);
+                } else {
+                    container.innerHTML = '<div class="empty-state"><p style="color:#ef4444;">Failed to load citizen reports.</p></div>';
+                }
+            } catch(e) {
+                console.error('Error loading citizen reports:', e);
+                container.innerHTML = '<div class="empty-state"><p style="color:#ef4444;">Network error loading citizen reports: ' + e.message + '</p></div>';
+            }
+        }
+
+        function renderCitizenReports(reports) {
+            var container = document.getElementById('citizenReportsContainer');
+            if (!container) return;
+
+            if (!reports || reports.length === 0) {
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>No citizen reports matching query.</p></div>';
+                return;
+            }
+
+            container.innerHTML = reports.map(function(r) {
+                var isPending = (r.status || '').toLowerCase() === 'pending';
+                var isCancelled = (r.status || '').toLowerCase() === 'cancelled' || (r.status || '').toLowerCase() === 'invalidated';
+                var isResolved = (r.status || '').toLowerCase() === 'resolved';
+
+                var badgeClass = 'badge-pending';
+                if (isResolved) badgeClass = 'badge-completed';
+                else if (isCancelled) badgeClass = 'badge-danger';
+                else if (!isPending) badgeClass = 'badge-progress';
+
+                var hasPhoto = r.photoData && r.photoData.length > 500 && !r.photoData.includes('AAAAEAAAABCAYAAAAfFcSJ');
+                var photoSrc = hasPhoto ? (r.photoData.startsWith('data:') ? r.photoData : 'data:image/jpeg;base64,' + r.photoData) : null;
+
+                var formattedTime = (window.formatIndianDateTime ? window.formatIndianDateTime(r.timestamp) : new Date(r.timestamp).toLocaleString('en-IN'));
+
+                return '<div class="task-card" style="display:flex;flex-direction:column;justify-content:space-between;">' +
+                    '<div>' +
+                        '<div class="task-header">' +
+                            '<span class="task-id">REPORT #' + r.reportId + '</span>' +
+                            '<span class="badge ' + badgeClass + '">' + (r.status || 'Pending') + '</span>' +
+                        '</div>' +
+                        '<h3 style="font-size:1.05rem;font-weight:700;color:#fff;margin:0.5rem 0;">' + (r.location || 'Location Not Specified') + '</h3>' +
+                        '<p style="color:#cbd5e1;font-size:0.88rem;margin-bottom:0.75rem;line-height:1.4;">' + (r.message || 'No description provided') + '</p>' +
+                        
+                        (photoSrc ? 
+                            '<div style="margin:0.5rem 0 0.8rem;cursor:pointer;" onclick="if(window.openMediaLightbox) openMediaLightbox(\'' + photoSrc + '\', \'Citizen Report #' + r.reportId + ' Evidence\', \'PHOTO\')">' +
+                                '<img src="' + photoSrc + '" alt="Citizen Evidence" style="width:100%;max-height:140px;object-fit:cover;border-radius:6px;border:1px solid rgba(255,255,255,0.15);" onerror="if(window.handleEvidenceImageError) handleEvidenceImageError(this, \'' + photoSrc + '\');" />' +
+                                '<div style="font-size:0.75rem;color:#38bdf8;margin-top:2px;"><i class="fas fa-magnifying-glass-plus"></i> Click to inspect photo evidence</div>' +
+                            '</div>' : ''
+                        ) +
+
+                        '<div class="task-meta">' +
+                            '<div><i class="fas fa-user"></i> Sourced by: ' + (r.citizenEmail || 'Anonymous') + '</div>' +
+                            (r.timestamp ? '<div><i class="fas fa-clock"></i> ' + formattedTime + '</div>' : '') +
+                        '</div>' +
+                    '</div>' +
+
+                    '<div style="margin-top:1rem;padding-top:0.75rem;border-top:1px solid rgba(255,255,255,0.1);display:flex;flex-wrap:wrap;gap:0.4rem;">' +
+                        (isPending ? 
+                            '<button class="btn btn-primary" style="flex:1;min-width:110px;padding:0.4rem;font-size:0.78rem;" onclick="dispatchCitizenReport(' + r.reportId + ', \'' + escapeJs(r.location || '') + '\', \'' + escapeJs(r.message || '') + '\')">' +
+                                '<i class="fas fa-paper-plane"></i> Convert to Task' +
+                            '</button>' +
+                            '<button class="btn btn-success" style="padding:0.4rem 0.6rem;font-size:0.78rem;" onclick="validateCitizenReport(' + r.reportId + ')">' +
+                                '<i class="fas fa-check"></i> Validate' +
+                            '</button>' : ''
+                        ) +
+                        (!isCancelled && !isResolved ? 
+                            '<button class="btn btn-danger" style="padding:0.4rem 0.6rem;font-size:0.78rem;" onclick="invalidateCitizenReport(' + r.reportId + ')">' +
+                                '<i class="fas fa-ban"></i> Invalidate' +
+                            '</button>' : ''
+                        ) +
+                        '<button class="btn" style="background:rgba(255,255,255,0.08);color:#fff;padding:0.4rem 0.6rem;font-size:0.78rem;" onclick="window.IncidentRoom.open(' + r.reportId + ', \'CITIZEN_REPORT\', \'' + escapeJs(r.location || '') + '\')">' +
+                            '<i class="fas fa-comments"></i> Comms' +
+                        '</button>' +
+                        '<button class="btn" style="background:rgba(245,158,11,0.15);border:1px solid #f59e0b;color:#f59e0b;padding:0.4rem 0.6rem;font-size:0.78rem;" onclick="archiveCitizenReport(' + r.reportId + ')" title="Archive Report">' +
+                            '<i class="fas fa-box-archive"></i> Archive' +
+                        '</button>' +
+                        '<button class="btn btn-danger" style="padding:0.4rem 0.6rem;font-size:0.78rem;" onclick="deleteCitizenReportPrompt(' + r.reportId + ')" title="Delete Report">' +
+                            '<i class="fas fa-trash-can"></i>' +
+                        '</button>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+        }
+
+        async function validateCitizenReport(reportId) {
+            var token = localStorage.getItem('token');
+            try {
+                var res = await fetch('/api/citizen-reports/' + reportId + '/acknowledge', {
+                    method: 'PUT',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    showNotification('Citizen Report #' + reportId + ' verified and acknowledged.', 'success');
+                    loadCitizenReports();
+                } else {
+                    showNotification('Failed to validate report', 'error');
+                }
+            } catch(e) {
+                showNotification('Network error: ' + e.message, 'error');
+            }
+        }
+
+        async function archiveCitizenReport(reportId) {
+            var token = localStorage.getItem('token');
+            try {
+                var res = await fetch('/api/citizen-reports/' + reportId + '/archive', {
+                    method: 'PUT',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                var data = await res.json();
+                if (res.ok && data.status === 'success') {
+                    showNotification('Citizen Report #' + reportId + ' moved to archive.', 'success');
+                    loadCitizenReports();
+                } else {
+                    showNotification(data.message || 'Failed to archive report', 'error');
+                }
+            } catch(e) {
+                showNotification('Network error: ' + e.message, 'error');
+            }
+        }
+
+        async function deleteCitizenReportPrompt(reportId) {
+            let confirmed = false;
+            if (window.showConfirm) {
+                confirmed = await window.showConfirm({
+                    title: 'Delete Citizen Report #' + reportId,
+                    message: 'Are you sure you want to delete Citizen Distress Report #' + reportId + '?\n\nThis will remove the incident from active queues. Active missions deployed for this report must be resolved first.',
+                    confirmText: 'Delete Report',
+                    type: 'danger'
+                });
+            } else {
+                confirmed = confirm('Are you sure you want to delete Citizen Report #' + reportId + '?');
+            }
+
+            if (!confirmed) return;
+
+            var token = localStorage.getItem('token');
+            try {
+                var res = await fetch('/api/citizen-reports/' + reportId + '?action=delete', {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                var data = await res.json();
+                if (res.ok && data.status === 'success') {
+                    showNotification('Report #' + reportId + ' deleted successfully.', 'success');
+                    loadCitizenReports();
+                } else if (res.status === 409) {
+                    showNotification(data.message || 'Cannot delete report: an active rescue mission is currently deployed for this incident.', 'error');
+                } else {
+                    showNotification(data.message || 'Failed to delete report', 'error');
+                }
+            } catch(e) {
+                showNotification('Network error deleting report: ' + e.message, 'error');
+            }
+        }
+
+        async function invalidateCitizenReport(reportId) {
+            var reason = '';
+            if (window.showPrompt) {
+                reason = await window.showPrompt({
+                    title: 'Invalidate / Cancel Report',
+                    message: 'Provide an audit reason for invalidating Report #' + reportId + ' (e.g. False alarm, Duplicate report):',
+                    placeholder: 'Enter audit reason...',
+                    confirmText: 'Commit Invalidation'
+                });
+            } else {
+                reason = prompt('Enter audit reason for invalidating Report #' + reportId + ':');
+            }
+
+            if (reason === null) return; // User cancelled
+
+            var token = localStorage.getItem('token');
+            try {
+                var res = await fetch('/api/citizen-reports/' + reportId + '?reason=' + encodeURIComponent(reason || 'Administrative Invalidation'), {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                var data = await res.json();
+                if (res.ok) {
+                    showNotification('Report #' + reportId + ' invalidated with audit reason logged.', 'info');
+                    loadCitizenReports();
+                } else {
+                    showNotification(data.message || 'Failed to invalidate report', 'error');
+                }
+            } catch(e) {
+                showNotification('Network error: ' + e.message, 'error');
+            }
+        }
+
+        function dispatchCitizenReport(reportId, location, description) {
+            linkedCitizenReportId = reportId;
+            var notice = document.getElementById('linkedReportNotice');
+            var text = document.getElementById('linkedReportIdText');
+            if (notice && text) {
+                text.textContent = '#' + reportId;
+                notice.style.display = 'flex';
+            }
+            document.getElementById('taskTitle').value = 'Emergency Response - Report #' + reportId + ' (' + (location || 'Field Zone') + ')';
+            document.getElementById('taskDescription').value = description || 'Citizen reported emergency distress situation.';
+            document.getElementById('taskLocation').value = location || '';
+            document.getElementById('taskPriority').value = 'High';
+            window.scrollTo({ top: 350, behavior: 'smooth' });
+            showNotification('Report #' + reportId + ' linked. Complete task fields and click Create Task.', 'info');
+        }
+
+        function clearLinkedReport() {
+            linkedCitizenReportId = null;
+            var notice = document.getElementById('linkedReportNotice');
+            if (notice) notice.style.display = 'none';
+        }
+    </script>
+</body>
+</html>

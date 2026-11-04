@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Toast Showcase</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link rel="stylesheet" href="toast-manager.css?v=2">
+    <script src="toast-manager.js?v=2"></script>
+    <style>
+        body { background: #050811; color: #fff; font-family: sans-serif; padding: 2rem; }
+    </style>
+</head>
+<body>
+    <h2>NDMA Tactical Notification Engine</h2>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            window.showToast('Dispatch accepted — Unit is now En Route.', 'success', 20000);
+            setTimeout(() => {
+                window.showToast('Critical Flood Warning: Evacuate Sector 4 immediately.', 'error', 20000);
+            }, 100);
+            setTimeout(() => {
+                window.showToast('High winds detected: Structural caution advised.', 'warning', 20000);
+            }, 200);
+            setTimeout(() => {
+                window.showToast('Live GPS streaming active to central command.', 'info', 20000);
+            }, 300);
+        });
+    </script>
+</body>
+</html>
