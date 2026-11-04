@@ -33,4 +33,18 @@ public interface RescueTaskRepository extends JpaRepository<RescueTask, Long> {
     
     // Find tasks by zone and status
     List<RescueTask> findByZoneAndStatus(String zone, String status);
+
+    // Count active tasks for responder workload calculation
+    long countByAssignedToAndStatusIn(String assignedTo, List<String> statuses);
+
+    // Find tasks linked to a citizen report
+    List<RescueTask> findByCitizenReportId(Long citizenReportId);
+
+    // Count active (non-terminal) tasks linked to a citizen report
+    long countByCitizenReportIdAndStatusNotIn(Long citizenReportId, List<String> terminalStatuses);
+
+    // Find top active task assigned to responder
+    java.util.Optional<RescueTask> findTopByAssignedToAndStatusNotOrderByCreatedAtDesc(String assignedTo, String status);
+
+    java.util.Optional<RescueTask> findTopByAssignedToOrderByCreatedAtDesc(String assignedTo);
 }

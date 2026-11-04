@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+    <title>Offline Emergency Mode | NDMA Safety Hub</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link rel="stylesheet" href="command-center.css?v=3">
+
+    <style>
+        body {
+            background: #050811;
+            color: var(--cc-text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .offline-card {
+            background: rgba(14, 23, 38, 0.9);
+            border: 1px solid var(--cc-border);
+            border-top: 4px solid var(--cc-alert-severe);
+            border-radius: var(--cc-radius-xl);
+            padding: 2.5rem 1.5rem;
+            max-width: 600px;
+            margin: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+        }
+
+        .offline-icon-glow {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(245, 158, 11, 0.15);
+            border: 2px solid var(--cc-alert-severe);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 2.2rem;
+            color: #f59e0b;
+            box-shadow: 0 0 25px rgba(245, 158, 11, 0.3);
+        }
+
+        .hotline-grid-offline {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin: 1.5rem 0;
+            text-align: left;
+        }
+
+        @media (max-width: 480px) {
+            .hotline-grid-offline {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .hotline-item-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: var(--cc-radius-md);
+            padding: 0.85rem 1rem;
+            color: #fca5a5;
+            text-decoration: none;
+            transition: all var(--cc-transition-fast);
+        }
+
+        .hotline-item-btn:hover {
+            background: rgba(239, 68, 68, 0.25);
+            color: #ffffff;
+            border-color: #ef4444;
+        }
+
+        .survival-accordion {
+            text-align: left;
+            margin-top: 1.5rem;
+            border-top: 1px solid var(--cc-border);
+            padding-top: 1.25rem;
+        }
+
+        .survival-item {
+            background: rgba(5, 8, 17, 0.6);
+            border: 1px solid var(--cc-border);
+            border-radius: var(--cc-radius-md);
+            padding: 0.85rem 1rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div></div>
+
+    <main class="offline-card">
+        <div class="offline-icon-glow">
+            <i class="fas fa-satellite-dish"></i>
+        </div>
+
+        <span class="cc-badge cc-badge-severe" style="margin-bottom: 0.75rem;">OFFLINE MODE ACTIVE</span>
+        
+        <h2 style="color: #ffffff; font-size: 1.6rem; margin: 0 0 0.5rem; font-weight: 700;">
+            Network Connection Unavailable
+        </h2>
+        
+        <p style="color: var(--cc-text-secondary); font-size: 0.9rem; line-height: 1.5; margin: 0 0 1.5rem;">
+            Live NDMA SACHET disaster telemetry, emergency map radar, and authenticated reporting require an active internet connection.
+            <strong>Direct cellular telephone emergency lines remain operational below.</strong>
+        </p>
+
+        <!-- Offline Direct Cellular Hotlines -->
+        <div class="hotline-grid-offline">
+            <a href="tel:112" class="hotline-item-btn">
+                <i class="fas fa-phone-volume" style="font-size: 1.3rem;"></i>
+                <div>
+                    <div style="font-weight: 700; color: #ffffff;">Call 112</div>
+                    <div style="font-size: 0.75rem; color: var(--cc-text-muted);">National Emergency SOS</div>
+                </div>
+            </a>
+
+            <a href="tel:1070" class="hotline-item-btn">
+                <i class="fas fa-building-shield" style="font-size: 1.3rem;"></i>
+                <div>
+                    <div style="font-weight: 700; color: #ffffff;">Call 1070</div>
+                    <div style="font-size: 0.75rem; color: var(--cc-text-muted);">State Disaster Control</div>
+                </div>
+            </a>
+
+            <a href="tel:1077" class="hotline-item-btn">
+                <i class="fas fa-tower-broadcast" style="font-size: 1.3rem;"></i>
+                <div>
+                    <div style="font-weight: 700; color: #ffffff;">Call 1077</div>
+                    <div style="font-size: 0.75rem; color: var(--cc-text-muted);">District Emergency Operations</div>
+                </div>
+            </a>
+
+            <a href="tel:108" class="hotline-item-btn">
+                <i class="fas fa-truck-medical" style="font-size: 1.3rem;"></i>
+                <div>
+                    <div style="font-weight: 700; color: #ffffff;">Call 108</div>
+                    <div style="font-size: 0.75rem; color: var(--cc-text-muted);">Medical Ambulance Dispatch</div>
+                </div>
+            </a>
+        </div>
+
+        <button type="button" class="cc-btn cc-btn-primary" onclick="retryConnection()" style="width: 100%; height: 46px; margin-top: 0.5rem;">
+            <i class="fas fa-rotate"></i> Check Connection & Reconnect
+        </button>
+
+        <!-- Cached Offline Survival Guidelines -->
+        <div class="survival-accordion">
+            <div style="font-size: 0.8rem; font-weight: 700; color: var(--cc-accent-glow); margin-bottom: 0.5rem; text-transform: uppercase;">
+                <i class="fas fa-book-medical"></i> Offline Survival Directives
+            </div>
+
+            <div class="survival-item">
+                <strong style="color: #fca5a5;">Flood / Flash Water:</strong> Move to the highest ground immediately. Never walk, swim, or drive through flowing water. Stay clear of submerged power lines.
+            </div>
+
+            <div class="survival-item">
+                <strong style="color: #fcd34d;">Cyclone / Storm Surge:</strong> Stay indoors on the leeward side of the building. Disconnect electrical mains. Keep mobile battery conserved.
+            </div>
+
+            <div class="survival-item">
+                <strong style="color: #86efac;">Earthquake:</strong> Drop, Cover, and Hold on under sturdy furniture. Protect head and neck. Do not run outside while shaking continues.
+            </div>
+        </div>
+    </main>
+
+    <footer style="color: var(--cc-text-muted); font-size: 0.75rem;">
+        National Disaster Management & Alert System &bull; Offline Fail-Safe Shell
+    </footer>
+
+    <script>
+        function retryConnection() {
+            if (navigator.onLine) {
+                window.location.href = '/index.html';
+            } else {
+                window.showToast('Device is still offline. Please verify Wi-Fi or cellular mobile data connection.', 'warning');
+            }
+        }
+
+        window.addEventListener('online', () => {
+            window.location.href = '/index.html';
+        });
+    </script>
+</body>
+</html>
+

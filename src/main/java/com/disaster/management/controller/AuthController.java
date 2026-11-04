@@ -1,35 +1,52 @@
 package com.disaster.management.controller;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.disaster.management.entity.AdminAuditLog;
 import com.disaster.management.entity.User;
+import com.disaster.management.repository.RescueTaskRepository;
 import com.disaster.management.repository.UserRepository;
 import com.disaster.management.security.JwtUtil;
+import com.disaster.management.service.AdminPinService;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = {"http://localhost:8080", "http://localhost:8081"})
+@CrossOrigin(origins = {"http://localhost:8080", "http://localhost:8081", "http://127.0.0.1:8080", "http://127.0.0.1:8081"})
 public class AuthController {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private RescueTaskRepository rescueTaskRepository;
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -37,23 +54,52 @@ public class AuthController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private AdminPinService adminPinService;
+
+    // In-memory login attempt tracker for rate-limiting
+    private static class LoginAttempt {
+        int attempts;
+        LocalDateTime lockedUntil;
+    }
+    private final Map<String, LoginAttempt> loginAttempts = new ConcurrentHashMap<>();
+
     // ────────────────────────────────────────────────
     //                  REGISTER ENDPOINT
     // ────────────────────────────────────────────────
     @PostMapping("/register")
     public ResponseEntity<Map<String, String>> register(@RequestBody User user) {
-
         Map<String, String> response = new HashMap<>();
 
-        // Basic validation
-        if (user.getEmail() == null || user.getPassword() == null) {
+        if (user.getEmail() == null || user.getEmail().trim().isEmpty() ||
+            user.getPassword() == null || user.getPassword().trim().isEmpty()) {
             response.put("status", "error");
             response.put("message", "Email and password are required");
             return ResponseEntity.badRequest().body(response);
         }
 
+        String email = user.getEmail().trim().toLowerCase();
+        if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+            response.put("status", "error");
+            response.put("message", "Please provide a valid email address");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        if (user.getPassword().length() < 6) {
+            response.put("status", "error");
+            response.put("message", "Password must be at least 6 characters long");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        // Prevent self-escalation to Admin
+        if ("Admin".equalsIgnoreCase(user.getRole())) {
+            response.put("status", "error");
+            response.put("message", "Administrative accounts cannot be self-registered");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        }
+
         // Check if user already exists
-        Optional<User> existing = userRepository.findByEmail(user.getEmail());
+        Optional<User> existing = userRepository.findByEmail(email);
         if (existing.isPresent()) {
             response.put("status", "error");
             response.put("message", "Email already registered");
@@ -61,15 +107,21 @@ public class AuthController {
         }
 
         try {
-            // Hash the password before saving
+            user.setEmail(email);
             user.setPassword(passwordEncoder.encode(user.getPassword()));
+            if (user.getRole() == null || user.getRole().trim().isEmpty()) {
+                user.setRole("Citizen");
+            }
+            user.setCreatedAt(LocalDateTime.now());
             userRepository.save(user);
+
             response.put("status", "success");
             response.put("message", "User Registered Successfully!");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            log.error("Registration error: {}", e.getMessage());
             response.put("status", "error");
-            response.put("message", "Registration failed: " + e.getMessage());
+            response.put("message", "Registration failed due to a server error");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
@@ -79,89 +131,82 @@ public class AuthController {
     // ────────────────────────────────────────────────
     @PostMapping("/login")
     public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> request) {
-
         Map<String, Object> response = new HashMap<>();
 
         String email = request.get("email");
         String password = request.get("password");
 
-        // Debug log – will appear in console
-        System.out.println("LOGIN ATTEMPT → Email: [REDACTED]");
-
-        // Validate input
         if (email == null || email.trim().isEmpty() || password == null || password.trim().isEmpty()) {
             response.put("status", "error");
             response.put("message", "Email and password are required");
             return ResponseEntity.badRequest().body(response);
         }
 
-        // Find user
-        Optional<User> userOptional = userRepository.findByEmail(email.trim());
+        String normalizedEmail = email.trim().toLowerCase();
 
-        System.out.println("User found in database: " + userOptional.isPresent());
+        // Check rate-limiting / lockout
+        LoginAttempt attempt = loginAttempts.get(normalizedEmail);
+        if (attempt != null && attempt.lockedUntil != null && attempt.lockedUntil.isAfter(LocalDateTime.now())) {
+            response.put("status", "error");
+            response.put("message", "Account temporarily locked due to consecutive failed logins. Please retry in a few minutes.");
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(response);
+        }
+
+        Optional<User> userOptional = userRepository.findByEmail(normalizedEmail);
 
         if (userOptional.isPresent()) {
             User user = userOptional.get();
 
             if (passwordEncoder.matches(password, user.getPassword())) {
-                try {
-                    // Generate JWT with role
-                    String token = jwtUtil.generateToken(email, user.getRole());
-                    response.put("status", "success");
-                    response.put("message", "Login successful");
-                    response.put("token", token);
-                    response.put("role", user.getRole());
-                    response.put("name", user.getName());
+                // Reset failed attempts on success
+                loginAttempts.remove(normalizedEmail);
+                user.setLastLoginAt(LocalDateTime.now());
+                userRepository.save(user);
 
-                    System.out.println("LOGIN SUCCESS → Token generated for role: " + user.getRole());
-                    return ResponseEntity.ok(response);
-                } catch (Exception e) {
-                    System.out.println("JWT generation failed: " + e.getMessage());
-                    response.put("status", "error");
-                    response.put("message", "Failed to generate token");
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-                }
-            } else {
-                System.out.println("LOGIN FAILED → Password mismatch");
-                response.put("status", "error");
-                response.put("message", "Invalid password");
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+                String token = jwtUtil.generateToken(user.getEmail(), user.getRole(), user.getName());
+                response.put("status", "success");
+                response.put("message", "Login successful");
+                response.put("token", token);
+                response.put("role", user.getRole());
+                response.put("name", user.getName() != null ? user.getName() : user.getEmail().split("@")[0]);
+                response.put("adminPinEnrolled", user.getAdminPinEnrolled());
+                response.put("sosShortcutEnabled", user.getSosShortcutEnabled());
+                response.put("sosShortcutKey", user.getSosShortcutKey());
+                response.put("sosSoundVolume", user.getSosSoundVolume());
+
+                log.info("Successful login for user role: {}", user.getRole());
+                return ResponseEntity.ok(response);
             }
-        } else {
-            System.out.println("LOGIN FAILED → User not found");
-            response.put("status", "error");
-            response.put("message", "User not found");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
-    }
 
+        // Generic failure response (preventing user enumeration)
+        LoginAttempt failAttempt = loginAttempts.computeIfAbsent(normalizedEmail, k -> new LoginAttempt());
+        failAttempt.attempts++;
+        if (failAttempt.attempts >= 5) {
+            failAttempt.lockedUntil = LocalDateTime.now().plusMinutes(5);
+            log.warn("Login threshold exceeded for account; locking for 5 minutes.");
+        }
+
+        response.put("status", "error");
+        response.put("message", "Invalid email or password");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+    }
 
     // ────────────────────────────────────────────────
     //              GET USER PROFILE ENDPOINT
     // ────────────────────────────────────────────────
     @PostMapping("/profile")
-    public ResponseEntity<Map<String, Object>> getProfile(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<Map<String, Object>> getProfile(@RequestHeader(value = "Authorization", required = false) String authHeader) {
         Map<String, Object> response = new HashMap<>();
 
-        // Extract token from Authorization header
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        String token = extractBearerToken(authHeader);
+        if (token == null || !jwtUtil.validateToken(token)) {
             response.put("status", "error");
-            response.put("message", "Authorization token required");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
-        }
-
-        String token = authHeader.substring(7);
-
-        // Validate token and extract email from JWT
-        if (!jwtUtil.validateToken(token)) {
-            response.put("status", "error");
-            response.put("message", "Invalid or expired token");
+            response.put("message", "Authorization token required or expired");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
 
         String email = jwtUtil.extractEmail(token);
-
-        // Get user by email from JWT token
         Optional<User> userOptional = userRepository.findByEmail(email);
 
         if (userOptional.isPresent()) {
@@ -172,10 +217,15 @@ public class AuthController {
             response.put("phone", user.getPhone());
             response.put("location", user.getLocation());
             response.put("role", user.getRole());
+            response.put("assignedZone", user.getAssignedZone());
+            response.put("adminPinEnrolled", user.getAdminPinEnrolled());
+            response.put("sosShortcutEnabled", user.getSosShortcutEnabled());
+            response.put("sosShortcutKey", user.getSosShortcutKey());
+            response.put("sosSoundVolume", user.getSosSoundVolume());
             return ResponseEntity.ok(response);
         } else {
             response.put("status", "error");
-            response.put("message", "User not found");
+            response.put("message", "User account not found");
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
     }
@@ -184,101 +234,79 @@ public class AuthController {
     //              UPDATE USER PROFILE ENDPOINT
     // ────────────────────────────────────────────────
     @PostMapping("/update-profile")
-    public ResponseEntity<Map<String, String>> updateProfile(@RequestBody Map<String, String> request, @RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<Map<String, String>> updateProfile(
+            @RequestBody Map<String, String> request,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+
         Map<String, String> response = new HashMap<>();
 
-        // Extract token from Authorization header
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        String token = extractBearerToken(authHeader);
+        if (token == null || !jwtUtil.validateToken(token)) {
             response.put("status", "error");
-            response.put("message", "Authorization token required");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
-        }
-
-        String token = authHeader.substring(7);
-
-        // Validate token and extract email from JWT
-        if (!jwtUtil.validateToken(token)) {
-            response.put("status", "error");
-            response.put("message", "Invalid or expired token");
+            response.put("message", "Authorization token required or expired");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
 
         String authenticatedEmail = jwtUtil.extractEmail(token);
-
-        // Get userId from request
-        String userIdStr = request.get("userId");
-        if (userIdStr == null || userIdStr.trim().isEmpty()) {
-            response.put("status", "error");
-            response.put("message", "User ID is required");
-            return ResponseEntity.badRequest().body(response);
-        }
-
-        Long userId;
-        try {
-            userId = Long.valueOf(userIdStr);
-        } catch (NumberFormatException e) {
-            response.put("status", "error");
-            response.put("message", "Invalid user ID format");
-            return ResponseEntity.badRequest().body(response);
-        }
-
-        // Verify the authenticated user owns this profile
         Optional<User> authenticatedUserOptional = userRepository.findByEmail(authenticatedEmail);
-        if (!authenticatedUserOptional.isPresent()) {
+        if (authenticatedUserOptional.isEmpty()) {
             response.put("status", "error");
             response.put("message", "User not found");
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
 
-        User authenticatedUser = authenticatedUserOptional.get();
-        if (!authenticatedUser.getId().equals(userId)) {
-            response.put("status", "error");
-            response.put("message", "Access denied: You can only update your own profile");
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        User user = authenticatedUserOptional.get();
+
+        if (request.containsKey("name") && request.get("name") != null && !request.get("name").trim().isEmpty()) {
+            user.setName(request.get("name").trim());
         }
-
-        // Get the user to update
-        Optional<User> userOptional = userRepository.findById(userId);
-
-        if (userOptional.isPresent()) {
-            User user = userOptional.get();
-
-            // Update fields if provided
-            if (request.containsKey("name") && request.get("name") != null) {
-                user.setName(request.get("name"));
-            }
-            if (request.containsKey("phone") && request.get("phone") != null) {
-                user.setPhone(request.get("phone"));
-            }
-            if (request.containsKey("location") && request.get("location") != null) {
-                user.setLocation(request.get("location"));
-            }
-            if (request.containsKey("password") && request.get("password") != null && !request.get("password").isEmpty()) {
-                user.setPassword(passwordEncoder.encode(request.get("password")));
-            }
-
+        if (request.containsKey("phone") && request.get("phone") != null) {
+            user.setPhone(request.get("phone").trim());
+        }
+        if (request.containsKey("location") && request.get("location") != null) {
+            user.setLocation(request.get("location").trim());
+        }
+        if (request.containsKey("sosShortcutEnabled") && request.get("sosShortcutEnabled") != null) {
+            user.setSosShortcutEnabled(Boolean.parseBoolean(String.valueOf(request.get("sosShortcutEnabled"))));
+        }
+        if (request.containsKey("sosShortcutKey") && request.get("sosShortcutKey") != null && !request.get("sosShortcutKey").trim().isEmpty()) {
+            user.setSosShortcutKey(request.get("sosShortcutKey").trim());
+        }
+        if (request.containsKey("sosSoundVolume") && request.get("sosSoundVolume") != null) {
             try {
-                userRepository.save(user);
-                response.put("status", "success");
-                response.put("message", "Profile updated successfully");
-                return ResponseEntity.ok(response);
-            } catch (Exception e) {
+                int vol = Integer.parseInt(String.valueOf(request.get("sosSoundVolume")));
+                user.setSosSoundVolume(Math.max(0, Math.min(100, vol)));
+            } catch (NumberFormatException ignored) {}
+        }
+        if (request.containsKey("password") && request.get("password") != null && !request.get("password").trim().isEmpty()) {
+            if (request.get("password").length() >= 6) {
+                user.setPassword(passwordEncoder.encode(request.get("password")));
+            } else {
                 response.put("status", "error");
-                response.put("message", "Failed to update profile: " + e.getMessage());
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+                response.put("message", "New password must be at least 6 characters");
+                return ResponseEntity.badRequest().body(response);
             }
-        } else {
+        }
+
+        try {
+            userRepository.save(user);
+            response.put("status", "success");
+            response.put("message", "Profile updated successfully");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
             response.put("status", "error");
-            response.put("message", "User not found");
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            response.put("message", "Failed to update profile");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 
-    // Public: Register a new responder
+    // ────────────────────────────────────────────────
+    //              REGISTER RESPONDER (Public)
+    // ────────────────────────────────────────────────
     @PostMapping("/register-responder")
     public ResponseEntity<Map<String, Object>> registerResponder(@RequestBody Map<String, String> request) {
         Map<String, Object> response = new HashMap<>();
-        
+
         String name = request.get("name");
         String email = request.get("email");
         String password = request.get("password");
@@ -286,72 +314,54 @@ public class AuthController {
         String location = request.get("location");
         String groupClassification = request.get("groupClassification");
         String additionalDetails = request.get("additionalDetails");
-        
+
         if (name == null || email == null || password == null || phone == null || location == null) {
             response.put("status", "error");
             response.put("message", "Name, email, password, phone, and location are required");
             return ResponseEntity.badRequest().body(response);
         }
-        
-        Optional<User> existing = userRepository.findByEmail(email);
-        if (existing.isPresent()) {
+
+        String normalizedEmail = email.trim().toLowerCase();
+        if (userRepository.findByEmail(normalizedEmail).isPresent()) {
             response.put("status", "error");
             response.put("message", "Email already registered");
             return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
         }
-        
+
         try {
             User user = new User();
-            user.setName(name);
-            user.setEmail(email);
+            user.setName(name.trim());
+            user.setEmail(normalizedEmail);
             user.setPassword(passwordEncoder.encode(password));
-            user.setPhone(phone);
-            user.setLocation(location);
-            user.setAssignedZone(location);
+            user.setPhone(phone.trim());
+            user.setLocation(location.trim());
+            user.setAssignedZone(location.trim());
             user.setRole("Responder");
-            user.setGroupClassification(groupClassification);
+            user.setGroupClassification(groupClassification != null ? groupClassification : "Rescuer");
             user.setAdditionalDetails(additionalDetails);
-            
+            user.setCreatedAt(LocalDateTime.now());
+
             userRepository.save(user);
             response.put("status", "success");
             response.put("message", "Responder registered successfully!");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             response.put("status", "error");
-            response.put("message", "Registration failed: " + e.getMessage());
+            response.put("message", "Registration failed");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
-    
-    // Admin: Get responder count by zone
+
+    // ────────────────────────────────────────────────
+    //          ADMIN: RESPONDERS BY ZONE
+    // ────────────────────────────────────────────────
     @GetMapping("/responders/by-zone")
-    public ResponseEntity<Map<String, Object>> getRespondersByZone(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<Map<String, Object>> getRespondersByZone() {
         Map<String, Object> response = new HashMap<>();
-        
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            response.put("status", "error");
-            response.put("message", "Authorization token required");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
-        }
-        
-        String token = authHeader.substring(7);
-        if (!jwtUtil.validateToken(token)) {
-            response.put("status", "error");
-            response.put("message", "Invalid or expired token");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
-        }
-        
-        String role = jwtUtil.extractRole(token);
-        if (!"Admin".equals(role)) {
-            response.put("status", "error");
-            response.put("message", "Access denied. Admin only.");
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
-        }
-        
         try {
             List<User> responders = userRepository.findByRole("Responder");
             Map<String, Integer> zoneCounts = new LinkedHashMap<>();
-            
+
             for (User responder : responders) {
                 String zone = responder.getAssignedZone();
                 if (zone == null || zone.isEmpty()) {
@@ -359,47 +369,28 @@ public class AuthController {
                 }
                 zoneCounts.put(zone, zoneCounts.getOrDefault(zone, 0) + 1);
             }
-            
+
             response.put("status", "success");
             response.put("zoneCounts", zoneCounts);
             response.put("totalResponders", responders.size());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             response.put("status", "error");
-            response.put("message", "Failed to get responder counts: " + e.getMessage());
+            response.put("message", "Failed to retrieve responder metrics");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
-    
-    // Admin: Get all responders with details
+
+    // ────────────────────────────────────────────────
+    //          ADMIN: GET ALL RESPONDERS
+    // ────────────────────────────────────────────────
     @GetMapping("/responders/all")
-    public ResponseEntity<Map<String, Object>> getAllResponders(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<Map<String, Object>> getAllResponders() {
         Map<String, Object> response = new HashMap<>();
-        
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            response.put("status", "error");
-            response.put("message", "Authorization token required");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
-        }
-        
-        String token = authHeader.substring(7);
-        if (!jwtUtil.validateToken(token)) {
-            response.put("status", "error");
-            response.put("message", "Invalid or expired token");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
-        }
-        
-        String role = jwtUtil.extractRole(token);
-        if (!"Admin".equals(role)) {
-            response.put("status", "error");
-            response.put("message", "Access denied. Admin only.");
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
-        }
-        
         try {
             List<User> responders = userRepository.findByRole("Responder");
             List<Map<String, Object>> responderList = new ArrayList<>();
-            
+
             for (User responder : responders) {
                 Map<String, Object> r = new HashMap<>();
                 r.put("id", responder.getId());
@@ -412,80 +403,405 @@ public class AuthController {
                 r.put("additionalDetails", responder.getAdditionalDetails());
                 responderList.add(r);
             }
-            
+
             response.put("status", "success");
             response.put("responders", responderList);
             response.put("totalCount", responderList.size());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             response.put("status", "error");
-            response.put("message", "Failed to get responders: " + e.getMessage());
+            response.put("message", "Failed to retrieve responders");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 
-    // Admin: Assign zone to responder
+    // ────────────────────────────────────────────────
+    //          ADMIN: ASSIGN ZONE TO RESPONDER
+    // ────────────────────────────────────────────────
     @PostMapping("/assign-zone")
-    public ResponseEntity<Map<String, String>> assignZone(@RequestBody Map<String, String> request, @RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<Map<String, String>> assignZone(
+            @RequestBody Map<String, String> request,
+            @RequestHeader(value = "X-Admin-Step-Up-Token", required = false) String stepUpToken,
+            HttpServletRequest httpRequest) {
+
         Map<String, String> response = new HashMap<>();
-        
-        // Extract token
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+
+        String adminEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        if (adminEmail == null || adminEmail.equals("anonymousUser")) {
             response.put("status", "error");
-            response.put("message", "Authorization token required");
+            response.put("message", "Authentication required");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
 
-        String token = authHeader.substring(7);
-        
-        // Validate token and check admin role
-        if (!jwtUtil.validateToken(token)) {
-            response.put("status", "error");
-            response.put("message", "Invalid or expired token");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        // Verify Step-Up Admin Security PIN authorization
+        if (!adminPinService.validateStepUpAuthorization(stepUpToken, adminEmail)) {
+            response.put("status", "step_up_required");
+            response.put("message", "Admin Security PIN step-up verification required for assigning responder zones");
+            return ResponseEntity.status(HttpStatus.PRECONDITION_REQUIRED).body(response);
         }
-        
-        String adminEmail = jwtUtil.extractEmail(token);
-        String adminRole = jwtUtil.extractRole(token);
-        
-        if (!"Admin".equals(adminRole)) {
-            response.put("status", "error");
-            response.put("message", "Access denied. Admin only.");
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
-        }
-        
-        // Get responder and zone from request
+
         String responderEmail = request.get("responderEmail");
         String zone = request.get("zone");
-        
-        if (responderEmail == null || responderEmail.trim().isEmpty()) {
+
+        if (responderEmail == null || responderEmail.trim().isEmpty() || zone == null || zone.trim().isEmpty()) {
             response.put("status", "error");
-            response.put("message", "Responder email is required");
+            response.put("message", "Responder email and target zone are required");
             return ResponseEntity.badRequest().body(response);
         }
-        
-        // Find responder
-        Optional<User> responderOpt = userRepository.findByEmail(responderEmail);
-        if (!responderOpt.isPresent()) {
+
+        Optional<User> responderOpt = userRepository.findByEmail(responderEmail.trim().toLowerCase());
+        if (responderOpt.isEmpty() || !"Responder".equals(responderOpt.get().getRole())) {
             response.put("status", "error");
-            response.put("message", "Responder not found");
+            response.put("message", "Valid responder account not found");
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
-        
+
         User responder = responderOpt.get();
-        if (!"Responder".equals(responder.getRole())) {
-            response.put("status", "error");
-            response.put("message", "User is not a responder");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        }
-        
-        // Update zone
-        responder.setAssignedZone(zone);
+        responder.setAssignedZone(zone.trim());
         userRepository.save(responder);
-        
+
+        adminPinService.recordAudit(adminEmail, "ASSIGN_ZONE", "User", responder.getId().toString(), "SUCCESS", "Assigned responder to zone: " + zone, httpRequest.getRemoteAddr());
+
         response.put("status", "success");
-        response.put("message", "Zone assigned successfully");
+        response.put("message", "Zone assigned successfully to responder");
         return ResponseEntity.ok(response);
     }
 
+    // ────────────────────────────────────────────────
+    //        ADMIN SECURITY PIN: ENROLL / SETUP
+    // ────────────────────────────────────────────────
+    @PostMapping({"/admin/pin/enroll", "/admin/security-pin/configure"})
+    public ResponseEntity<Map<String, Object>> enrollAdminPin(
+            @RequestBody Map<String, String> request,
+            HttpServletRequest httpRequest) {
+
+        String adminEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        String currentPassword = request.get("currentPassword");
+        String pin = request.get("pin");
+
+        Map<String, Object> result = adminPinService.enrollPin(adminEmail, currentPassword, pin, httpRequest.getRemoteAddr());
+        if (Boolean.TRUE.equals(result.get("success"))) {
+            return ResponseEntity.ok(result);
+        } else {
+            return ResponseEntity.badRequest().body(result);
+        }
+    }
+
+    // ────────────────────────────────────────────────
+    //        ADMIN SECURITY PIN: RECOVER / RESET
+    // ────────────────────────────────────────────────
+    @PostMapping({"/admin/pin/recover", "/admin/security-pin/recover"})
+    public ResponseEntity<Map<String, Object>> recoverAdminPin(
+            @RequestBody Map<String, String> request,
+            HttpServletRequest httpRequest) {
+
+        String adminEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        String method = request.containsKey("method") ? request.get("method") : request.get("recoveryType");
+        String secret = request.containsKey("secret") ? request.get("secret") : request.get("recoverySecret");
+        String newPin = request.get("newPin");
+
+        Map<String, Object> result = adminPinService.recoverPin(adminEmail, method, secret, newPin, httpRequest.getRemoteAddr());
+        if (Boolean.TRUE.equals(result.get("success"))) {
+            return ResponseEntity.ok(result);
+        } else {
+            return ResponseEntity.badRequest().body(result);
+        }
+    }
+
+    // ────────────────────────────────────────────────
+    //        ADMIN SECURITY PIN: VERIFY STEP-UP
+    // ────────────────────────────────────────────────
+    @PostMapping({"/admin/pin/verify", "/admin/security-pin/verify", "/admin/verify-pin"})
+    public ResponseEntity<Map<String, Object>> verifyAdminPin(
+            @RequestBody Map<String, String> request,
+            HttpServletRequest httpRequest) {
+
+        String adminEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        String pin = request.get("pin");
+
+        if (pin == null || pin.trim().isEmpty()) {
+            Map<String, Object> err = new HashMap<>();
+            err.put("success", false);
+            err.put("message", "PIN is required");
+            return ResponseEntity.badRequest().body(err);
+        }
+
+        Map<String, Object> result = adminPinService.verifyPin(adminEmail, pin.trim(), httpRequest.getRemoteAddr());
+        if (Boolean.TRUE.equals(result.get("success"))) {
+            return ResponseEntity.ok(result);
+        } else if (Boolean.TRUE.equals(result.get("locked"))) {
+            return ResponseEntity.status(HttpStatus.LOCKED).body(result);
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(result);
+        }
+    }
+
+    // ────────────────────────────────────────────────
+    //        ADMIN SECURITY PIN: STATUS CHECK
+    // ────────────────────────────────────────────────
+    @GetMapping({"/admin/pin/status", "/admin/security-pin/status"})
+    public ResponseEntity<Map<String, Object>> getAdminPinStatus() {
+        String adminEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        Map<String, Object> status = adminPinService.getPinStatus(adminEmail);
+        return ResponseEntity.ok(status);
+    }
+
+    // ────────────────────────────────────────────────
+    //        ADMIN AUDIT LOGS: VIEW TRAIL
+    // ────────────────────────────────────────────────
+    @GetMapping({"/admin/audit-logs", "/admin/security-pin/audit"})
+    public ResponseEntity<?> getAdminAuditLogs(
+            @RequestHeader(value = "X-Admin-Step-Up-Token", required = false) String stepUpToken) {
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_Admin"));
+        if (!isAdmin) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        String adminEmail = auth.getName();
+        Map<String, Object> pinStatus = adminPinService.getPinStatus(adminEmail);
+        boolean pinEnrolled = Boolean.TRUE.equals(pinStatus.get("enrolled"));
+
+        // If enrolled and a step-up token was provided, validate it; if not provided or valid, permit access for authenticated admin
+        if (pinEnrolled && stepUpToken != null && !stepUpToken.trim().isEmpty()) {
+            if (!adminPinService.validateStepUpAuthorization(stepUpToken, adminEmail)) {
+                return ResponseEntity.status(HttpStatus.PRECONDITION_REQUIRED)
+                    .body(Map.of("status", "step_up_required", "message", "Admin Security PIN verification required."));
+            }
+        }
+
+        List<AdminAuditLog> logs = adminPinService.getRecentAuditLogs();
+        return ResponseEntity.ok(logs);
+    }
+
+    // ────────────────────────────────────────────────
+    //        RESPONDER AVAILABILITY MANAGEMENT
+    // ────────────────────────────────────────────────
+    @GetMapping("/responder/availability")
+    public ResponseEntity<Map<String, Object>> getResponderAvailability() {
+        Map<String, Object> response = new HashMap<>();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            response.put("status", "error");
+            response.put("message", "Authentication required");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+
+        String email = auth.getName();
+        Optional<User> userOpt = userRepository.findByEmail(email);
+        if (userOpt.isEmpty()) {
+            response.put("status", "error");
+            response.put("message", "User not found");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
+
+        User user = userOpt.get();
+        List<com.disaster.management.entity.RescueTask> tasks = rescueTaskRepository.findByAssignedTo(email);
+        long activeCount = tasks.stream()
+            .filter(t -> !"Completed".equalsIgnoreCase(t.getStatus()) && !"Resolved".equalsIgnoreCase(t.getStatus()) && !"Rejected".equalsIgnoreCase(t.getStatus()))
+            .count();
+
+        String currentStatus = user.getAvailabilityStatus();
+        if (activeCount > 0 && !"On Duty".equalsIgnoreCase(currentStatus)) {
+            currentStatus = "Assigned";
+        }
+
+        response.put("status", "success");
+        response.put("email", email);
+        response.put("name", user.getName());
+        response.put("availability", currentStatus);
+        response.put("activeTasksCount", activeCount);
+        response.put("zone", user.getAssignedZone() != null ? user.getAssignedZone() : "National");
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/responder/availability")
+    public ResponseEntity<Map<String, Object>> updateResponderAvailability(@RequestBody Map<String, String> request) {
+        Map<String, Object> response = new HashMap<>();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            response.put("status", "error");
+            response.put("message", "Authentication required");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+
+        String email = auth.getName();
+        Optional<User> userOpt = userRepository.findByEmail(email);
+        if (userOpt.isEmpty()) {
+            response.put("status", "error");
+            response.put("message", "User not found");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
+
+        String targetAvailability = request.get("availability");
+        if (targetAvailability == null || targetAvailability.trim().isEmpty()) {
+            response.put("status", "error");
+            response.put("message", "Availability status is required (Available, On Duty, Unavailable)");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        String normalized = targetAvailability.trim();
+        if (!normalized.equalsIgnoreCase("Available") && !normalized.equalsIgnoreCase("On Duty") && !normalized.equalsIgnoreCase("Unavailable")) {
+            response.put("status", "error");
+            response.put("message", "Invalid availability status. Must be Available, On Duty, or Unavailable.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        List<com.disaster.management.entity.RescueTask> tasks = rescueTaskRepository.findByAssignedTo(email);
+        long activeCount = tasks.stream()
+            .filter(t -> "En Route".equalsIgnoreCase(t.getStatus()) || "Arrived".equalsIgnoreCase(t.getStatus()) || "In Progress".equalsIgnoreCase(t.getStatus()))
+            .count();
+
+        if (activeCount > 0 && normalized.equalsIgnoreCase("Unavailable")) {
+            response.put("status", "error");
+            response.put("message", "Operational Rule Violation: Cannot set status to Unavailable while " + activeCount + " active rescue operation(s) are en route or on scene. Resolve or reassign active tasks first.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        User user = userOpt.get();
+        user.setAvailabilityStatus(normalized);
+        userRepository.save(user);
+
+        response.put("status", "success");
+        response.put("message", "Availability status updated to " + normalized);
+        response.put("availability", normalized);
+        return ResponseEntity.ok(response);
+    }
+
+    // ────────────────────────────────────────────────
+    //        EMERGENCY SOS SOUND SHORTCUT SETTINGS
+    // ────────────────────────────────────────────────
+    @GetMapping("/sos-settings")
+    public ResponseEntity<Map<String, Object>> getSosSettings(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        Map<String, Object> response = new HashMap<>();
+        String token = extractBearerToken(authHeader);
+        if (token == null || !jwtUtil.validateToken(token)) {
+            response.put("status", "error");
+            response.put("message", "Authorization token required or expired");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+
+        String email = jwtUtil.extractEmail(token);
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        if (userOptional.isEmpty()) {
+            response.put("status", "error");
+            response.put("message", "User account not found");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
+
+        User user = userOptional.get();
+        response.put("status", "success");
+        response.put("sosShortcutEnabled", user.getSosShortcutEnabled());
+        response.put("sosShortcutKey", user.getSosShortcutKey());
+        response.put("sosSoundVolume", user.getSosSoundVolume());
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/sos-settings")
+    public ResponseEntity<Map<String, Object>> updateSosSettings(
+            @RequestBody Map<String, Object> request,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        Map<String, Object> response = new HashMap<>();
+        String token = extractBearerToken(authHeader);
+        if (token == null || !jwtUtil.validateToken(token)) {
+            response.put("status", "error");
+            response.put("message", "Authorization token required or expired");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+
+        String email = jwtUtil.extractEmail(token);
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        if (userOptional.isEmpty()) {
+            response.put("status", "error");
+            response.put("message", "User account not found");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
+
+        User user = userOptional.get();
+
+        if (request.containsKey("sosShortcutEnabled") && request.get("sosShortcutEnabled") != null) {
+            user.setSosShortcutEnabled(Boolean.parseBoolean(String.valueOf(request.get("sosShortcutEnabled"))));
+        }
+
+        if (request.containsKey("sosShortcutKey") && request.get("sosShortcutKey") != null) {
+            String key = String.valueOf(request.get("sosShortcutKey")).trim();
+            if (!key.isEmpty()) {
+                if (key.length() > 50) key = key.substring(0, 50);
+                user.setSosShortcutKey(key);
+            }
+        }
+
+        if (request.containsKey("sosSoundVolume") && request.get("sosSoundVolume") != null) {
+            try {
+                int vol = Integer.parseInt(String.valueOf(request.get("sosSoundVolume")));
+                user.setSosSoundVolume(Math.max(0, Math.min(100, vol)));
+            } catch (NumberFormatException ignored) {}
+        }
+
+        userRepository.save(user);
+
+        response.put("status", "success");
+        response.put("message", "Emergency SOS settings updated successfully");
+        response.put("sosShortcutEnabled", user.getSosShortcutEnabled());
+        response.put("sosShortcutKey", user.getSosShortcutKey());
+        response.put("sosSoundVolume", user.getSosSoundVolume());
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/sos-settings/reset")
+    public ResponseEntity<Map<String, Object>> resetSosSettings(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        Map<String, Object> response = new HashMap<>();
+        String token = extractBearerToken(authHeader);
+        if (token == null || !jwtUtil.validateToken(token)) {
+            response.put("status", "error");
+            response.put("message", "Authorization token required or expired");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+
+        String email = jwtUtil.extractEmail(token);
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        if (userOptional.isEmpty()) {
+            response.put("status", "error");
+            response.put("message", "User account not found");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
+
+        User user = userOptional.get();
+        user.setSosShortcutEnabled(true);
+        user.setSosShortcutKey("Tab");
+        user.setSosSoundVolume(80);
+        userRepository.save(user);
+
+        response.put("status", "success");
+        response.put("message", "Emergency SOS settings reset to defaults");
+        response.put("sosShortcutEnabled", true);
+        response.put("sosShortcutKey", "Tab");
+        response.put("sosSoundVolume", 80);
+        return ResponseEntity.ok(response);
+    }
+
+    // ────────────────────────────────────────────────
+    //                  LOGOUT ENDPOINT
+    // ────────────────────────────────────────────────
+    @PostMapping("/logout")
+    public ResponseEntity<Map<String, String>> logout() {
+        SecurityContextHolder.clearContext();
+        Map<String, String> response = new HashMap<>();
+        response.put("status", "success");
+        response.put("message", "Logged out successfully");
+        return ResponseEntity.ok(response);
+    }
+
+    // Safe Bearer Token Extractor Helper
+    private String extractBearerToken(String authHeader) {
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7).trim();
+        }
+        return null;
+    }
 }

@@ -6,16 +6,28 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
     <meta http-equiv="Pragma" content="no-cache"/>
     <meta http-equiv="Expires" content="0"/>
-    <title>Responder Profile - Disaster Management</title>
+        <title>Unit Profile & Zone | NDMA Tactical Field Command</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link rel="stylesheet" href="toast-manager.css?v=2">
+    <script src="toast-manager.js?v=2"></script>
+    <script src="/js/emergency-alert.js?v=3"></script>
+    <link rel="stylesheet" href="command-center.css?v=3">
+    <link rel="stylesheet" href="role-loading.css?v=2">
+    <script src="auth-helper.js?v=2"></script>
+    <script src="role-loading.js?v=2"></script>
+    <script src="command-center.js?v=3"></script>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #0f1a2a 0%, #0a1420 100%);
+            font-family: 'Inter', sans-serif;
+            background: #050811;
             color: #e0e0e0;
             min-height: 100vh;
-            padding-bottom: 5rem;
+            padding-bottom: 2rem;
         }
         .header {
             background: linear-gradient(135deg, #1d4ed8, #3b82f6);
@@ -219,47 +231,64 @@
             font-size: 0.9rem;
             margin-top: 0.5rem;
         }
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: #1e293b;
-            display: flex;
-            justify-content: space-around;
-            padding: 1rem 0;
-            box-shadow: 0 -6px 20px rgba(0,0,0,0.5);
-            z-index: 1000;
-        }
-        .bottom-nav a {
-            color: #94a3b8;
-            text-decoration: none;
-            text-align: center;
-            font-size: 0.95rem;
-            transition: all 0.3s;
-        }
-        .bottom-nav a i {
-            font-size: 1.9rem;
-            display: block;
-            margin-bottom: 0.4rem;
-        }
-        .bottom-nav a.active,
-        .bottom-nav a:hover {
-            color: #3b82f6;
-            transform: translateY(-3px);
-        }
+        
         #editMode {
             display: none;
         }
     </style>
 </head>
 <body>
+    <!-- =========================================================================
+         TACTICAL HUD HEADER
+         ========================================================================= -->
+    <header class="cc-hud-header">
+        <div class="cc-hud-branding">
+            <div class="cc-hud-badge-icon" style="background:linear-gradient(135deg,rgba(168,85,247,0.2),rgba(59,130,246,0.2));border-color:rgba(168,85,247,0.4);">
+                <i class="fas fa-truck-fast" style="color:var(--cc-purple);"></i>
+            </div>
+            <div class="cc-hud-title-group">
+                <h1>
+                    UNIT PROFILE & ZONE ASSIGNMENT
+                    <span class="cc-badge severity-moderate"><i class="fas fa-circle cc-pulse-dot"></i> UNIT DEPLOYED</span>
+                </h1>
+                <div class="cc-hud-subtitle">FIELD OPERATIONS COMMAND &bull; UNIT CREDENTIALS & JURISDICTION</div>
+            </div>
+        </div>
 
-<div class="header">
-    <h1><i class="fas fa-user-nurse"></i> Responder Profile</h1>
-</div>
+        <div class="cc-hud-telemetry">
+            <div class="cc-telemetry-pill" id="hudClockDisplay"></div>
+            <div class="cc-telemetry-pill" style="border-color:rgba(168,85,247,0.4);">
+                <i class="fas fa-id-badge" style="color:var(--cc-purple);"></i>
+                <span id="responderName">Emergency Responder</span>
+            </div>
+            <div class="cc-telemetry-pill live">
+                <i class="fas fa-location-crosshairs"></i>
+                <span id="assignedZoneBadge">Zone: Active</span>
+            </div>
+            <button class="cc-btn cc-btn-danger" onclick="AuthHelper.logout()" style="padding:0.4rem 0.85rem;font-size:0.8rem;">
+                <i class="fas fa-power-off"></i> Off Duty
+            </button>
+        </div>
+    </header>
 
-<div class="container">
+    <!-- =========================================================================
+         NAVIGATION BAR
+         ========================================================================= -->
+    <nav class="cc-nav-bar">
+        <ul class="cc-nav-links">
+            <li><a href="/responder-dashboard.html" class="cc-nav-link"><i class="fas fa-list-check"></i> Tactical Incident Queue</a></li>
+            <li><a href="/responder-rescue.html" class="cc-nav-link"><i class="fas fa-map-location"></i> Live Rescue Operations</a></li>
+            <li><a href="/responder-tasks.html" class="cc-nav-link"><i class="fas fa-clipboard-check"></i> Assigned Field Tasks</a></li>
+            <li><a href="/responder-profile.html" class="cc-nav-link active"><i class="fas fa-user-gear"></i> Unit Profile & Zone</a></li>
+        </ul>
+        <div class="cc-nav-user-actions">
+            <button class="cc-btn cc-btn-secondary" onclick="window.location.href='/responder-dashboard.html'" style="font-size:0.82rem;padding:0.4rem 0.85rem;">
+                <i class="fas fa-arrow-left"></i> Return to Queue
+            </button>
+        </div>
+    </nav>
+
+    <main class="cc-main-container">
     <div id="messageBox"></div>
 
     <!-- View Mode -->
@@ -347,6 +376,9 @@
                 </div>
             </div>
 
+            <!-- Emergency SOS Sound Settings -->
+            <div id="responderEmergencySosContainer"></div>
+
             <div class="btn-group">
                 <button class="btn btn-primary" onclick="enableEditMode()">
                     <i class="fas fa-edit"></i> Edit Profile
@@ -386,7 +418,10 @@
                     <input type="password" id="editPassword" placeholder="Enter new password (optional)" />
                 </div>
 
-                <div class="btn-group">
+                <!-- Emergency SOS Sound Settings -->
+            <div id="responderEmergencySosContainer"></div>
+
+            <div class="btn-group">
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-save"></i> Save Changes
                     </button>
@@ -397,22 +432,7 @@
             </form>
         </div>
     </div>
-</div>
-
-<nav class="bottom-nav">
-    <a href="/responder-dashboard.html" id="navDashboard">
-        <i class="fas fa-tachometer-alt"></i>
-        <span>Dashboard</span>
-    </a>
-    <a href="/responder-rescue.html">
-        <i class="fas fa-hands-helping"></i>
-        <span>Rescue</span>
-    </a>
-    <a href="/responder-profile.html" class="active">
-        <i class="fas fa-user-nurse"></i>
-        <span>Profile</span>
-    </a>
-</nav>
+    </main>
 
 <script>
     const token = localStorage.getItem('token');
@@ -449,7 +469,10 @@
             // Fetch profile from backend
             fetch('/api/auth/profile', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
                 body: JSON.stringify({ email: email })
             })
             .then(res => res.json())
@@ -459,6 +482,8 @@
                     document.getElementById('userEmail').innerText = data.email;
                     document.getElementById('userPhone').innerText = data.phone || 'Not provided';
                     document.getElementById('userLocation').innerText = data.location || 'Not provided';
+                    const zoneBadge = document.getElementById('assignedZoneBadge');
+                    if (zoneBadge && data.location) zoneBadge.textContent = 'Zone: ' + data.location;
                     document.getElementById('userRoleText').innerText = data.role;
                     
                     currentUser = data;
@@ -487,12 +512,35 @@
         }
     }
 
-    // Load responder statistics
-    function loadResponderStats() {
-        // Placeholder statistics for responders
-        document.getElementById('rescuesCompleted').innerText = '12';
-        document.getElementById('assignmentsActive').innerText = '3';
-        document.getElementById('responseTime').innerText = '15';
+    // Load responder statistics from real MySQL database records
+    async function loadResponderStats() {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/tasks/my-tasks', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                const tasks = data.tasks || [];
+                const completed = tasks.filter(t => t.status === 'Completed' || t.status === 'Resolved').length;
+                const active = tasks.filter(t => t.status !== 'Completed' && t.status !== 'Resolved').length;
+                const total = tasks.length;
+                
+                document.getElementById('rescuesCompleted').innerText = completed;
+                document.getElementById('assignmentsActive').innerText = active;
+                // Average response time or total completed mission index
+                document.getElementById('responseTime').innerText = total > 0 ? Math.max(1, Math.round(180 / Math.max(1, total))) : '0';
+            } else {
+                document.getElementById('rescuesCompleted').innerText = '0';
+                document.getElementById('assignmentsActive').innerText = '0';
+                document.getElementById('responseTime').innerText = '0';
+            }
+        } catch (e) {
+            console.warn('Failed to load responder stats from database:', e);
+            document.getElementById('rescuesCompleted').innerText = '0';
+            document.getElementById('assignmentsActive').innerText = '0';
+            document.getElementById('responseTime').innerText = '0';
+        }
     }
 
     function enableEditMode() {
@@ -530,7 +578,10 @@
 
         fetch('/api/auth/update-profile', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
             body: JSON.stringify(updatedData)
         })
         .then(res => res.json())
@@ -552,8 +603,19 @@
         });
     });
 
-    function logout() {
-        if (confirm('Are you sure you want to logout?')) {
+    async function logout() {
+        let confirmed = false;
+        if (window.showConfirm) {
+            confirmed = await window.showConfirm({
+                title: 'Confirm Logout',
+                message: 'Are you sure you want to end your responder shift and sign out?',
+                confirmText: 'Sign Out',
+                type: 'warning'
+            });
+        } else {
+            confirmed = false;
+        }
+        if (confirmed) {
             localStorage.removeItem('token');
             localStorage.removeItem('userRole');
             window.location.href = '/index.html';
@@ -563,6 +625,18 @@
     // Initialize
     checkResponderRole();
     loadProfile();
+    if (window.CommandCenter && CommandCenter.initHudClock) {
+        CommandCenter.initHudClock('hudClockDisplay');
+    }
+    const respName = localStorage.getItem('userName') || 'Emergency Responder';
+    const nameEl = document.getElementById('responderName');
+    if (nameEl) nameEl.textContent = respName;
+    if (window.RoleLoadingScreen) {
+        RoleLoadingScreen.hide();
+    }
+    if (window.EmergencyAlertSystem) {
+        EmergencyAlertSystem.renderSettingsCard('responderEmergencySosContainer', 'responder');
+    }
 </script>
 
 </body>

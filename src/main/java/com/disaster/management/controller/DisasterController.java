@@ -1,75 +1,96 @@
 package com.disaster.management.controller;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.disaster.management.entity.Disaster;          // ← ADD THIS LINE
+import com.disaster.management.entity.Disaster;
 import com.disaster.management.service.DisasterService;
+import com.disaster.management.service.ImdWeatherService;
 
 @RestController
 @RequestMapping("/api")
 public class DisasterController {
 
+    private static final Logger log = LoggerFactory.getLogger(DisasterController.class);
+
     @Autowired
     private DisasterService disasterService;
+
+    @Autowired
+    private ImdWeatherService imdWeatherService;
 
     @GetMapping("/disasters")
     public List<Disaster> getDisasters() {
         return disasterService.getAllDisasters();
     }
 
-    // New endpoint: real weather for Tamil Nadu cities (no API key needed)
+    /**
+     * Unified weather observation endpoint.
+     * Supports querying by city name or geographic coordinates (lat/lon).
+     * Connects with IMD (official) or WMO Global Observation Network (transparent fallback).
+     */
     @GetMapping("/weather")
-    public Map<String, Object> getWeather(@RequestParam String city) {
-        Map<String, Object> response = new HashMap<>();
+    public ResponseEntity<Map<String, Object>> getWeather(
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) Double lat,
+            @RequestParam(required = false) Double lon) {
 
-        // Tamil Nadu city coordinates
-        Map<String, double[]> cities = new HashMap<>();
-        cities.put("Coimbatore", new double[]{11.0168, 76.9558});
-        cities.put("Dindigul", new double[]{10.3687, 77.9803});
-        cities.put("Chennai", new double[]{13.0827, 80.2707});
-        cities.put("Madurai", new double[]{9.9252, 78.1198});
-        cities.put("Tirunelveli", new double[]{8.7139, 77.7567});
-        cities.put("Salem", new double[]{11.6643, 78.1460});
-        cities.put("Tiruchirappalli", new double[]{10.7905, 78.7047});
+        double targetLat = 13.0827; // Default Chennai
+        double targetLon = 80.2707;
+        String resolvedCity = (city != null && !city.trim().isEmpty()) ? city.trim() : "Chennai";
 
-        double[] latLon = cities.getOrDefault(city, new double[]{11.0168, 76.9558}); // default Coimbatore
-
-        try {
-            String urlStr = String.format(
-                "https://api.open-meteo.com/v1/forecast?latitude=%.4f&longitude=%.4f&current=temperature_2m,apparent_temperature,weather_code,precipitation&timezone=Asia%%2FKolkata",
-                latLon[0], latLon[1]
+        if (lat != null && lon != null) {
+            targetLat = lat;
+            targetLon = lon;
+            resolvedCity = String.format("%.2f, %.2f", lat, lon);
+        } else if (city != null) {
+            // Coordinate mapping for major Indian cities
+            Map<String, double[]> cityMap = Map.of(
+                "chennai", new double[]{13.0827, 80.2707},
+                "coimbatore", new double[]{11.0168, 76.9558},
+                "madurai", new double[]{9.9252, 78.1198},
+                "tiruchirappalli", new double[]{10.7905, 78.7047},
+                "salem", new double[]{11.6643, 78.1460},
+                "tirunelveli", new double[]{8.7139, 77.7567},
+                "dindigul", new double[]{10.3687, 77.9803},
+                "delhi", new double[]{28.6139, 77.2090},
+                "mumbai", new double[]{19.0760, 72.8777},
+                "kolkata", new double[]{22.5726, 88.3639}
             );
 
-            URL url = new URL(urlStr);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-
-            BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-            StringBuilder content = new StringBuilder();
-            String line;
-            while ((line = in.readLine()) != null) {
-                content.append(line);
+            double[] coords = cityMap.get(resolvedCity.toLowerCase());
+            if (coords != null) {
+                targetLat = coords[0];
+                targetLon = coords[1];
             }
-            in.close();
-            conn.disconnect();
-
-            response.put("weather", content.toString());
-        } catch (Exception e) {
-            response.put("error", "Weather fetch failed: " + e.getMessage());
         }
 
-        return response;
+        ImdWeatherService.WeatherObservation obs = imdWeatherService.getWeather(targetLat, targetLon);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "success");
+        response.put("city", resolvedCity);
+        response.put("latitude", targetLat);
+        response.put("longitude", targetLon);
+        response.put("source", obs.sourceName());
+        response.put("isOfficialImd", obs.isOfficialImd());
+        response.put("temperature", obs.temperatureC());
+        response.put("humidity", obs.humidityPercent());
+        response.put("windSpeed", obs.windSpeedKmh());
+        response.put("precipitation", obs.precipitationMm());
+        response.put("condition", obs.conditionText());
+        response.put("timestamp", obs.observationTime());
+
+        return ResponseEntity.ok(response);
     }
 }

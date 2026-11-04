@@ -1,0 +1,44 @@
+{
+  "name": "ndma-command-center-desktop",
+  "version": "1.0.0",
+  "description": "NDMA Tactical Command Center & Disaster Alert System - Windows Desktop Application",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "build:win": "electron-builder --win nsis portable --x64"
+  },
+  "author": "National Disaster Management Platform",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "in.gov.ndma.commandcenter",
+    "productName": "NDMA Command Center",
+    "copyright": "Copyright © 2026 National Disaster Management Platform",
+    "directories": {
+      "output": "dist",
+      "buildResources": "assets"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "assets/icon.ico",
+      "signtoolOptions": {
+        "publisherName": "NDMA Operations Command"
+      }
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "NDMA Command Center"
+    }
+  }
+}
+

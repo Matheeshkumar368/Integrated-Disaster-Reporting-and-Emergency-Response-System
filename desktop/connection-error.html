@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backend Connection Required | NDMA Desktop Command</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #050811;
+            color: #cbd5e1;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 1.5rem;
+        }
+
+        .error-card {
+            background: #0e1726;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            border-radius: 16px;
+            padding: 2.5rem 2rem;
+            max-width: 580px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 30px rgba(239, 68, 68, 0.15);
+        }
+
+        .icon-circle {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: rgba(239, 68, 68, 0.15);
+            border: 2px solid #ef4444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 2rem;
+            color: #ef4444;
+        }
+
+        h2 {
+            color: #ffffff;
+            font-size: 1.4rem;
+            margin-bottom: 0.5rem;
+        }
+
+        p {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
+        }
+
+        .url-box {
+            background: #050811;
+            border: 1px solid #1e293b;
+            border-radius: 8px;
+            padding: 0.6rem 1rem;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #38bdf8;
+            word-break: break-all;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.7rem 1.4rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: #ffffff;
+        }
+        .btn-primary:hover { background: #1d4ed8; }
+
+        .btn-secondary {
+            background: #1e293b;
+            color: #cbd5e1;
+            border: 1px solid #334155;
+        }
+        .btn-secondary:hover { background: #334155; color: #ffffff; }
+
+        .config-section {
+            display: none;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #1e293b;
+            text-align: left;
+        }
+
+        .config-section label {
+            display: block;
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-bottom: 0.4rem;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .config-section input {
+            width: 100%;
+            height: 40px;
+            padding: 0 0.8rem;
+            background: #050811;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            color: white;
+            font-size: 0.9rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .config-section input:focus {
+            outline: none;
+            border-color: #38bdf8;
+        }
+
+        .instructions-box {
+            margin-top: 1.5rem;
+            background: rgba(14, 165, 233, 0.05);
+            border: 1px dashed rgba(14, 165, 233, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            font-size: 0.8rem;
+            color: #94a3b8;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-card">
+        <div class="icon-circle">⚡</div>
+        <h2>Backend Server Unreachable</h2>
+        <p>The desktop application could not establish an HTTP connection with the configured Disaster Management core server.</p>
+
+        <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 0.35rem; text-transform: uppercase; font-weight: 600;">Target Server Endpoint:</div>
+        <div class="url-box" id="targetUrlDisplay">Connecting...</div>
+
+        <div class="btn-group">
+            <button class="btn btn-primary" onclick="retryConnection()" id="retryBtn">Retry Connection</button>
+            <button class="btn btn-secondary" onclick="toggleConfig()">Change Server URL</button>
+        </div>
+
+        <!-- URL Configuration Drawer -->
+        <div class="config-section" id="configSection">
+            <label for="serverUrlInput">Specify Target Server URL</label>
+            <input type="text" id="serverUrlInput" placeholder="http://localhost:8080 or https://your-server.com">
+            <div style="display: flex; gap: 0.5rem;">
+                <button class="btn btn-primary" onclick="saveAndReconnect()" style="flex: 1; padding: 0.5rem;">Save & Reconnect</button>
+                <button class="btn btn-secondary" onclick="resetToLocalhost()" style="padding: 0.5rem;">Reset Localhost</button>
+            </div>
+        </div>
+
+        <div class="instructions-box">
+            <strong style="color: #38bdf8;">For Local Development / Evaluation:</strong><br>
+            Ensure your Spring Boot backend is active. Run from the project root:<br>
+            <code style="display:block; background:#050811; padding:0.4rem 0.6rem; border-radius:4px; margin-top:0.4rem; color:#86efac;">.\mvnw.cmd spring-boot:run</code>
+        </div>
+    </div>
+
+    <script>
+        let currentUrl = 'http://localhost:8080';
+
+        async function init() {
+            if (window.desktopAPI) {
+                currentUrl = await window.desktopAPI.getServerUrl();
+            }
+            document.getElementById('targetUrlDisplay').innerText = currentUrl;
+            document.getElementById('serverUrlInput').value = currentUrl;
+        }
+
+        async function retryConnection() {
+            const btn = document.getElementById('retryBtn');
+            btn.innerText = 'Connecting...';
+            btn.disabled = true;
+
+            if (window.desktopAPI) {
+                const healthy = await window.desktopAPI.testConnection(currentUrl);
+                if (healthy) {
+                    window.desktopAPI.reconnect();
+                    return;
+                }
+            }
+
+            setTimeout(() => {
+                btn.innerText = 'Retry Connection';
+                btn.disabled = false;
+                alert('Server is still unreachable at ' + currentUrl + '.\nPlease ensure the backend is started.');
+            }, 800);
+        }
+
+        function toggleConfig() {
+            const sec = document.getElementById('configSection');
+            sec.style.display = sec.style.display === 'block' ? 'none' : 'block';
+        }
+
+        async function saveAndReconnect() {
+            const newUrl = document.getElementById('serverUrlInput').value.trim();
+            if (!newUrl) {
+                alert('Please enter a valid URL.');
+                return;
+            }
+
+            if (window.desktopAPI) {
+                await window.desktopAPI.setServerUrl(newUrl);
+                currentUrl = newUrl;
+                document.getElementById('targetUrlDisplay').innerText = newUrl;
+                retryConnection();
+            }
+        }
+
+        function resetToLocalhost() {
+            document.getElementById('serverUrlInput').value = 'http://localhost:8080';
+            saveAndReconnect();
+        }
+
+        init();
+    </script>
+</body>
+</html>
+

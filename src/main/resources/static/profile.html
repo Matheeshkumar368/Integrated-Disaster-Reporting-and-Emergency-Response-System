@@ -6,16 +6,27 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
     <meta http-equiv="Pragma" content="no-cache"/>
     <meta http-equiv="Expires" content="0"/>
-    <title>User Profile - Disaster Management</title>
+        <title>Civilian Profile | NDMA Safety Hub</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link rel="stylesheet" href="toast-manager.css?v=2">
+    <script src="toast-manager.js?v=2"></script>
+    <link rel="stylesheet" href="command-center.css?v=3">
+    <link rel="stylesheet" href="role-loading.css?v=2">
+    <script src="auth-helper.js?v=2"></script>
+    <script src="role-loading.js?v=2"></script>
+    <script src="command-center.js?v=3"></script>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #0f1a2a 0%, #0a1420 100%);
+            font-family: 'Inter', sans-serif;
+            background: #050811;
             color: #e0e0e0;
             min-height: 100vh;
-            padding-bottom: 5rem;
+            padding-bottom: 2rem;
         }
         .header {
             background: linear-gradient(135deg, #1e3a8a, #3b82f6);
@@ -187,35 +198,7 @@
             color: #ef4444;
             border: 1px solid #ef4444;
         }
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: #1e293b;
-            display: flex;
-            justify-content: space-around;
-            padding: 1rem 0;
-            box-shadow: 0 -6px 20px rgba(0,0,0,0.5);
-            z-index: 1000;
-        }
-        .bottom-nav a {
-            color: #94a3b8;
-            text-decoration: none;
-            text-align: center;
-            font-size: 0.95rem;
-            transition: all 0.3s;
-        }
-        .bottom-nav a i {
-            font-size: 1.9rem;
-            display: block;
-            margin-bottom: 0.4rem;
-        }
-        .bottom-nav a.active,
-        .bottom-nav a:hover {
-            color: #3b82f6;
-            transform: translateY(-3px);
-        }
+        
         #editMode {
             display: none;
         }
@@ -223,11 +206,40 @@
 </head>
 <body>
 
-<div class="header">
-    <h1><i class="fas fa-user-circle"></i> User Profile</h1>
-</div>
 
-<div class="container">
+    <!-- =========================================================================
+         TOP HUD HEADER
+         ========================================================================= -->
+    <header class="cc-hud-header">
+        <div class="cc-hud-branding">
+            <div class="cc-hud-badge-icon" style="background:linear-gradient(135deg,rgba(16,185,129,0.2),rgba(56,189,248,0.2));border-color:rgba(16,185,129,0.4);">
+                <i class="fas fa-shield-heart" style="color:var(--cc-safe-green);"></i>
+            </div>
+            <div class="cc-hud-title-group">
+                <h1>
+                    CIVILIAN PROFILE & IDENTITY
+                    <span class="cc-badge ndma"><i class="fas fa-circle cc-pulse-dot"></i> CIVIL PROTECTION</span>
+                </h1>
+                <div class="cc-hud-subtitle">NATIONAL EMERGENCY CITIZEN DIRECTORY &bull; EMERGENCY CONTACT RECORD</div>
+            </div>
+        </div>
+
+        <div class="cc-hud-telemetry">
+            <div class="cc-telemetry-pill" id="hudClockDisplay"></div>
+            <div class="cc-telemetry-pill">
+                <i class="fas fa-user-check" style="color:var(--cc-cyan);"></i>
+                <span id="citizenHudName">Civilian Citizen</span>
+            </div>
+            <button class="cc-btn cc-btn-secondary" onclick="window.location.href='/citizen-dashboard.html'" style="padding:0.4rem 0.85rem;font-size:0.8rem;">
+                <i class="fas fa-shield-heart"></i> Safety Hub
+            </button>
+            <button class="cc-btn cc-btn-danger" onclick="AuthHelper.logout()" style="padding:0.4rem 0.85rem;font-size:0.8rem;">
+                <i class="fas fa-power-off"></i> Exit
+            </button>
+        </div>
+    </header>
+
+    <main class="cc-main-container">
     <div id="messageBox"></div>
 
     <!-- View Mode -->
@@ -283,43 +295,8 @@
                 </div>
             </div>
 
-            <!-- Emergency Alert Settings -->
-            <div class="emergency-settings-card" style="background: rgba(220, 38, 38, 0.1); border: 1px solid rgba(220, 38, 38, 0.3); border-radius: 12px; padding: 1.5rem; margin-top: 1.5rem;">
-                <h3 style="color: #ef4444; margin-bottom: 1rem; font-size: 1.3rem;">
-                    <i class="fas fa-exclamation-triangle"></i> Emergency Sound Alert
-                </h3>
-                <p style="color: #94a3b8; margin-bottom: 1rem; font-size: 0.95rem;">
-                    Configure a keyboard shortcut to emit a loud alarm sound when you need help but cannot verbally call for assistance.
-                </p>
-                <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-                    <div style="flex: 1; min-width: 200px;">
-                        <label style="color: #94a3b8; font-size: 0.9rem; display: block; margin-bottom: 0.5rem;">Current Shortcut:</label>
-                        <div id="currentShortcut" style="background: #1e293b; padding: 0.8rem 1rem; border-radius: 8px; font-size: 1.1rem; font-weight: 600; color: #3b82f6;">F12</div>
-                    </div>
-                    <div style="display: flex; gap: 0.5rem; margin-top: 1.2rem;">
-                        <button type="button" class="btn" style="background: #3b82f6; color: white; padding: 0.7rem 1.2rem;" onclick="enableEditShortcut()">
-                            <i class="fas fa-edit"></i> Change
-                        </button>
-                        <button type="button" class="btn" style="background: #dc2626; color: white; padding: 0.7rem 1.2rem;" onclick="EmergencyAlertSystem.testAlarm()">
-                            <i class="fas fa-volume-up"></i> Test
-                        </button>
-                    </div>
-                </div>
-                <div id="shortcutEditSection" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
-                    <label style="color: #94a3b8; font-size: 0.9rem; display: block; margin-bottom: 0.5rem;">Press a key or key combination:</label>
-                    <input type="text" id="newShortcut" placeholder="Click here and press your desired key" 
-                           style="width: 100%; padding: 0.8rem; border: 1px solid #334155; border-radius: 8px; background: #1e293b; color: white; font-size: 1rem;"
-                           onkeydown="captureShortcut(event)" readonly>
-                    <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                        <button type="button" class="btn" style="background: #10b981; color: white;" onclick="saveShortcut()">
-                            <i class="fas fa-save"></i> Save
-                        </button>
-                        <button type="button" class="btn" style="background: #64748b; color: white;" onclick="cancelShortcutEdit()">
-                            <i class="fas fa-times"></i> Cancel
-                        </button>
-                    </div>
-                </div>
-            </div>
+            <!-- Emergency SOS Sound & Shortcut Settings -->
+            <div id="emergencyAlertContainer"></div>
 
             <div class="btn-group">
                 <button class="btn btn-primary" onclick="enableEditMode()">
@@ -371,28 +348,9 @@
             </form>
         </div>
     </div>
-</div>
+</main>
 
-<nav class="bottom-nav">
-    <a href="/citizen-dashboard.html" id="navDashboard">
-        <i class="fas fa-tachometer-alt"></i>
-        <span>Dashboard</span>
-    </a>
-    <a href="#" onclick="openCameraModal(); return false;">
-        <i class="fas fa-camera"></i>
-        <span>Report</span>
-    </a>
-    <a href="/training.html">
-        <i class="fas fa-graduation-cap"></i>
-        <span>Training</span>
-    </a>
-    <a href="/profile.html" class="active">
-        <i class="fas fa-user"></i>
-        <span>Profile</span>
-    </a>
-</nav>
-
-<script src="/js/emergency-alert.js"></script>
+<script src="/js/emergency-alert.js?v=3"></script>
 <script>
     const token = localStorage.getItem('token');
     let currentUser = null;
@@ -468,7 +426,10 @@
             // Fetch profile from backend
             fetch('/api/auth/profile', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
                 body: JSON.stringify({ email: email })
             })
             .then(res => res.json())
@@ -527,14 +488,15 @@
             }
 
             // Update dashboard link based on role
-            if (role === 'Admin') {
-                document.getElementById('navDashboard').href = '/admin-dashboard.html';
-            } else if (role === 'Responder') {
-                document.getElementById('navDashboard').href = '/responder-dashboard.html';
-            } else if (role === 'Citizen') {
-                document.getElementById('navDashboard').href = 'citizen-dashboard.html';
-            } else {
-                document.getElementById('navDashboard').href = 'citizen-dashboard.html';
+            const navDash = document.getElementById('navDashboard');
+            if (navDash) {
+                if (role === 'Admin') {
+                    navDash.href = '/admin-dashboard.html';
+                } else if (role === 'Responder') {
+                    navDash.href = '/responder-dashboard.html';
+                } else {
+                    navDash.href = '/citizen-dashboard.html';
+                }
             }
 
         } catch (e) {
@@ -580,7 +542,10 @@
         // Send to backend API
         fetch('/api/auth/update-profile', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
             body: JSON.stringify(updatedData)
         })
         .then(res => res.json())
@@ -607,61 +572,38 @@
         });
     });
 
-    function logout() {
-        if (confirm('Are you sure you want to logout?')) {
+    async function logout() {
+        let confirmed = false;
+        if (window.showConfirm) {
+            confirmed = await window.showConfirm({
+                title: 'Confirm Logout',
+                message: 'Are you sure you want to end your current session?',
+                confirmText: 'Sign Out',
+                type: 'warning'
+            });
+        } else {
+            confirmed = false;
+        }
+        if (confirmed) {
             localStorage.removeItem('token');
             localStorage.removeItem('userRole');
             window.location.href = '/index.html';
         }
     }
 
-    // Emergency shortcut functions
-    function loadShortcut() {
-        const shortcut = localStorage.getItem('emergencyShortcut') || 'F12';
-        document.getElementById('currentShortcut').innerText = shortcut;
-    }
-
-    function enableEditShortcut() {
-        document.getElementById('shortcutEditSection').style.display = 'block';
-        document.getElementById('newShortcut').value = '';
-        document.getElementById('newShortcut').focus();
-    }
-
-    function captureShortcut(event) {
-        event.preventDefault();
-        
-        let shortcut = '';
-        if (event.ctrlKey) shortcut += 'Ctrl+';
-        if (event.altKey) shortcut += 'Alt+';
-        if (event.shiftKey) shortcut += 'Shift+';
-        
-        // Get the key name
-        let key = event.key;
-        if (key === ' ') key = 'Space';
-        if (key === 'Control' || key === 'Alt' || key === 'Shift' || key === 'Meta') {
-            return; // Don't capture modifier keys alone
-        }
-        
-        shortcut += key;
-        document.getElementById('newShortcut').value = shortcut;
-    }
-
-    function saveShortcut() {
-        const newShortcut = document.getElementById('newShortcut').value;
-        if (newShortcut) {
-            localStorage.setItem('emergencyShortcut', newShortcut);
-            document.getElementById('currentShortcut').innerText = newShortcut;
-            document.getElementById('shortcutEditSection').style.display = 'none';
-            showMessage('✓ Emergency shortcut updated to: ' + newShortcut, 'success');
-        }
-    }
-
-    function cancelShortcutEdit() {
-        document.getElementById('shortcutEditSection').style.display = 'none';
-    }
-
     loadProfile();
-    loadShortcut();
+    if (window.CommandCenter && CommandCenter.initHudClock) {
+        CommandCenter.initHudClock('hudClockDisplay');
+    }
+    const citizenName = localStorage.getItem('userName') || 'Civilian Citizen';
+    const hudNameEl = document.getElementById('citizenHudName');
+    if (hudNameEl) hudNameEl.textContent = citizenName;
+    if (window.RoleLoadingScreen) {
+        RoleLoadingScreen.hide();
+    }
+    if (window.EmergencyAlertSystem) {
+        EmergencyAlertSystem.renderSettingsCard('emergencyAlertContainer', 'profile');
+    }
 </script>
 
 </body>

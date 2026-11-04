@@ -1,0 +1,189 @@
+/* ==============================================================================
+   SMART RESPONDER ASSIGNMENT MODAL (Feature 6)
+   Disaster Management & Alert System - Cinematic Command Center
+   ============================================================================== */
+
+.smart-assign-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(3, 7, 18, 0.9);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.smart-assign-backdrop.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.smart-assign-container {
+    background: linear-gradient(155deg, rgba(14, 24, 44, 0.98), rgba(7, 12, 24, 0.99));
+    border: 1px solid rgba(0, 229, 255, 0.35);
+    border-radius: 16px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(0, 229, 255, 0.15);
+    width: 100%;
+    max-width: 720px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    color: #e2e8f0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.smart-assign-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.1rem 1.4rem;
+    background: rgba(8, 14, 28, 0.95);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.smart-assign-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #00e5ff;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.smart-assign-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.25rem 1.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.responder-card-recommendation {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    transition: all 0.2s;
+}
+
+.responder-card-recommendation:hover {
+    border-color: rgba(0, 229, 255, 0.4);
+    background: rgba(15, 23, 42, 0.95);
+    box-shadow: 0 4px 20px rgba(0, 229, 255, 0.1);
+}
+
+.responder-card-recommendation.top-rank {
+    border-color: #00e5ff;
+    background: linear-gradient(135deg, rgba(0, 229, 255, 0.08), rgba(15, 23, 42, 0.8));
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.15);
+}
+
+.rec-rank-badge {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #64748b;
+    min-width: 28px;
+}
+
+.responder-card-recommendation.top-rank .rec-rank-badge {
+    color: #00e5ff;
+}
+
+.rec-info-col {
+    flex: 1;
+}
+
+.rec-responder-name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.rec-metrics-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 4px;
+    font-size: 0.78rem;
+    color: #94a3b8;
+}
+
+.rec-badges-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 6px;
+}
+
+.rec-pill {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    text-transform: uppercase;
+}
+
+.rec-pill.available { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+.rec-pill.proximity { background: rgba(0, 229, 255, 0.2); color: #00e5ff; }
+.rec-pill.specialist { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+.rec-pill.zone { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+
+.rec-score-box {
+    text-align: center;
+    min-width: 65px;
+}
+
+.rec-score-num {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #00e5ff;
+    line-height: 1;
+}
+
+.rec-score-label {
+    font-size: 0.65rem;
+    color: #64748b;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-top: 2px;
+}
+
+.btn-assign-deploy {
+    background: linear-gradient(135deg, #00e5ff, #0077ff);
+    color: #030a16;
+    border: none;
+    font-weight: 700;
+    font-size: 0.82rem;
+    padding: 0.55rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.btn-assign-deploy:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(0, 229, 255, 0.4);
+}
+

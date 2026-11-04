@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Home - Disaster Management & Alert System</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link rel="stylesheet" href="toast-manager.css?v=2"/>
+    <script src="toast-manager.js?v=2"></script>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
         body {
@@ -144,17 +146,20 @@
         </p>
 
         <div class="menu-buttons">
-            <button class="menu-btn" onclick="window.location.href='citizen-dashboard.html'">
+            <button class="menu-btn" onclick="window.location.href='/citizen-dashboard.html?tab=radar'">
                 <i class="fas fa-map-marker-alt"></i> View Live Disasters
             </button>
-            <button class="menu-btn" onclick="alert('Chat feature coming soon!')">
+            <button class="menu-btn" onclick="window.location.href='/citizen-dashboard.html?tab=my-reports'">
                 <i class="fas fa-comments"></i> Chat
             </button>
-            <button class="menu-btn" onclick="alert('Settings page coming soon!')">
+            <button class="menu-btn" onclick="window.location.href='/profile.html'">
                 <i class="fas fa-cog"></i> Settings
             </button>
-            <button class="menu-btn" onclick="alert('Alert History coming soon!')">
+            <button class="menu-btn" onclick="window.location.href='/citizen-dashboard.html?tab=alerts'">
                 <i class="fas fa-history"></i> Alert History
+            </button>
+            <button class="menu-btn" style="background:#0284c7;" onclick="window.location.href='/emergency-videos.html'">
+                <i class="fas fa-film"></i> Survival Videos
             </button>
             <button class="menu-btn logout" onclick="logout()">
                 <i class="fas fa-sign-out-alt"></i> Logout
@@ -167,7 +172,7 @@
     Real-time alerts • Coordination • Safety
 </div>
 
-<script src="/js/emergency-alert.js"></script>
+<script src="/js/emergency-alert.js?v=3"></script>
 <script>
     // Check user role and redirect automatically
     const token = localStorage.getItem('token');
@@ -182,7 +187,7 @@
             if (role === 'Admin') {
                 window.location.href = '/admin-dashboard.html';
             } else if (role === 'Responder') {
-                window.location.href = '/responder-rescue.html';
+                window.location.href = '/responder-dashboard.html';
             } else if (role === 'Citizen') {
                 window.location.href = 'citizen-dashboard.html';
             } else {
@@ -195,7 +200,7 @@
                 if (storedRole === 'Admin') {
                     window.location.href = '/admin-dashboard.html';
                 } else if (storedRole === 'Responder') {
-                    window.location.href = '/responder-rescue.html';
+                    window.location.href = '/responder-dashboard.html';
                 } else {
                     window.location.href = 'citizen-dashboard.html';
                 }
@@ -213,7 +218,7 @@
     function logout() {
         localStorage.removeItem('token');
         localStorage.removeItem('userRole');
-        alert("Logged out successfully!");
+        window.showToast('Logged out successfully', 'success');
         window.location.href = '/';
     }
 

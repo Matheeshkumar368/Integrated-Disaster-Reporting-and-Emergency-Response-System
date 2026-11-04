@@ -8,6 +8,8 @@
     <meta http-equiv="Expires" content="0"/>
     <title>Training & Preparedness - Disaster Management</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link rel="stylesheet" href="toast-manager.css?v=2" />
+    <script src="toast-manager.js?v=2"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -578,7 +580,7 @@
                     </div>
                     <span class="shelter-type">Emergency Shelter</span>
                 </div>
-                <a href="#" class="view-map-btn" onclick="alert('Opening map for Government School Shelter...'); return false;">
+                <a href="#" class="view-map-btn" href="/citizen-dashboard.html?tab=radar">
                     <i class="fas fa-map"></i> View Map
                 </a>
             </div>
@@ -597,7 +599,7 @@
                     </div>
                     <span class="shelter-type">Evacuation Center</span>
                 </div>
-                <a href="#" class="view-map-btn" onclick="alert('Opening map for Community Hall Shelter...'); return false;">
+                <a href="#" class="view-map-btn" href="/citizen-dashboard.html?tab=radar">
                     <i class="fas fa-map"></i> View Map
                 </a>
             </div>
@@ -616,7 +618,7 @@
                     </div>
                     <span class="shelter-type">Medical Shelter</span>
                 </div>
-                <a href="#" class="view-map-btn" onclick="alert('Opening map for District Hospital Safe Zone...'); return false;">
+                <a href="#" class="view-map-btn" href="/citizen-dashboard.html?tab=radar">
                     <i class="fas fa-map"></i> View Map
                 </a>
             </div>
@@ -635,7 +637,7 @@
                     </div>
                     <span class="shelter-type">Temporary Shelter</span>
                 </div>
-                <a href="#" class="view-map-btn" onclick="alert('Opening map for Flood Relief Center...'); return false;">
+                <a href="#" class="view-map-btn" href="/citizen-dashboard.html?tab=radar">
                     <i class="fas fa-map"></i> View Map
                 </a>
             </div>
@@ -698,7 +700,7 @@
     </a>
 </nav>
 
-<script src="/js/emergency-alert.js"></script>
+<script src="/js/emergency-alert.js?v=3"></script>
 <script>
     // Role-based dashboard redirect
     function goToDashboard() {

@@ -6,564 +6,818 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
     <meta http-equiv="Pragma" content="no-cache"/>
     <meta http-equiv="Expires" content="0"/>
-    <title>Admin Profile - Disaster Management</title>
+    <title>Security Governance & 2FA PIN | NDMA Mission Control</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome & Command Center CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link rel="stylesheet" href="toast-manager.css?v=2" />
+    <script src="toast-manager.js?v=2"></script>
+    <script src="/js/emergency-alert.js?v=3"></script>
+    <link rel="stylesheet" href="command-center.css?v=3" />
+    <link rel="stylesheet" href="role-loading.css?v=2" />
+
     <style>
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #0f1a2a 0%, #0a1420 100%);
-            color: #e0e0e0;
-            min-height: 100vh;
-            padding-bottom: 5rem;
-        }
-        .header {
-            background: linear-gradient(135deg, #dc2626, #ef4444);
-            padding: 1.8rem 1rem;
-            text-align: center;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.5);
-        }
-        .header h1 {
-            font-size: 2.4rem;
-            color: white;
-            font-weight: 700;
-            text-shadow: 0 2px 8px rgba(0,0,0,0.4);
-        }
-        .container {
-            max-width: 900px;
-            margin: 2rem auto;
-            padding: 0 1.5rem;
-        }
-        .profile-card {
-            background: rgba(30, 41, 59, 0.95);
-            border-radius: 16px;
-            padding: 2rem;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
-            border: 1px solid rgba(220,38,38,0.2);
-            margin-bottom: 1.5rem;
-        }
-        .profile-header {
-            text-align: center;
-            padding: 2rem 0;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            margin-bottom: 2rem;
-        }
-        .profile-avatar {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #dc2626, #f87171);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 1rem;
-            font-size: 3rem;
-            color: white;
-        }
-        .profile-name {
-            font-size: 2rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-        .profile-role {
-            display: inline-block;
-            padding: 0.5rem 1.5rem;
-            border-radius: 20px;
-            font-weight: 600;
-            font-size: 1rem;
-            background: rgba(220,38,38,0.2);
-            color: #ef4444;
-        }
-        .info-grid {
+        .profile-layout {
             display: grid;
+            grid-template-columns: 320px 1fr;
             gap: 1.5rem;
+            align-items: start;
         }
-        .info-item {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem;
-            background: rgba(255,255,255,0.05);
-            border-radius: 10px;
+
+        @media (max-width: 900px) {
+            .profile-layout {
+                grid-template-columns: 1fr;
+            }
         }
-        .info-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 10px;
-            background: rgba(220,38,38,0.2);
+
+        .profile-side-card {
+            background: rgba(14, 23, 38, 0.85);
+            border: 1px solid var(--cc-border);
+            border-radius: var(--cc-radius-lg);
+            padding: 2rem 1.5rem;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .profile-avatar-tactical {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(14, 165, 233, 0.2));
+            border: 2px solid var(--cc-alert-extreme);
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
+            font-size: 2.8rem;
             color: #ef4444;
+            margin: 0 auto 1.25rem;
         }
-        .info-content {
-            flex: 1;
-        }
-        .info-label {
-            color: #94a3b8;
-            font-size: 0.9rem;
-            margin-bottom: 0.3rem;
-        }
-        .info-value {
-            font-size: 1.1rem;
-            font-weight: 500;
-        }
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-        .form-group label {
-            display: block;
-            color: #94a3b8;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-        }
-        .form-group input {
+
+        .audit-table {
             width: 100%;
-            padding: 0.8rem;
-            border: 1px solid #334155;
-            border-radius: 8px;
-            background: #1e293b;
-            color: white;
-            font-size: 1rem;
+            border-collapse: collapse;
+            font-size: 0.85rem;
         }
-        .form-group input:focus {
-            outline: none;
-            border-color: #dc2626;
+
+        .audit-table th {
+            background: rgba(20, 32, 52, 0.8);
+            color: var(--cc-accent-glow);
+            font-family: var(--cc-font-mono);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--cc-border);
+            text-align: left;
         }
-        .btn {
-            padding: 0.8rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #dc2626, #ef4444);
-            color: white;
-        }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(220,38,38,0.4);
-        }
-        .btn-danger {
-            background: linear-gradient(135deg, #dc2626, #ef4444);
-            color: white;
-        }
-        .btn-danger:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(239,68,68,0.4);
-        }
-        .btn-secondary {
-            background: linear-gradient(135deg, #64748b, #94a3b8);
-            color: white;
-        }
-        .btn-group {
-            display: flex;
-            gap: 1rem;
-            margin-top: 1.5rem;
-        }
-        .message {
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            text-align: center;
-        }
-        .message.success {
-            background: rgba(34,197,94,0.2);
-            color: #22c55e;
-            border: 1px solid #22c55e;
-        }
-        .message.error {
-            background: rgba(239,68,68,0.2);
-            color: #ef4444;
-            border: 1px solid #ef4444;
-        }
-        .admin-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-top: 1.5rem;
-        }
-        .stat-card {
-            background: rgba(255,255,255,0.05);
-            padding: 1.5rem;
-            border-radius: 12px;
-            text-align: center;
-            border: 1px solid rgba(220,38,38,0.2);
-        }
-        .stat-card i {
-            font-size: 2rem;
-            color: #ef4444;
-            margin-bottom: 0.5rem;
-        }
-        .stat-card .stat-value {
-            font-size: 1.8rem;
-            font-weight: bold;
-            color: white;
-        }
-        .stat-card .stat-label {
-            color: #94a3b8;
-            font-size: 0.9rem;
-        }
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: #1e293b;
-            display: flex;
-            justify-content: space-around;
-            padding: 1rem 0;
-            box-shadow: 0 -6px 20px rgba(0,0,0,0.5);
-            z-index: 1000;
-        }
-        .bottom-nav a {
-            color: #94a3b8;
-            text-decoration: none;
-            text-align: center;
-            font-size: 0.95rem;
-            transition: all 0.3s;
-        }
-        .bottom-nav a i {
-            font-size: 1.9rem;
-            display: block;
-            margin-bottom: 0.4rem;
-        }
-        .bottom-nav a.active,
-        .bottom-nav a:hover {
-            color: #ef4444;
-            transform: translateY(-3px);
-        }
-        #editMode {
-            display: none;
+
+        .audit-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--cc-text-secondary);
         }
     </style>
 </head>
+
 <body>
-
-<div class="header">
-    <h1><i class="fas fa-user-shield"></i> Admin Profile</h1>
-</div>
-
-<div class="container">
-    <div id="messageBox"></div>
-
-    <!-- View Mode -->
-    <div id="viewMode">
-        <div class="profile-card">
-            <div class="profile-header">
-                <div class="profile-avatar">
-                    <i class="fas fa-user-shield" id="avatarIcon"></i>
-                </div>
-                <div class="profile-name" id="userName">Loading...</div>
-                <span class="profile-role" id="userRole">Admin</span>
+    <!-- =========================================================================
+         TACTICAL TOP HUD HEADER
+         ========================================================================= -->
+    <header class="cc-hud-header">
+        <div class="cc-hud-branding">
+            <div class="cc-hud-badge-icon">
+                <i class="fas fa-shield-halved"></i>
             </div>
-
-            <div class="info-grid">
-                <div class="info-item">
-                    <div class="info-icon">
-                        <i class="fas fa-envelope"></i>
-                    </div>
-                    <div class="info-content">
-                        <div class="info-label">Email Address</div>
-                        <div class="info-value" id="userEmail">-</div>
-                    </div>
-                </div>
-
-                <div class="info-item">
-                    <div class="info-icon">
-                        <i class="fas fa-phone"></i>
-                    </div>
-                    <div class="info-content">
-                        <div class="info-label">Phone Number</div>
-                        <div class="info-value" id="userPhone">-</div>
-                    </div>
-                </div>
-
-                <div class="info-item">
-                    <div class="info-icon">
-                        <i class="fas fa-map-marker-alt"></i>
-                    </div>
-                    <div class="info-content">
-                        <div class="info-label">Base Location</div>
-                        <div class="info-value" id="userLocation">-</div>
-                    </div>
-                </div>
-
-                <div class="info-item">
-                    <div class="info-icon">
-                        <i class="fas fa-shield-alt"></i>
-                    </div>
-                    <div class="info-content">
-                        <div class="info-label">Account Type</div>
-                        <div class="info-value" id="userRoleText">Admin</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Admin Statistics -->
-            <div class="admin-stats">
-                <div class="stat-card">
-                    <i class="fas fa-bell"></i>
-                    <div class="stat-value" id="totalAlerts">0</div>
-                    <div class="stat-label">Total Alerts</div>
-                </div>
-                <div class="stat-card">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <div class="stat-value" id="activeDisasters">0</div>
-                    <div class="stat-label">Active Disasters</div>
-                </div>
-                <div class="stat-card">
-                    <i class="fas fa-users"></i>
-                    <div class="stat-value" id="totalCitizens">0</div>
-                    <div class="stat-label">Registered Citizens</div>
-                </div>
-            </div>
-
-            <div class="btn-group">
-                <button class="btn btn-primary" onclick="enableEditMode()">
-                    <i class="fas fa-edit"></i> Edit Profile
-                </button>
-                <button class="btn btn-danger" onclick="logout()">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </button>
+            <div class="cc-hud-title-group">
+                <h1>
+                    SECURITY GOVERNANCE & 2FA PIN
+                    <span class="cc-badge"><i class="fas fa-key cc-pulse-dot"></i> ACCESS CONTROL</span>
+                </h1>
+                <div class="cc-hud-subtitle">ADMINISTRATIVE SECURITY GOVERNANCE &bull; STEP-UP PIN & AUDIT TRAIL</div>
             </div>
         </div>
-    </div>
 
-    <!-- Edit Mode -->
-    <div id="editMode">
-        <div class="profile-card">
-            <h2 style="color:#ef4444;margin-bottom:1.5rem;">
-                <i class="fas fa-edit"></i> Edit Admin Profile
-            </h2>
+        <div class="cc-hud-telemetry">
+            <div class="cc-telemetry-pill live" id="securityStatusPill">
+                <span class="cc-pulse-dot"></span>
+                <span>SECURITY: ACTIVE</span>
+            </div>
+            <div class="cc-telemetry-pill" id="hudClockDisplay"></div>
+            <div class="cc-telemetry-pill" style="border-color: rgba(56,189,248,0.35);">
+                <i class="fas fa-user-shield" style="color:var(--cc-cyan);"></i>
+                <span id="adminName">Admin User</span>
+            </div>
+            <button class="cc-btn cc-btn-danger" onclick="AuthHelper.logout()" style="padding:0.4rem 0.85rem;font-size:0.8rem;">
+                <i class="fas fa-power-off"></i> Exit
+            </button>
+        </div>
+    </header>
 
-            <form id="editForm">
-                <div class="form-group">
-                    <label><i class="fas fa-user"></i> Full Name</label>
-                    <input type="text" id="editName" required />
+    <!-- =========================================================================
+         TACTICAL NAVIGATION BAR
+         ========================================================================= -->
+    <nav class="cc-nav-bar">
+        <ul class="cc-nav-links">
+            <li><a href="/admin-dashboard.html" class="cc-nav-link"><i class="fas fa-map-location-dot"></i> Mission Control</a></li>
+            <li><a href="/admin-alerts.html" class="cc-nav-link"><i class="fas fa-bullhorn"></i> Emergency Broadcasts</a></li>
+            <li><a href="/admin-tasks.html" class="cc-nav-link"><i class="fas fa-truck-medical"></i> Responder Tasks</a></li>
+            <li><a href="/reports.html" class="cc-nav-link"><i class="fas fa-chart-line"></i> Incident Telemetry</a></li>
+            <li><a href="/admin-profile.html" class="cc-nav-link active"><i class="fas fa-shield-halved"></i> Security & 2FA PIN</a></li>
+        </ul>
+        <div class="cc-nav-user-actions">
+            <button class="cc-btn cc-btn-secondary" onclick="window.location.href='/admin-dashboard.html'" style="font-size:0.82rem;padding:0.45rem 0.9rem;">
+                <i class="fas fa-satellite"></i> Live Tactical Map
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="cc-main-container">
+        
+        <div id="statusAlertBox" style="display: none; padding: 0.75rem 1rem; border-radius: var(--cc-radius-md); font-size: 0.85rem; margin-bottom: 1.5rem;"></div>
+
+        <div class="profile-layout">
+            
+            <!-- Left: Identity & Badge -->
+            <div class="profile-side-card">
+                <div class="profile-avatar-tactical">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                <h3 id="profileNameDisplay" style="color: #ffffff; font-size: 1.25rem; margin: 0 0 0.35rem; font-weight: 700;">Admin Commander</h3>
+                <div style="font-family: var(--cc-font-mono); font-size: 0.8rem; color: var(--cc-accent-glow); margin-bottom: 1rem;" id="profileEmailDisplay">admin@disaster.gov.in</div>
+                
+                <span class="cc-badge cc-badge-extreme" style="font-size: 0.8rem; padding: 0.3rem 0.8rem;">CLEARANCE LEVEL 5 // FULL DISPATCH</span>
+
+                <div style="margin-top: 1.5rem; text-align: left; font-size: 0.85rem; display: flex; flex-direction: column; gap: 0.75rem; border-top: 1px solid var(--cc-border); padding-top: 1.25rem;">
+                    <div>
+                        <div style="color: var(--cc-text-muted); font-size: 0.75rem;">PHONE TELEMETRY</div>
+                        <div id="profilePhoneDisplay" style="color: #ffffff; font-family: var(--cc-font-mono);">+91 94440 12345</div>
+                    </div>
+                    <div>
+                        <div style="color: var(--cc-text-muted); font-size: 0.75rem;">COMMAND JURISDICTION</div>
+                        <div id="profileLocationDisplay" style="color: #ffffff;">National Operations Center, New Delhi</div>
+                    </div>
+                    <div>
+                        <div style="color: var(--cc-text-muted); font-size: 0.75rem;">AUTHENTICATION REALM</div>
+                        <div style="color: #ffffff;">Spring Security JWT &bull; BCrypt 12 Rounds</div>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label><i class="fas fa-phone"></i> Phone Number</label>
-                    <input type="tel" id="editPhone" required />
-                </div>
-
-                <div class="form-group">
-                    <label><i class="fas fa-map-marker-alt"></i> Base Location</label>
-                    <input type="text" id="editLocation" required />
-                </div>
-
-                <div class="form-group">
-                    <label><i class="fas fa-lock"></i> New Password (leave blank to keep current)</label>
-                    <input type="password" id="editPassword" placeholder="Enter new password (optional)" />
-                </div>
-
-                <div class="btn-group">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Save Changes
+                <div style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                    <button type="button" class="cc-btn cc-btn-primary" onclick="toggleEditMode(true)" style="width: 100%;">
+                        <i class="fas fa-user-pen"></i> Edit Profile Metadata
                     </button>
-                    <button type="button" class="btn btn-secondary" onclick="cancelEdit()">
-                        <i class="fas fa-times"></i> Cancel
+                    <button type="button" class="cc-btn cc-btn-secondary" onclick="handleLogout()" style="width: 100%;">
+                        <i class="fas fa-right-from-bracket"></i> End Session
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right: 2FA PIN Security & Audit Console -->
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                
+                <!-- 2FA Step-Up Security Card -->
+                <div class="cc-card">
+                    <div class="cc-card-header">
+                        <div class="cc-card-title">
+                            <i class="fas fa-key" style="color: var(--cc-alert-extreme);"></i> Step-Up 2FA Security PIN (Critical Safeguard)
+                        </div>
+                        <span id="pinStatusBadge" class="cc-badge cc-badge-moderate">CHECKING STATUS...</span>
+                    </div>
+
+                    <p style="font-size: 0.85rem; color: var(--cc-text-secondary); line-height: 1.5; margin: 0 0 1.25rem;">
+                        This Disaster Response Command Center enforces <strong>RFC 6585 HTTP 428 Step-Up Authentication</strong>. 
+                        Actions that trigger public sirens or broad alerts demand an out-of-band 6-digit administrative security PIN before backend commit.
+                    </p>
+
+                    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                        <button type="button" class="cc-btn cc-btn-primary" onclick="openPinModal()">
+                            <i class="fas fa-lock-open"></i> Configure / Reset Security PIN
+                        </button>
+                        <button type="button" class="cc-btn cc-btn-secondary" onclick="fetchAndDisplayAuditTrail()">
+                            <i class="fas fa-shield-virus"></i> View 2FA Audit Trail
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Profile Edit Form (Hidden by default) -->
+                <div id="editProfileCard" class="cc-card" style="display: none;">
+                    <div class="cc-card-header">
+                        <div class="cc-card-title">
+                            <i class="fas fa-pen-to-square"></i> Modify Admin Personnel Records
+                        </div>
+                        <button type="button" class="cc-drawer-close" onclick="toggleEditMode(false)">&times;</button>
+                    </div>
+
+                    <form id="profileUpdateForm" onsubmit="handleProfileUpdate(event)">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                            <div class="cc-form-group">
+                                <label class="cc-label" for="editName">Full Name</label>
+                                <input type="text" id="editName" class="cc-input" required>
+                            </div>
+                            <div class="cc-form-group">
+                                <label class="cc-label" for="editPhone">Contact Number</label>
+                                <input type="tel" id="editPhone" class="cc-input" required>
+                            </div>
+                        </div>
+
+                        <div class="cc-form-group">
+                            <label class="cc-label" for="editLocation">Base Command Center / Jurisdiction</label>
+                            <input type="text" id="editLocation" class="cc-input" required>
+                        </div>
+
+                        <div class="cc-form-group">
+                            <label class="cc-label" for="editPassword">New Account Password (Leave blank to keep unchanged)</label>
+                            <input type="password" id="editPassword" class="cc-input" placeholder="••••••••••••">
+                        </div>
+
+                        <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+                            <button type="submit" class="cc-btn cc-btn-primary" id="saveProfileBtn">
+                                <i class="fas fa-floppy-disk"></i> Save Profile Updates
+                            </button>
+                            <button type="button" class="cc-btn cc-btn-secondary" onclick="toggleEditMode(false)">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Audit Trail Card -->
+                <div class="cc-card" id="auditTrailCard">
+                    <div class="cc-card-header">
+                        <div class="cc-card-title">
+                            <i class="fas fa-clipboard-check"></i> Security & Cryptographic Audit Trail
+                        </div>
+                        <span class="cc-badge cc-badge-official">IMMUTABLE LOG</span>
+                    </div>
+
+                    <div style="overflow-x: auto; max-height: 380px;">
+                        <table class="audit-table">
+                            <thead>
+                                <tr>
+                                    <th>TIMESTAMP</th>
+                                    <th>ACTION</th>
+                                    <th>OFFICER</th>
+                                    <th>STATUS</th>
+                                    <th>OPERATIONAL DETAILS</th>
+                                </tr>
+                            </thead>
+                            <tbody id="auditTrailTableBody">
+                                <tr>
+                                    <td colspan="5" style="text-align: center; padding: 2rem; color: var(--cc-text-muted);">
+                                        Click "View 2FA Audit Trail" to decrypt and view security telemetry.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Emergency SOS Sound Settings -->
+                <div id="adminEmergencySosContainer" style="margin-top: 1.5rem;"></div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- PIN Enrollment & Emergency Recovery Modal -->
+    <div id="pinEnrollModal" class="cc-modal-backdrop" style="display: none; align-items: center; justify-content: center; z-index: 2000;" role="dialog" aria-modal="true">
+        <div class="cc-modal-card" style="max-width: 460px; width: 92%;">
+            <div class="cc-modal-header">
+                <div class="cc-modal-title" style="color: var(--cc-accent-glow);">
+                    <i class="fas fa-shield-halved"></i> 2FA Administrative Security PIN
+                </div>
+                <button type="button" class="cc-drawer-close" onclick="closePinModal()">&times;</button>
+            </div>
+
+            <!-- PIN Modal Tabs -->
+            <div class="cc-sub-tabs" style="display:flex;gap:0.5rem;margin:0.8rem 0 1rem;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:0.6rem;">
+                <button type="button" class="cc-sub-tab-btn active" id="btnPinTabEnroll" onclick="switchPinTab('enroll')" style="flex:1;text-align:center;justify-content:center;">
+                    <i class="fas fa-key"></i> Set / Change PIN
+                </button>
+                <button type="button" class="cc-sub-tab-btn" id="btnPinTabRecover" onclick="switchPinTab('recover')" style="flex:1;text-align:center;justify-content:center;">
+                    <i class="fas fa-life-ring"></i> Forgot / Emergency Reset
+                </button>
+            </div>
+
+            <div id="pinModalAlert" style="display: none; padding: 0.6rem 0.8rem; border-radius: var(--cc-radius-sm); font-size: 0.82rem; margin-bottom: 1rem;"></div>
+
+            <!-- TAB 1: STANDARD ENROLLMENT -->
+            <form id="pinEnrollForm" onsubmit="handlePinEnrollment(event)">
+                <p style="font-size: 0.83rem; color: var(--cc-text-secondary); margin-bottom: 1rem; line-height: 1.4;">
+                    Configure your 6-digit numeric security PIN for 2FA alert authorizations.
+                </p>
+
+                <div class="cc-form-group">
+                    <label class="cc-label" for="pinCurrentPass">CURRENT ACCOUNT PASSWORD</label>
+                    <input type="password" id="pinCurrentPass" class="cc-input" required placeholder="••••••••••••">
+                </div>
+
+                <div class="cc-form-group">
+                    <label class="cc-label" for="pinNewValue">NEW SECURITY PIN (6 NUMERIC DIGITS)</label>
+                    <input type="password" id="pinNewValue" class="cc-input" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" required placeholder="••••••" style="font-family: var(--cc-font-mono); letter-spacing: 0.4em; text-align: center; font-size: 1.2rem;">
+                </div>
+
+                <div class="cc-form-group">
+                    <label class="cc-label" for="pinConfirmValue">CONFIRM NEW SECURITY PIN</label>
+                    <input type="password" id="pinConfirmValue" class="cc-input" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" required placeholder="••••••" style="font-family: var(--cc-font-mono); letter-spacing: 0.4em; text-align: center; font-size: 1.2rem;">
+                </div>
+
+                <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+                    <button type="button" class="cc-btn cc-btn-secondary" onclick="closePinModal()" style="flex: 1;">Cancel</button>
+                    <button type="submit" class="cc-btn cc-btn-primary" id="savePinBtn" style="flex: 1;">
+                        <i class="fas fa-shield"></i> Commit PIN
                     </button>
                 </div>
             </form>
+
+            <!-- TAB 2: EMERGENCY RECOVERY -->
+            <form id="pinRecoverForm" style="display:none;" onsubmit="handlePinRecovery(event)">
+                <p style="font-size: 0.83rem; color: var(--cc-text-secondary); margin-bottom: 1rem; line-height: 1.4;">
+                    Forgot your PIN? Recover and re-issue your security PIN using your account credentials or single-use Emergency Recovery Code.
+                </p>
+
+                <div class="cc-form-group">
+                    <label class="cc-label">RECOVERY METHOD</label>
+                    <select id="pinRecoveryType" class="cc-select" onchange="toggleRecoverySecretLabel()">
+                        <option value="ACCOUNT_PASSWORD">Account Password</option>
+                        <option value="RECOVERY_CODE">Emergency Recovery Code (REC-XXXX-XXXX-XXXX)</option>
+                    </select>
+                </div>
+
+                <div class="cc-form-group">
+                    <label class="cc-label" id="recoverySecretLabel" for="pinRecoverySecret">ACCOUNT PASSWORD</label>
+                    <input type="password" id="pinRecoverySecret" class="cc-input" required placeholder="Enter verification credential">
+                </div>
+
+                <div class="cc-form-group">
+                    <label class="cc-label" for="pinRecoverNew">NEW 6-DIGIT SECURITY PIN</label>
+                    <input type="password" id="pinRecoverNew" class="cc-input" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" required placeholder="••••••" style="font-family: var(--cc-font-mono); letter-spacing: 0.4em; text-align: center; font-size: 1.2rem;">
+                </div>
+
+                <div class="cc-form-group">
+                    <label class="cc-label" for="pinRecoverConfirm">CONFIRM NEW 6-DIGIT PIN</label>
+                    <input type="password" id="pinRecoverConfirm" class="cc-input" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" required placeholder="••••••" style="font-family: var(--cc-font-mono); letter-spacing: 0.4em; text-align: center; font-size: 1.2rem;">
+                </div>
+
+                <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+                    <button type="button" class="cc-btn cc-btn-secondary" onclick="closePinModal()" style="flex: 1;">Cancel</button>
+                    <button type="submit" class="cc-btn cc-btn-danger" id="recoverPinBtn" style="flex: 1;">
+                        <i class="fas fa-rotate-right"></i> Reset Security PIN
+                    </button>
+                </div>
+            </form>
+
+            <!-- EMERGENCY RECOVERY CODE SUCCESS BANNER -->
+            <div id="recoveryCodeDisplayBox" style="display:none;margin-top:1.2rem;background:rgba(16,185,129,0.12);border:1px solid #10b981;border-radius:8px;padding:1rem;text-align:center;">
+                <div style="color:#10b981;font-weight:700;font-size:0.9rem;margin-bottom:0.4rem;">
+                    <i class="fas fa-key"></i> Emergency Recovery Code Generated
+                </div>
+                <div style="color:#cbd5e1;font-size:0.8rem;margin-bottom:0.75rem;">
+                    Save this code offline in a secure location. It can reset your PIN if forgotten:
+                </div>
+                <div id="recoveryCodeText" style="font-family:var(--cc-font-mono);font-size:1.15rem;font-weight:700;color:#38bdf8;letter-spacing:2px;background:#050811;padding:0.6rem;border-radius:6px;border:1px dashed #38bdf8;user-select:all;margin-bottom:0.75rem;">
+                    REC-XXXX-XXXX-XXXX
+                </div>
+                <button type="button" class="cc-btn cc-btn-secondary" onclick="copyRecoveryCodeToClipboard()" style="font-size:0.78rem;padding:0.35rem 0.8rem;">
+                    <i class="fas fa-copy"></i> Copy Code to Clipboard
+                </button>
+            </div>
         </div>
     </div>
-</div>
 
-<nav class="bottom-nav">
-    <a href="/admin-dashboard.html" id="navDashboard">
-        <i class="fas fa-tachometer-alt"></i>
-        <span>Dashboard</span>
-    </a>
-    <a href="/reports.html" id="navReports">
-        <i class="fas fa-chart-bar"></i>
-        <span>Reports</span>
-    </a>
-    <a href="/admin-profile.html" class="active">
-        <i class="fas fa-user-shield"></i>
-        <span>Profile</span>
-    </a>
-</nav>
+    <!-- Scripts -->
+    <script src="auth-helper.js?v=2"></script>
+    <script src="command-center.js?v=3"></script>
+    <script src="role-loading.js?v=2"></script>
 
-<script>
-    const token = localStorage.getItem('token');
-    let currentUser = null;
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('token');
+            const role = localStorage.getItem('userRole');
 
-    if (!token) {
-        window.location.href = '/index.html';
-    }
-
-    // Verify Admin role
-    function checkAdminRole() {
-        try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            const role = payload.role;
-            if (role !== 'Admin') {
-                // Redirect to appropriate dashboard
-                if (role === 'Responder') {
-                    window.location.href = '/responder-profile.html';
-                } else {
-                    window.location.href = '/profile.html';
+            if (!token || role !== 'Admin') {
+                if (window.showToast) {
+                    window.showToast('Restricted: Admin access required.', 'error');
                 }
+                setTimeout(() => {
+                    window.location.href = '/index.html';
+                }, 1000);
+                return;
             }
-        } catch (e) {
-            window.location.href = '/index.html';
-        }
-    }
 
-    // Load admin profile
-    function loadProfile() {
-        try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            const email = payload.sub;
-
-            // Fetch profile from backend
-            fetch('/api/auth/profile', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: email })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    document.getElementById('userName').innerText = data.name || email.split('@')[0];
-                    document.getElementById('userEmail').innerText = data.email;
-                    document.getElementById('userPhone').innerText = data.phone || 'Not provided';
-                    document.getElementById('userLocation').innerText = data.location || 'Not provided';
-                    document.getElementById('userRoleText').innerText = data.role;
-                    
-                    currentUser = data;
-                } else {
-                    document.getElementById('userName').innerText = email.split('@')[0];
-                    document.getElementById('userEmail').innerText = email;
-                    document.getElementById('userPhone').innerText = 'Not available';
-                    document.getElementById('userLocation').innerText = 'Not available';
-                    
-                    currentUser = { email, role: 'Admin' };
-                }
-            })
-            .catch(err => {
-                console.error('Error fetching profile:', err);
-                document.getElementById('userName').innerText = email.split('@')[0];
-                document.getElementById('userEmail').innerText = email;
-                currentUser = { email, role: 'Admin' };
-            });
-
-            // Load admin statistics
-            loadAdminStats();
-
-        } catch (e) {
-            console.error('Error loading profile:', e);
-            window.location.href = '/index.html';
-        }
-    }
-
-    // Load admin statistics
-    function loadAdminStats() {
-        // Fetch alerts count
-        fetch('/api/alerts', {
-            headers: { 'Authorization': 'Bearer ' + token }
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.status === 'success') {
-                document.getElementById('totalAlerts').innerText = data.alerts ? data.alerts.length : 0;
+            if (window.CommandCenter && CommandCenter.initHudClock) {
+                CommandCenter.initHudClock('hudClockDisplay');
             }
-        })
-        .catch(err => console.error('Error loading alerts:', err));
+            const adminName = localStorage.getItem('userName') || 'Admin User';
+            const nameEl = document.getElementById('adminName');
+            if (nameEl) nameEl.textContent = adminName;
 
-        // Fetch disasters count
-        fetch('/api/disasters', {
-            headers: { 'Authorization': 'Bearer ' + token }
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.status === 'success') {
-                const disasters = data.disasters || [];
-                const activeCount = disasters.filter(d => d.status === 'Active').length;
-                document.getElementById('activeDisasters').innerText = activeCount;
+            populateUserData();
+            checkPinStatus();
+
+            if (window.RoleLoadingScreen) {
+                RoleLoadingScreen.hide();
             }
-        })
-        .catch(err => console.error('Error loading disasters:', err));
-
-        // For now, show placeholder for citizens count
-        document.getElementById('totalCitizens').innerText = '5';
-    }
-
-    function enableEditMode() {
-        document.getElementById('viewMode').style.display = 'none';
-        document.getElementById('editMode').style.display = 'block';
-
-        document.getElementById('editName').value = document.getElementById('userName').innerText;
-        document.getElementById('editPhone').value = document.getElementById('userPhone').innerText;
-        document.getElementById('editLocation').value = document.getElementById('userLocation').innerText;
-    }
-
-    function cancelEdit() {
-        document.getElementById('viewMode').style.display = 'block';
-        document.getElementById('editMode').style.display = 'none';
-    }
-
-    function showMessage(text, type) {
-        const messageBox = document.getElementById('messageBox');
-        messageBox.innerHTML = `<div class="message ${type}">${text}</div>`;
-        setTimeout(() => {
-            messageBox.innerHTML = '';
-        }, 5000);
-    }
-
-    document.getElementById('editForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-
-        const updatedData = {
-            email: currentUser.email,
-            name: document.getElementById('editName').value,
-            phone: document.getElementById('editPhone').value,
-            location: document.getElementById('editLocation').value,
-            password: document.getElementById('editPassword').value
-        };
-
-        fetch('/api/auth/update-profile', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updatedData)
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.status === 'success') {
-                showMessage('✓ Profile updated successfully!', 'success');
-                document.getElementById('userName').innerText = updatedData.name;
-                document.getElementById('userPhone').innerText = updatedData.phone;
-                document.getElementById('userLocation').innerText = updatedData.location;
-                document.getElementById('editPassword').value = '';
-                cancelEdit();
-            } else {
-                showMessage('✗ Failed to update profile: ' + data.message, 'error');
-            }
-        })
-        .catch(err => {
-            console.error('Error updating profile:', err);
-            showMessage('✗ Network error. Please try again.', 'error');
         });
-    });
 
-    function logout() {
-        if (confirm('Are you sure you want to logout?')) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('userRole');
+        function populateUserData() {
+            try {
+                const token = localStorage.getItem('token');
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                const storedName = localStorage.getItem('userName') || (payload.sub ? payload.sub.split('@')[0] : 'Administrator');
+                const storedEmail = localStorage.getItem('userEmail') || payload.sub || 'admin@disaster.gov.in';
+
+                document.getElementById('profileNameDisplay').innerText = storedName;
+                document.getElementById('profileEmailDisplay').innerText = storedEmail;
+                
+                document.getElementById('editName').value = storedName;
+                document.getElementById('editPhone').value = payload.phone || '+91 94440 12345';
+                document.getElementById('editLocation').value = payload.location || 'New Delhi, Operations Command';
+            } catch (e) {
+                console.error('Error reading JWT:', e);
+            }
+        }
+
+        async function checkPinStatus() {
+            const badge = document.getElementById('pinStatusBadge');
+            try {
+                const res = await fetch('/api/auth/admin/pin/status', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.enrolled) {
+                        badge.className = 'cc-badge cc-badge-moderate';
+                        badge.innerText = 'ENROLLED & ACTIVE';
+                    } else {
+                        badge.className = 'cc-badge cc-badge-severe';
+                        badge.innerText = 'NOT CONFIGURED';
+                    }
+                }
+            } catch (err) {
+                badge.innerText = 'STATUS UNKNOWN';
+            }
+        }
+
+        function toggleEditMode(show) {
+            document.getElementById('editProfileCard').style.display = show ? 'block' : 'none';
+        }
+
+        async function handleProfileUpdate(event) {
+            event.preventDefault();
+            const btn = document.getElementById('saveProfileBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Committing...';
+
+            const payload = {
+                name: document.getElementById('editName').value.trim(),
+                phone: document.getElementById('editPhone').value.trim(),
+                location: document.getElementById('editLocation').value.trim()
+            };
+            const pwd = document.getElementById('editPassword').value;
+            if (pwd) payload.password = pwd;
+
+            try {
+                const res = await fetch('/api/auth/profile', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+
+                if (res.ok && (data.status === 'success' || data.id)) {
+                    showAlert('Profile records updated successfully!', 'success');
+                    localStorage.setItem('userName', payload.name);
+                    document.getElementById('profileNameDisplay').innerText = payload.name;
+                    document.getElementById('profilePhoneDisplay').innerText = payload.phone;
+                    document.getElementById('profileLocationDisplay').innerText = payload.location;
+                    toggleEditMode(false);
+                } else {
+                    showAlert('Failed to update profile: ' + (data.message || 'Unknown error'), 'error');
+                }
+            } catch (err) {
+                showAlert('Connection error: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-floppy-disk"></i> Save Profile Updates';
+            }
+        }
+
+        // PIN Enrollment & Recovery State
+        function openPinModal() {
+            document.getElementById('pinEnrollModal').style.display = 'flex';
+            document.getElementById('pinModalAlert').style.display = 'none';
+            document.getElementById('recoveryCodeDisplayBox').style.display = 'none';
+            switchPinTab('enroll');
+        }
+
+        function closePinModal() {
+            document.getElementById('pinEnrollModal').style.display = 'none';
+        }
+
+        function switchPinTab(tab) {
+            const enrollForm = document.getElementById('pinEnrollForm');
+            const recoverForm = document.getElementById('pinRecoverForm');
+            const btnEnroll = document.getElementById('btnPinTabEnroll');
+            const btnRecover = document.getElementById('btnPinTabRecover');
+            const alertBox = document.getElementById('pinModalAlert');
+            if (alertBox) alertBox.style.display = 'none';
+
+            if (tab === 'enroll') {
+                enrollForm.style.display = 'block';
+                recoverForm.style.display = 'none';
+                btnEnroll.classList.add('active');
+                btnRecover.classList.remove('active');
+            } else {
+                enrollForm.style.display = 'none';
+                recoverForm.style.display = 'block';
+                btnEnroll.classList.remove('active');
+                btnRecover.classList.add('active');
+                toggleRecoverySecretLabel();
+            }
+        }
+
+        function toggleRecoverySecretLabel() {
+            const type = document.getElementById('pinRecoveryType').value;
+            const label = document.getElementById('recoverySecretLabel');
+            const input = document.getElementById('pinRecoverySecret');
+            if (type === 'RECOVERY_CODE') {
+                label.innerText = 'EMERGENCY RECOVERY CODE';
+                input.placeholder = 'REC-XXXX-XXXX-XXXX';
+                input.type = 'text';
+            } else {
+                label.innerText = 'CURRENT ACCOUNT PASSWORD';
+                input.placeholder = '••••••••••••';
+                input.type = 'password';
+            }
+        }
+
+        function displayEmergencyRecoveryCode(code) {
+            const box = document.getElementById('recoveryCodeDisplayBox');
+            const textEl = document.getElementById('recoveryCodeText');
+            if (box && textEl && code) {
+                textEl.innerText = code;
+                box.style.display = 'block';
+            }
+        }
+
+        function copyRecoveryCodeToClipboard() {
+            const text = document.getElementById('recoveryCodeText').innerText.trim();
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showAlert('Recovery code copied to clipboard!', 'success');
+                });
+            } else {
+                showAlert('Recovery code: ' + text, 'info');
+            }
+        }
+
+        async function handlePinEnrollment(event) {
+            event.preventDefault();
+            const curPass = document.getElementById('pinCurrentPass').value;
+            const newPin = document.getElementById('pinNewValue').value.trim();
+            const confPin = document.getElementById('pinConfirmValue').value.trim();
+            const alertBox = document.getElementById('pinModalAlert');
+
+            if (!newPin.match(/^\d{6}$/)) {
+                alertBox.style.display = 'block';
+                alertBox.style.background = 'rgba(239, 68, 68, 0.2)';
+                alertBox.style.color = '#fca5a5';
+                alertBox.innerText = 'Security PIN must be exactly 6 numeric digits.';
+                return;
+            }
+
+            if (newPin !== confPin) {
+                alertBox.style.display = 'block';
+                alertBox.style.background = 'rgba(239, 68, 68, 0.2)';
+                alertBox.style.color = '#fca5a5';
+                alertBox.innerText = 'PINs do not match.';
+                return;
+            }
+
+            const btn = document.getElementById('savePinBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Committing PIN...';
+
+            try {
+                const res = await fetch('/api/auth/admin/pin/enroll', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    },
+                    body: JSON.stringify({ currentPassword: curPass, pin: newPin })
+                });
+
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    checkPinStatus();
+                    showAlert('Admin Security PIN successfully enrolled/updated.', 'success');
+                    if (data.recoveryCode) {
+                        displayEmergencyRecoveryCode(data.recoveryCode);
+                        alertBox.style.display = 'block';
+                        alertBox.style.background = 'rgba(16, 185, 129, 0.2)';
+                        alertBox.style.color = '#86efac';
+                        alertBox.innerText = 'PIN enrolled! Note your Emergency Recovery Code below.';
+                    } else {
+                        closePinModal();
+                    }
+                } else {
+                    alertBox.style.display = 'block';
+                    alertBox.style.background = 'rgba(239, 68, 68, 0.2)';
+                    alertBox.style.color = '#fca5a5';
+                    alertBox.innerText = data.message || 'Enrollment failed.';
+                }
+            } catch (err) {
+                alertBox.style.display = 'block';
+                alertBox.innerText = 'Network error: ' + err.message;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-shield"></i> Commit PIN';
+            }
+        }
+
+        async function handlePinRecovery(event) {
+            event.preventDefault();
+            const recType = document.getElementById('pinRecoveryType').value;
+            const recSecret = document.getElementById('pinRecoverySecret').value.trim();
+            const newPin = document.getElementById('pinRecoverNew').value.trim();
+            const confPin = document.getElementById('pinRecoverConfirm').value.trim();
+            const alertBox = document.getElementById('pinModalAlert');
+
+            if (!newPin.match(/^\d{6}$/)) {
+                alertBox.style.display = 'block';
+                alertBox.style.background = 'rgba(239, 68, 68, 0.2)';
+                alertBox.style.color = '#fca5a5';
+                alertBox.innerText = 'New Security PIN must be exactly 6 numeric digits.';
+                return;
+            }
+
+            if (newPin !== confPin) {
+                alertBox.style.display = 'block';
+                alertBox.style.background = 'rgba(239, 68, 68, 0.2)';
+                alertBox.style.color = '#fca5a5';
+                alertBox.innerText = 'New PINs do not match.';
+                return;
+            }
+
+            const btn = document.getElementById('recoverPinBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Resetting...';
+
+            try {
+                const res = await fetch('/api/auth/admin/pin/recover', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    },
+                    body: JSON.stringify({
+                        recoveryType: recType,
+                        recoverySecret: recSecret,
+                        newPin: newPin
+                    })
+                });
+
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    checkPinStatus();
+                    showAlert('Admin Security PIN reset successfully!', 'success');
+                    if (data.recoveryCode) {
+                        displayEmergencyRecoveryCode(data.recoveryCode);
+                        alertBox.style.display = 'block';
+                        alertBox.style.background = 'rgba(16, 185, 129, 0.2)';
+                        alertBox.style.color = '#86efac';
+                        alertBox.innerText = 'PIN reset complete! A new single-use recovery code has been issued below.';
+                    } else {
+                        closePinModal();
+                    }
+                } else {
+                    alertBox.style.display = 'block';
+                    alertBox.style.background = 'rgba(239, 68, 68, 0.2)';
+                    alertBox.style.color = '#fca5a5';
+                    alertBox.innerText = data.message || 'Recovery failed.';
+                }
+            } catch (err) {
+                alertBox.style.display = 'block';
+                alertBox.innerText = 'Network error: ' + err.message;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-rotate-right"></i> Reset Security PIN';
+            }
+        }
+
+        // Fetch Audit Trail
+        async function fetchAndDisplayAuditTrail() {
+            const tbody = document.getElementById('auditTrailTableBody');
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;"><i class="fas fa-spinner fa-spin"></i> Verifying clearance and decrypting audit records...</td></tr>';
+
+            let stepUpToken = sessionStorage.getItem('adminStepUpToken');
+            if (!stepUpToken) {
+                let pin = null;
+                if (window.showPrompt) {
+                    pin = await window.showPrompt({
+                        title: 'SECURITY CLEARANCE REQUIRED',
+                        message: 'Enter your 6-digit Admin Security PIN to view the immutable audit trail:',
+                        placeholder: '6-digit PIN',
+                        isPassword: true,
+                        confirmText: 'Verify & Decrypt'
+                    });
+                } else {
+                    pin = prompt('Enter 6-digit PIN to decrypt audit logs:');
+                }
+                if (!pin) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#ef4444;padding:1.5rem;">Access aborted: Security PIN required. Use "Configure / Reset Security PIN" if forgotten.</td></tr>';
+                    return;
+                }
+
+                const vRes = await fetch('/api/auth/admin/verify-pin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    },
+                    body: JSON.stringify({ pin: pin.trim() })
+                });
+
+                const vData = await vRes.json();
+                if (vRes.ok && vData.stepUpToken) {
+                    stepUpToken = vData.stepUpToken;
+                    sessionStorage.setItem('adminStepUpToken', stepUpToken);
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#ef4444;padding:1.5rem;">Clearance rejected: ${vData.message || 'Invalid PIN'}. Reset PIN if forgotten.</td></tr>`;
+                    return;
+                }
+            }
+
+            try {
+                const res = await fetch('/api/auth/admin/audit-logs', {
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'X-Admin-Step-Up-Token': stepUpToken
+                    }
+                });
+
+                if (res.ok) {
+                    const logs = await res.json();
+                    tbody.innerHTML = '';
+                    if (logs.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1.5rem;color:var(--cc-text-muted);">No administrative events recorded in audit log.</td></tr>';
+                        return;
+                    }
+
+                    logs.forEach(l => {
+                        const tr = document.createElement('tr');
+                        const isSuccess = l.status === 'SUCCESS';
+                        const badge = isSuccess ? '<span class="cc-badge cc-badge-moderate">SUCCESS</span>' : '<span class="cc-badge cc-badge-extreme">FAILED</span>';
+                        const formattedTime = (window.formatIndianDateTime ? window.formatIndianDateTime(l.timestamp) : new Date(l.timestamp).toLocaleString('en-IN'));
+
+                        tr.innerHTML = `
+                            <td style="font-family:var(--cc-font-mono);font-size:0.75rem;">${formattedTime}</td>
+                            <td style="font-weight:600;color:#ffffff;">${l.action}</td>
+                            <td style="font-family:var(--cc-font-mono);">${l.actorEmail}</td>
+                            <td>${badge}</td>
+                            <td style="font-size:0.8rem;color:var(--cc-text-secondary);">${l.details || '-'}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    sessionStorage.removeItem('adminStepUpToken');
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#ef4444;padding:1.5rem;">Authorization expired. Please re-verify PIN.</td></tr>';
+                }
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#ef4444;padding:1.5rem;">Error loading audit logs: ${err.message}</td></tr>`;
+            }
+        }
+
+        function showAlert(msg, type = 'success') {
+            const box = document.getElementById('statusAlertBox');
+            box.style.display = 'block';
+            box.style.background = type === 'success' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+            box.style.border = type === 'success' ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)';
+            box.style.color = type === 'success' ? '#86efac' : '#fca5a5';
+            box.innerText = msg;
+            setTimeout(() => { box.style.display = 'none'; }, 5000);
+        }
+
+        function handleLogout() {
+            localStorage.clear();
+            sessionStorage.clear();
             window.location.href = '/index.html';
         }
-    }
 
-    // Initialize
-    checkAdminRole();
-    loadProfile();
-</script>
-
+        if (window.EmergencyAlertSystem) {
+            EmergencyAlertSystem.renderSettingsCard('adminEmergencySosContainer', 'admin');
+        }
+    </script>
 </body>
 </html>

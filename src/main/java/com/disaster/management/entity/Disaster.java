@@ -2,6 +2,7 @@ package com.disaster.management.entity;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -25,7 +26,10 @@ public class Disaster {
     private LocalDateTime timestamp;  // when the alert came
 
     private String status;    // e.g. "Active", "Resolved"
-    
+
+    @Column(length = 1000)
+    private String description;
+
     // Geo-location coordinates
     private Double latitude;
     private Double longitude;
@@ -33,7 +37,7 @@ public class Disaster {
     // Empty constructor (needed by Hibernate)
     public Disaster() {}
 
-    // Getters and Setters (copy all these)
+    // Getters and Setters
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
 
@@ -51,10 +55,13 @@ public class Disaster {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
-    
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
     public Double getLatitude() { return latitude; }
     public void setLatitude(Double latitude) { this.latitude = latitude; }
-    
+
     public Double getLongitude() { return longitude; }
     public void setLongitude(Double longitude) { this.longitude = longitude; }
 }

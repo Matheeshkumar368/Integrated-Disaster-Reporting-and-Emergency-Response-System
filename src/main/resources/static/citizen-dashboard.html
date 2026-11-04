@@ -2,875 +2,2166 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover"/>
+    <meta name="theme-color" content="#050811"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+    <meta name="apple-mobile-web-app-title" content="Citizen Safety"/>
+    <link rel="manifest" href="/manifest.webmanifest"/>
+    <link rel="apple-touch-icon" href="/icons/icon-192.png"/>
+    <link rel="icon" type="image/png" href="/icons/icon-192.png"/>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
     <meta http-equiv="Pragma" content="no-cache"/>
     <meta http-equiv="Expires" content="0"/>
-    <title>Citizen Dashboard - Rescue Operations</title>
+    <title>Citizen Safety Hub — Disaster Management & Alert System</title>
+    
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    
+    <!-- Design System & Interaction Engine -->
+    <link rel="stylesheet" href="toast-manager.css?v=2" />
+    <script src="toast-manager.js?v=2"></script>
+    <script src="/js/emergency-alert.js?v=3"></script>
+    <link rel="stylesheet" href="command-center.css?v=3" />
+    <script src="command-center.js?v=3"></script>
+    <script src="pwa-manager.js"></script>
+    
+    <!-- Leaflet & Map Engine -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Situational Media Capture & Live Responder Tracking Components -->
+    <link rel="stylesheet" href="media-capture.css?v=1" />
+    <script src="media-capture.js?v=1"></script>
+    <link rel="stylesheet" href="responder-tracking.css?v=1" />
+    <script src="responder-tracking.js?v=1"></script>
+    <link rel="stylesheet" href="incident-room.css?v=1" />
+    <script src="incident-room.js?v=1"></script>
+    
+    <!-- Role Loading & Authentication Helper -->
+    <link rel="stylesheet" href="role-loading.css?v=2" />
+    <script src="role-loading.js?v=2"></script>
+    <script src="auth-helper.js?v=2"></script>
+
     <style>
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #0f1a2a 0%, #0a1420 100%);
-            color: #e0e0e0;
-            min-height: 100vh;
-            padding-bottom: 5rem;
+        @keyframes sosPulse {
+            0% { transform: scale(1); box-shadow: 0 0 10px rgba(239,68,68,0.7); }
+            50% { transform: scale(1.06); box-shadow: 0 0 25px rgba(239,68,68,1); }
+            100% { transform: scale(1); box-shadow: 0 0 10px rgba(239,68,68,0.7); }
         }
-        .header {
-            background: linear-gradient(135deg, #10b981, #34d399);
-            padding: 1.8rem 1rem;
-            text-align: center;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+        .sos-alarm-active-pulse {
+            animation: sosPulse 0.9s infinite ease-in-out !important;
         }
-        .header h1 {
-            font-size: 2.4rem;
-            color: white;
-            font-weight: 700;
-            text-shadow: 0 2px 8px rgba(0,0,0,0.4);
-        }
-        .user-info {
-            text-align: center;
-            padding: 1rem;
-            background: rgba(16,185,129,0.2);
-            color: #6ee7b7;
-            font-size: 1.1rem;
-            border-bottom: 2px solid #10b981;
-        }
-        .container {
-            max-width: 1200px;
+
+        .cc-citizen-container {
+            max-width: var(--cc-max-width, 1540px);
             margin: 0 auto;
             padding: 1.5rem;
         }
-        .tabs {
+
+        /* Emergency Hotline Banner */
+        .cc-emergency-banner {
+            background: linear-gradient(135deg, rgba(220, 38, 38, 0.25), rgba(15, 23, 42, 0.9));
+            border: 1px solid var(--cc-border-critical);
+            border-radius: var(--cc-radius-md);
+            padding: 1rem 1.4rem;
+            margin-bottom: 1.5rem;
             display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            box-shadow: 0 4px 20px var(--cc-critical-red-glow);
+        }
+
+        .cc-hotlines {
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+        }
+
+        .cc-hotline-pill {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #ffffff;
+            padding: 0.4rem 0.9rem;
+            border-radius: var(--cc-radius-pill);
+            font-size: 0.84rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
             gap: 0.5rem;
-            margin-bottom: 2rem;
-            border-bottom: 2px solid rgba(255,255,255,0.1);
+            text-decoration: none;
+            transition: all var(--cc-duration-fast) var(--cc-ease);
         }
-        .tab {
-            padding: 1rem 2rem;
-            background: transparent;
-            border: none;
-            color: #94a3b8;
-            font-size: 1.1rem;
-            cursor: pointer;
-            border-bottom: 3px solid transparent;
-            transition: all 0.3s;
+
+        .cc-hotline-pill:hover {
+            background: var(--cc-critical-red);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--cc-critical-red-glow);
         }
-        .tab.active {
-            color: #10b981;
-            border-bottom-color: #10b981;
+
+        /* Tabs System */
+        .cc-tabs-container {
+            display: flex;
+            gap: 0.6rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--cc-border-subtle);
+            padding-bottom: 0.6rem;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
         }
-        .tab-content {
+
+        .cc-tabs-container::-webkit-scrollbar {
             display: none;
         }
-        .tab-content.active {
-            display: block;
-        }
-        .card {
-            background: rgba(30, 41, 59, 0.95);
-            border-radius: 16px;
-            padding: 2rem;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
-            border: 1px solid rgba(16,185,129,0.2);
-            margin-bottom: 2rem;
-        }
-        .card h2 {
-            color: #10b981;
-            margin-bottom: 1.5rem;
-            font-size: 1.8rem;
-        }
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-        .form-group label {
-            display: block;
-            color: #94a3b8;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-        }
-        .form-group input,
-        .form-group textarea,
-        .form-group select {
-            width: 100%;
-            padding: 0.8rem;
-            border: 1px solid #334155;
-            border-radius: 8px;
-            background: #1e293b;
-            color: white;
-            font-size: 1rem;
-            font-family: inherit;
-        }
-        .form-group textarea {
-            min-height: 120px;
-            resize: vertical;
-        }
-        .btn {
-            padding: 1rem 2rem;
-            border: none;
-            border-radius: 8px;
-            font-size: 1.1rem;
+
+        .cc-tab-btn {
+            background: var(--cc-bg-surface-0);
+            border: 1px solid var(--cc-border-subtle);
+            color: var(--cc-text-secondary);
+            padding: 0.7rem 1.4rem;
+            border-radius: var(--cc-radius-sm);
+            font-size: 0.9rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            transition: all var(--cc-duration-fast) var(--cc-ease);
+            white-space: nowrap;
+            flex-shrink: 0;
         }
-        .btn-primary {
-            background: linear-gradient(135deg, #10b981, #34d399);
-            color: white;
-            width: 100%;
+
+        .cc-tab-btn:hover {
+            color: var(--cc-text-primary);
+            background: var(--cc-bg-surface-2);
         }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(16,185,129,0.4);
+
+        .cc-tab-btn.active {
+            color: var(--cc-cyan);
+            background: rgba(56, 189, 248, 0.12);
+            border-color: var(--cc-border-accent);
+            box-shadow: 0 2px 10px var(--cc-cyan-glow);
         }
-        .alerts-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 1.5rem;
+
+        .cc-tab-badge {
+            background: #334155;
+            color: #ffffff;
+            padding: 0.15rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-family: var(--cc-font-mono);
         }
-        .alert-card {
-            background: rgba(30, 41, 59, 0.95);
-            border-radius: 16px;
-            padding: 1.5rem;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
-            border-left: 4px solid;
-            transition: all 0.3s;
+
+        .cc-tab-btn.active .cc-tab-badge {
+            background: var(--cc-cyan);
+            color: #030a16;
+            font-weight: 700;
         }
-        .alert-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 40px rgba(16,185,129,0.3);
+
+        .cc-tab-content {
+            display: none;
+            animation: ccFadeIn 0.3s ease;
         }
-        .alert-card.high { border-left-color: #ef4444; }
-        .alert-card.medium { border-left-color: #f59e0b; }
-        .alert-card.low { border-left-color: #10b981; }
-        .alert-title {
-            font-size: 1.3rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
+
+        .cc-tab-content.active {
+            display: block;
         }
-        .alert-detail {
-            margin: 0.8rem 0;
+
+        @keyframes ccFadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 4-Stage Incident Timeline */
+        .cc-incident-timeline {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(10, 16, 30, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            margin: 1rem 0;
+            position: relative;
+        }
+
+        .cc-timeline-stage {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            z-index: 2;
+            flex: 1;
+        }
+
+        .cc-timeline-bubble {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #1e293b;
+            border: 2px solid #475569;
             color: #94a3b8;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            justify-content: center;
+            font-size: 0.72rem;
+            font-weight: 700;
+            margin-bottom: 0.3rem;
+            transition: all 0.25s ease;
         }
-        .message {
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            text-align: center;
-        }
-        .message.success {
-            background: rgba(34,197,94,0.2);
-            color: #22c55e;
-            border: 1px solid #22c55e;
-        }
-        .message.error {
-            background: rgba(239,68,68,0.2);
-            color: #ef4444;
-            border: 1px solid #ef4444;
-        }
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: #1e293b;
-            display: flex;
-            justify-content: space-around;
-            padding: 1rem 0;
-            box-shadow: 0 -6px 20px rgba(0,0,0,0.5);
-            z-index: 1000;
-        }
-        .bottom-nav a {
+
+        .cc-timeline-title {
+            font-size: 0.7rem;
+            font-family: var(--cc-font-mono);
             color: #94a3b8;
-            text-decoration: none;
-            text-align: center;
-            font-size: 0.95rem;
-            transition: all 0.3s;
+            text-transform: uppercase;
+            font-weight: 600;
         }
-        .bottom-nav a i {
-            font-size: 1.9rem;
-            display: block;
-            margin-bottom: 0.4rem;
+
+        .cc-timeline-stage.completed .cc-timeline-bubble {
+            background: #10b981;
+            border-color: #34d399;
+            color: #ffffff;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
         }
-        .bottom-nav a.active,
-        .bottom-nav a:hover {
-            color: #10b981;
-            transform: translateY(-3px);
+        .cc-timeline-stage.completed .cc-timeline-title {
+            color: #34d399;
         }
-        @media (max-width: 768px) {
-            .alerts-grid {
-                grid-template-columns: 1fr;
-            }
-            .tabs {
-                overflow-x: auto;
-            }
+
+        .cc-timeline-stage.active .cc-timeline-bubble {
+            background: #00e5ff;
+            border-color: #ffffff;
+            color: #030a16;
+            box-shadow: 0 0 14px rgba(0, 229, 255, 0.8);
+            transform: scale(1.15);
+        }
+        .cc-timeline-stage.active .cc-timeline-title {
+            color: #00e5ff;
+            font-weight: 700;
+        }
+
+        .cc-timeline-track-line {
+            position: absolute;
+            top: 20px;
+            left: 10%;
+            right: 10%;
+            height: 3px;
+            background: #334155;
+            z-index: 1;
+        }
+
+        .cc-timeline-track-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #00e5ff);
+            transition: width 0.3s ease;
+        }
+
+        /* Filter Controls Bar */
+        .cc-filter-controls-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            background: rgba(14, 23, 38, 0.7);
+            border: 1px solid var(--cc-border-subtle);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1.2rem;
+        }
+
+        /* Slide-in Notifications Drawer */
+        .cc-drawer-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(5, 8, 17, 0.75);
+            backdrop-filter: blur(8px);
+            z-index: 9998;
+            display: none;
+        }
+
+        .cc-notifications-drawer {
+            position: fixed;
+            top: 0; right: -420px; bottom: 0;
+            width: 400px;
+            max-width: 90vw;
+            background: var(--cc-bg-surface-1);
+            border-left: 1px solid var(--cc-border-medium);
+            z-index: 9999;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.7);
+            display: flex;
+            flex-direction: column;
+            transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .cc-notifications-drawer.open {
+            right: 0;
+        }
+
+        .cc-notif-header {
+            padding: 1.2rem 1.4rem;
+            border-bottom: 1px solid var(--cc-border-subtle);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .cc-notif-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 1.2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .cc-notif-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--cc-border-subtle);
+            border-radius: 8px;
+            padding: 0.85rem;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+
+        .cc-notif-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: var(--cc-border-accent);
         }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <h1><i class="fas fa-user"></i> Citizen Dashboard</h1>
-</div>
-
-<!-- New Alert Notification Toast -->
-<div id="citizenAlertToast" style="
-    position:fixed;
-    top:20px;
-    left:50%;
-    transform:translateX(-50%);
-    background:linear-gradient(135deg,#dc2626,#ef4444);
-    color:white;
-    padding:1rem 2rem;
-    border-radius:12px;
-    box-shadow:0 8px 25px rgba(239,68,68,0.5);
-    z-index:9999;
-    display:none;
-    animation:citizenSlideDown 0.3s ease;
-    text-align:center;
-    min-width:320px;
-    border:2px solid #fff;
-    cursor:pointer;
-" onclick="window.location.href='/alerts.html'">
-    <i class="fas fa-exclamation-triangle"></i> <span id="citizenAlertMessage">New Alert in Your Area! Click to view</span>
-</div>
-
-<style>
-@keyframes citizenSlideDown {
-    from {
-        transform:translateX(-50%) translateY(-100%);
-        opacity:0;
-    }
-    to {
-        transform:translateX(-50%) translateY(0);
-        opacity:1;
-    }
-}
-
-/* Emergency Contact Button Hover Effects */
-.emergency-btn:hover {
-    background: rgba(255,255,255,0.3) !important;
-    transform: scale(1.05);
-}
-</style>
-
-<div class="user-info">
-    <i class="fas fa-user-circle"></i> Logged in as: <strong id="citizenName">Loading...</strong>
-</div>
-
-<div class="container">
-    <!-- Tabs -->
-    <div class="tabs">
-        <button class="tab active" onclick="showTab('report')">
-            <i class="fas fa-exclamation-triangle"></i> Report Incident
-        </button>
-        <button class="tab" onclick="showTab('alerts')">
-            <i class="fas fa-bell"></i> View Alerts
-        </button>
-    </div>
-
-    <!-- Emergency Contact Numbers -->
-    <div class="card" style="margin-bottom:1.5rem;background:linear-gradient(135deg,#dc2626,#ef4444);">
-        <h3 style="color:white;margin-bottom:1rem;"><i class="fas fa-phone-alt"></i> Emergency Contacts</h3>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;">
-            <a href="tel:101" class="emergency-btn" style="display:flex;flex-direction:column;align-items:center;padding:1rem;background:rgba(255,255,255,0.2);border-radius:12px;text-decoration:none;color:white;transition:0.3s;">
-                <i class="fas fa-fire" style="font-size:2rem;margin-bottom:0.5rem;"></i>
-                <span style="font-weight:600;">Fire</span>
-                <span style="font-size:1.5rem;font-weight:bold;">101</span>
-            </a>
-            <a href="tel:102" class="emergency-btn" style="display:flex;flex-direction:column;align-items:center;padding:1rem;background:rgba(255,255,255,0.2);border-radius:12px;text-decoration:none;color:white;transition:0.3s;">
-                <i class="fas fa-ambulance" style="font-size:2rem;margin-bottom:0.5rem;"></i>
-                <span style="font-weight:600;">Ambulance</span>
-                <span style="font-size:1.5rem;font-weight:bold;">102</span>
-            </a>
-            <a href="tel:100" class="emergency-btn" style="display:flex;flex-direction:column;align-items:center;padding:1rem;background:rgba(255,255,255,0.2);border-radius:12px;text-decoration:none;color:white;transition:0.3s;">
-                <i class="fas fa-shield-alt" style="font-size:2rem;margin-bottom:0.5rem;"></i>
-                <span style="font-weight:600;">Police</span>
-                <span style="font-size:1.5rem;font-weight:bold;">100</span>
-            </a>
-            <a href="tel:108" class="emergency-btn" style="display:flex;flex-direction:column;align-items:center;padding:1rem;background:rgba(255,255,255,0.2);border-radius:12px;text-decoration:none;color:white;transition:0.3s;">
-                <i class="fas fa-heartbeat" style="font-size:2rem;margin-bottom:0.5rem;"></i>
-                <span style="font-weight:600;">Medical Emergency</span>
-                <span style="font-size:1.5rem;font-weight:bold;">108</span>
-            </a>
-        </div>
-    </div>
-
-    <!-- Report Incident Tab -->
-    <div id="reportTab" class="tab-content active">
-        <div class="card">
-            <h2><i class="fas fa-exclamation-triangle"></i> Report Emergency Incident</h2>
-            <p style="color:#94a3b8;margin-bottom:1.5rem;">
-                Report disasters or emergencies in your area. Responders will be notified immediately.
-            </p>
-            
-            <div id="reportMessageDisplay"></div>
-            
-            <form id="reportForm">
-                <div class="form-group">
-                    <label><i class="fas fa-map-marker-alt"></i> Select Zone / Location</label>
-                    <select id="zone" required>
-                        <option value="">Select your location</option>
-                        <option value="Chennai">Chennai</option>
-                        <option value="Coimbatore">Coimbatore</option>
-                        <option value="Madurai">Madurai</option>
-                        <option value="Tiruchirappalli">Tiruchirappalli</option>
-                        <option value="Salem">Salem</option>
-                        <option value="Tirunelveli">Tirunelveli</option>
-                        <option value="Dindigul">Dindigul</option>
-                        <option value="Vellore">Vellore</option>
-                        <option value="Erode">Erode</option>
-                        <option value="Thoothukudi">Thoothukudi</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label><i class="fas fa-exclamation-circle"></i> Incident Type</label>
-                    <select id="incidentType" required>
-                        <option value="">Select incident type</option>
-                        <option value="Flood">Flood</option>
-                        <option value="Fire">Fire</option>
-                        <option value="Accident">Accident</option>
-                        <option value="Medical Emergency">Medical Emergency</option>
-                        <option value="Building Collapse">Building Collapse</option>
-                        <option value="Landslide">Landslide</option>
-                        <option value="Other">Other Emergency</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label><i class="fas fa-comment-alt"></i> Incident Description</label>
-                    <textarea id="description" placeholder="Describe the emergency situation in detail..." required></textarea>
-                </div>
-
-                <button type="submit" class="btn btn-primary" id="submitBtn">
-                    <i class="fas fa-paper-plane"></i> Submit Emergency Report
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <!-- View Alerts Tab -->
-    <div id="alertsTab" class="tab-content">
-        <div class="card">
-            <h2><i class="fas fa-bell"></i> Emergency Alerts in Your Area</h2>
-            <p style="color:#94a3b8;margin-bottom:1.5rem;">
-                Stay informed about disasters and emergencies from authorities
-            </p>
-            
-            <div class="alerts-grid" id="alertsGrid">
-                <div style="text-align:center;padding:3rem;color:#64748b;">
-                    <i class="fas fa-spinner fa-spin" style="font-size:3rem;"></i>
-                    <p style="margin-top:1rem;">Loading alerts...</p>
-                </div>
+    <!-- =========================================================================
+         TOP HUD HEADER
+         ========================================================================= -->
+    <header class="cc-hud-header">
+        <div class="cc-hud-branding">
+            <div class="cc-hud-badge-icon" style="background:linear-gradient(135deg,rgba(16,185,129,0.2),rgba(56,189,248,0.2));border-color:rgba(16,185,129,0.4);">
+                <i class="fas fa-shield-heart" style="color:var(--cc-safe-green);"></i>
+            </div>
+            <div class="cc-hud-title-group">
+                <h1>
+                    CITIZEN SAFETY HUB
+                    <span class="cc-badge ndma"><i class="fas fa-circle cc-pulse-dot"></i> CIVIL PROTECTION</span>
+                </h1>
+                <div class="cc-hud-subtitle">NATIONAL EMERGENCY WARNINGS &bull; PUBLIC RESPONSE & DISPATCH PORTAL</div>
             </div>
         </div>
-    </div>
-</div>
 
-<nav class="bottom-nav">
-    <a href="/citizen-dashboard.html" class="active">
-        <i class="fas fa-tachometer-alt"></i>
-        <span>Dashboard</span>
-    </a>
-    <a href="#" onclick="openCameraModal(); return false;">
-        <i class="fas fa-camera"></i>
-        <span>Report</span>
-    </a>
-    <a href="/training.html">
-        <i class="fas fa-graduation-cap"></i>
-        <span>Training</span>
-    </a>
-    <a href="/profile.html">
-        <i class="fas fa-user"></i>
-        <span>Profile</span>
-    </a>
-</nav>
+        <div class="cc-hud-telemetry">
+            <!-- Sector Selector Dropdown -->
+            <div class="cc-telemetry-pill" style="border-color:rgba(56,189,248,0.4);display:flex;align-items:center;gap:0.4rem;">
+                <i class="fas fa-location-crosshairs" style="color:var(--cc-cyan);"></i>
+                <select id="sectorSelector" onchange="changeOperationalSector(this.value)" style="background:transparent;border:none;color:#ffffff;font-size:0.8rem;font-weight:600;outline:none;cursor:pointer;">
+                    <option value="Coimbatore" style="background:#090e1a;color:#ffffff;" selected>Sector: Coimbatore</option>
+                    <option value="Chennai" style="background:#090e1a;color:#ffffff;">Sector: Chennai</option>
+                    <option value="Madurai" style="background:#090e1a;color:#ffffff;">Sector: Madurai</option>
+                    <option value="Tiruchirappalli" style="background:#090e1a;color:#ffffff;">Sector: Tiruchirappalli</option>
+                    <option value="Salem" style="background:#090e1a;color:#ffffff;">Sector: Salem</option>
+                    <option value="All" style="background:#090e1a;color:#ffffff;">Sector: All India (National)</option>
+                </select>
+            </div>
 
-<!-- Camera Modal for Reporting -->
-<div id="cameraModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.95);z-index:10000;overflow-y:auto;">
-    <div style="max-width:600px;margin:2rem auto;padding:1.5rem;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
-            <h2 style="color:#22c55e;margin:0;"><i class="fas fa-camera"></i> Report Disaster</h2>
-            <button onclick="closeCameraModal()" style="background:none;border:none;color:white;font-size:2rem;cursor:pointer;">&times;</button>
-        </div>
-        
-        <!-- Camera Selection -->
-        <div style="margin-bottom:1rem;">
-            <label style="color:#94a3b8;display:block;margin-bottom:0.5rem;">Select Camera:</label>
-            <select id="cameraSelect" onchange="switchCamera()" style="width:100%;padding:0.8rem;background:#1e293b;color:white;border:1px solid #334155;border-radius:8px;">
-                <option value="user">Front Camera</option>
-                <option value="environment">Back Camera</option>
-            </select>
-        </div>
-        
-        <!-- Video Preview -->
-        <div id="videoContainer" style="margin-bottom:1rem;display:none;">
-            <video id="cameraVideo" autoplay playsinline style="width:100%;border-radius:12px;background:#000;"></video>
-            <div style="display:flex;gap:1rem;margin-top:1rem;">
-                <button onclick="capturePhoto()" style="flex:1;padding:1rem;background:linear-gradient(135deg,#22c55e,#16a34a);color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;">
-                    <i class="fas fa-camera"></i> Capture Photo
+            <div class="cc-telemetry-pill" id="hudClockDisplay">
+                <!-- Clock auto-populated -->
+            </div>
+
+            <!-- Citizen Profile Badge -->
+            <a href="/profile.html" class="cc-telemetry-pill" style="text-decoration:none;border-color:rgba(16,185,129,0.4);" title="Click to view civilian profile">
+                <i class="fas fa-user-check" style="color:var(--cc-safe-green);"></i>
+                <span id="citizenName">John Citizen</span>
+                <span style="font-size:0.7rem;color:#94a3b8;margin-left:0.2rem;">(Profile)</span>
+            </a>
+
+            <!-- Emergency Survival Video Library Link -->
+            <a href="/emergency-videos.html" class="cc-btn cc-btn-primary" style="padding:0.4rem 0.85rem;font-size:0.8rem;text-decoration:none;display:inline-flex;align-items:center;gap:0.35rem;" title="Official Disaster Evacuation & Survival Videos">
+                <i class="fas fa-film"></i> Survival Videos
+            </a>
+
+            <!-- Emergency SOS Sound Local Alarm Control & Settings -->
+            <div style="display:inline-flex;align-items:center;gap:0.3rem;">
+                <button type="button" id="sosSoundBtn" class="cc-btn cc-btn-danger" onclick="toggleLocalSosAlarm()" style="padding:0.4rem 0.85rem;font-size:0.8rem;border-radius:8px;transition:all 0.25s ease;" title="Sound audible SOS alert on this device (Shortcut: TAB)">
+                    <i class="fas fa-bullhorn" id="sosSoundBtnIcon"></i> <span id="sosSoundBtnText">SOS Sound</span> <kbd id="sosShortcutBadge" style="background:rgba(0,0,0,0.3);padding:0.1rem 0.35rem;border-radius:4px;font-size:0.75rem;margin-left:0.25rem;">TAB</kbd>
                 </button>
-                <button onclick="stopCamera()" style="flex:1;padding:1rem;background:#dc2626;color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;">
-                    <i class="fas fa-stop"></i> Stop Camera
+                <button type="button" class="cc-btn cc-btn-secondary" onclick="if(window.EmergencyAlertSystem) EmergencyAlertSystem.openSettingsModal()" style="padding:0.4rem 0.6rem;font-size:0.8rem;border-radius:8px;" title="Emergency SOS Sound & Keyboard Shortcut Settings">
+                    <i class="fas fa-gear"></i>
                 </button>
             </div>
-        </div>
-        
-        <!-- Photo Preview -->
-        <div id="photoPreview" style="display:none;margin-bottom:1rem;">
-            <img id="capturedImage" style="width:100%;border-radius:12px;"/>
-            <div style="display:flex;gap:1rem;margin-top:1rem;">
-                <button onclick="retakePhoto()" style="flex:1;padding:1rem;background:#f59e0b;color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;">
-                    <i class="fas fa-redo"></i> Retake
-                </button>
-                <button onclick="deletePhoto()" style="flex:1;padding:1rem;background:#dc2626;color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;">
-                    <i class="fas fa-trash"></i> Delete
-                </button>
-            </div>
-        </div>
-        
-        <!-- Message Input -->
-        <div style="margin-bottom:1rem;">
-            <label style="color:#94a3b8;display:block;margin-bottom:0.5rem;">Message to Responders:</label>
-            <textarea id="reportMessageText" placeholder="Describe the situation..." style="width:100%;min-height:100px;padding:0.8rem;background:#1e293b;color:white;border:1px solid #334155;border-radius:8px;resize:vertical;"></textarea>
-        </div>
-        
-        <!-- Location -->
-        <div style="margin-bottom:1rem;">
-            <label style="color:#94a3b8;display:block;margin-bottom:0.5rem;">Location:</label>
-            <input type="text" id="reportLocation" placeholder="Your location" style="width:100%;padding:0.8rem;background:#1e293b;color:white;border:1px solid #334155;border-radius:8px;"/>
-            <button onclick="getLocation()" style="margin-top:0.5rem;padding:0.6rem 1rem;background:#3b82f6;color:white;border:none;border-radius:8px;cursor:pointer;">
-                <i class="fas fa-map-marker-alt"></i> Get My Location
+
+            <!-- Notification Bell Icon -->
+            <button type="button" class="cc-btn cc-btn-secondary" id="notifBellBtn" onclick="toggleNotificationDrawer()" style="padding:0.4rem 0.75rem;font-size:0.85rem;position:relative;" title="View notifications">
+                <i class="fas fa-bell"></i>
+                <span id="notifBadgeCount" style="position:absolute;top:-4px;right:-4px;background:var(--cc-critical-red);color:#fff;border-radius:50%;width:18px;height:18px;font-size:0.7rem;font-weight:700;display:flex;align-items:center;justify-content:center;">3</span>
+            </button>
+
+            <button class="cc-btn cc-btn-danger" onclick="AuthHelper.logout()" style="padding:0.4rem 0.85rem;font-size:0.8rem;">
+                <i class="fas fa-power-off"></i> Exit
             </button>
         </div>
-        
-        <!-- Submit Button -->
-        <button onclick="submitReport()" id="submitReportBtn" style="width:100%;padding:1rem;background:linear-gradient(135deg,#22c55e,#16a34a);color:white;border:none;border-radius:8px;font-size:1.1rem;font-weight:600;cursor:pointer;">
-            <i class="fas fa-paper-plane"></i> Send Report to Responders
-        </button>
-        
-        <!-- Start Camera Button -->
-        <button onclick="startCamera()" id="startCameraBtn" style="width:100%;padding:1rem;background:linear-gradient(135deg,#3b82f6,#2563eb);color:white;border:none;border-radius:8px;font-size:1.1rem;font-weight:600;cursor:pointer;">
-            <i class="fas fa-camera"></i> Start Camera
-        </button>
-    </div>
-</div>
+    </header>
 
-<script src="/js/emergency-alert.js"></script>
-<script>
-    let cameraStream = null;
-    let capturedPhotoData = null;
-    
-    function openCameraModal() {
-        document.getElementById('cameraModal').style.display = 'block';
-    }
-    
-    function closeCameraModal() {
-        stopCamera();
-        document.getElementById('cameraModal').style.display = 'none';
-        document.getElementById('reportMessageText').value = '';
-        document.getElementById('reportLocation').value = '';
-        capturedPhotoData = null;
-    }
-    
-    async function startCamera() {
-        const facing = document.getElementById('cameraSelect').value;
-        try {
-            cameraStream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: facing },
-                audio: false
-            });
-            document.getElementById('cameraVideo').srcObject = cameraStream;
-            document.getElementById('videoContainer').style.display = 'block';
-            document.getElementById('startCameraBtn').style.display = 'none';
-            document.getElementById('photoPreview').style.display = 'none';
-        } catch (error) {
-            alert('Camera access denied or not available: ' + error.message);
-        }
-    }
-    
-    function stopCamera() {
-        if (cameraStream) {
-            cameraStream.getTracks().forEach(track => track.stop());
-            cameraStream = null;
-        }
-        document.getElementById('videoContainer').style.display = 'none';
-        document.getElementById('startCameraBtn').style.display = 'block';
-    }
-    
-    function switchCamera() {
-        if (cameraStream) {
-            stopCamera();
-            startCamera();
-        }
-    }
-    
-    function capturePhoto() {
-        const video = document.getElementById('cameraVideo');
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        canvas.getContext('2d').drawImage(video, 0, 0);
-        capturedPhotoData = canvas.toDataURL('image/jpeg', 0.8);
-        
-        document.getElementById('capturedImage').src = capturedPhotoData;
-        document.getElementById('photoPreview').style.display = 'block';
-        stopCamera();
-    }
-    
-    function retakePhoto() {
-        capturedPhotoData = null;
-        document.getElementById('photoPreview').style.display = 'none';
-        startCamera();
-    }
-    
-    function deletePhoto() {
-        capturedPhotoData = null;
-        document.getElementById('photoPreview').style.display = 'none';
-        document.getElementById('startCameraBtn').style.display = 'block';
-    }
-    
-    function getLocation() {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    document.getElementById('reportLocation').value = 
-                        `Lat: ${position.coords.latitude.toFixed(6)}, Lon: ${position.coords.longitude.toFixed(6)}`;
-                },
-                (error) => {
-                    alert('Location access denied: ' + error.message);
-                }
-            );
-        } else {
-            alert('Geolocation not supported by browser');
-        }
-    }
-    
-    async function submitReport() {
-        const message = document.getElementById('reportMessageText').value;
-        const location = document.getElementById('reportLocation').value;
-        
-        if (!message) {
-            alert('Please enter a message');
-            return;
-        }
-        
-        if (!location) {
-            alert('Please enter your location');
-            return;
-        }
-        
-        const reportData = {
-            message: message,
-            location: location,
-            photoData: capturedPhotoData,
-            timestamp: new Date().toISOString()
-        };
-        
-        const submitBtn = document.getElementById('submitReportBtn');
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
-        
-        try {
-            const response = await fetch('/api/citizen-reports', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(reportData)
-            });
+    <main class="cc-citizen-container">
+
+        <!-- EMERGENCY HOTLINES BANNER -->
+        <div class="cc-emergency-banner">
+            <div>
+                <div style="font-weight:700;font-size:1.05rem;color:#ffffff;display:flex;align-items:center;gap:0.5rem;">
+                    <i class="fas fa-phone-volume" style="color:var(--cc-critical-red);"></i>
+                    Official National Emergency Call Lines
+                </div>
+                <div style="font-size:0.82rem;color:#cbd5e1;margin-top:0.2rem;">
+                    Toll-free 24x7 disaster response, medical evacuation and fire rescue services.
+                </div>
+            </div>
+            <div class="cc-hotlines">
+                <a href="tel:112" class="cc-hotline-pill"><i class="fas fa-phone"></i> National Emergency: 112</a>
+                <a href="tel:1070" class="cc-hotline-pill"><i class="fas fa-building-shield"></i> State Control: 1070</a>
+                <a href="tel:108" class="cc-hotline-pill"><i class="fas fa-truck-medical"></i> Ambulance: 108</a>
+                <a href="tel:1077" class="cc-hotline-pill"><i class="fas fa-headset"></i> District Control: 1077</a>
+            </div>
+        </div>
+
+        <!-- HERO EMERGENCY SOS ACTION BAR -->
+        <div class="cc-card" style="margin-bottom:1.5rem;background:linear-gradient(135deg, rgba(239,68,68,0.18), rgba(15,23,42,0.95));border:1px solid rgba(239,68,68,0.5);box-shadow:0 0 30px rgba(239,68,68,0.2);">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+                <div style="display:flex;align-items:center;gap:1rem;">
+                    <div style="width:52px;height:52px;border-radius:50%;background:rgba(239,68,68,0.25);border:2px solid var(--cc-critical-red);display:flex;align-items:center;justify-content:center;color:var(--cc-critical-red);font-size:1.6rem;">
+                        <i class="fas fa-triangle-exclamation"></i>
+                    </div>
+                    <div>
+                        <h2 style="font-size:1.15rem;font-weight:700;color:#ffffff;margin:0;">IMMEDIATE LIFE-SAFETY DISTRESS SIGNAL</h2>
+                        <p style="margin:0.2rem 0 0;color:#cbd5e1;font-size:0.84rem;">Facing rising waters, trapped survivors, structural collapse or life threat? Transmit immediate distress with GPS.</p>
+                    </div>
+                </div>
+                <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+                    <button type="button" class="cc-btn cc-btn-danger" onclick="openFastSosModal()" style="padding:0.75rem 1.4rem;font-size:0.95rem;font-weight:700;box-shadow:0 0 20px var(--cc-critical-red-glow);">
+                        <i class="fas fa-tower-broadcast"></i> TRANSMIT EMERGENCY SOS
+                    </button>
+                    <button type="button" class="cc-btn cc-btn-secondary" onclick="switchTab('reportTab')" style="padding:0.75rem 1rem;font-size:0.88rem;">
+                        <i class="fas fa-pen-to-square"></i> File Detailed Report
+                    </button>
+                    <button type="button" class="cc-btn cc-btn-secondary" onclick="switchTab('mapTab')" style="padding:0.75rem 1rem;font-size:0.88rem;">
+                        <i class="fas fa-map-location-dot"></i> View Safety Map
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- NAVIGATION TABS -->
+        <div class="cc-tabs-container">
+            <button class="cc-tab-btn active" id="tabBtnAlerts" onclick="switchTab('alertsTab', this)">
+                <i class="fas fa-triangle-exclamation"></i> Live Warnings & Advisories
+                <span class="cc-tab-badge" id="badgeWarningCount">0</span>
+            </button>
+            <button class="cc-tab-btn" id="tabBtnMap" onclick="switchTab('mapTab', this)">
+                <i class="fas fa-map-location-dot"></i> Interactive Safety & Shelter Map
+            </button>
+            <button class="cc-tab-btn" id="tabBtnReport" onclick="switchTab('reportTab', this)">
+                <i class="fas fa-camera-retro"></i> Report Emergency Incident
+            </button>
+            <button class="cc-tab-btn" id="tabBtnMyReports" onclick="switchTab('myReportsTab', this)">
+                <i class="fas fa-list-check"></i> My Reports & Live Status
+                <span class="cc-tab-badge" id="badgeMyReportCount">0</span>
+            </button>
+            <button class="cc-tab-btn" id="tabBtnSafety" onclick="switchTab('safetyTab', this)">
+                <i class="fas fa-book-bookmark"></i> Disaster Safety Guidelines
+            </button>
+        </div>
+
+        <!-- =========================================================================
+             TAB 1: LIVE WARNINGS & ADVISORIES (DUAL STREAM + FILTERS)
+             ========================================================================= -->
+        <div id="alertsTab" class="cc-tab-content active">
             
-            if (response.ok) {
-                alert('✅ Report sent to responders successfully!');
-                closeCameraModal();
-            } else {
-                const error = await response.text();
-                alert('✗ Failed to send report: ' + error);
+            <!-- Filters Bar -->
+            <div class="cc-filter-controls-bar">
+                <div style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;">
+                    <label style="font-size:0.8rem;color:#94a3b8;font-weight:600;"><i class="fas fa-filter"></i> Filter Alerts:</label>
+                    <select id="filterHazardCategory" onchange="filterAlertsFeed()" style="background:#090e1a;border:1px solid #334155;color:#f8fafc;padding:0.35rem 0.7rem;border-radius:6px;font-size:0.8rem;">
+                        <option value="ALL">All Hazard Categories</option>
+                        <option value="Cyclone">Cyclone / Storm Surge</option>
+                        <option value="Flood">Flood & Inundation</option>
+                        <option value="Rain">Heavy Rainfall / Thunderstorm</option>
+                        <option value="Earthquake">Earthquake / Seismic</option>
+                        <option value="Other">Other Advisories</option>
+                    </select>
+
+                    <select id="filterSourceAgency" onchange="filterAlertsFeed()" style="background:#090e1a;border:1px solid #334155;color:#f8fafc;padding:0.35rem 0.7rem;border-radius:6px;font-size:0.8rem;">
+                        <option value="ALL">All Sources (NDMA & Municipal)</option>
+                        <option value="NDMA">Official NDMA SACHET Only</option>
+                        <option value="MUNICIPAL">Municipal Broadcasts Only</option>
+                    </select>
+                </div>
+
+                <div style="display:flex;gap:0.5rem;align-items:center;">
+                    <button class="cc-btn cc-btn-secondary" onclick="loadUnifiedAlerts()" style="padding:0.35rem 0.8rem;font-size:0.82rem;">
+                        <i class="fas fa-rotate"></i> Refresh Alerts
+                    </button>
+                </div>
+            </div>
+
+            <!-- Unified Alerts Grid -->
+            <div id="alertsGrid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(360px, 1fr));gap:1.3rem;">
+                <!-- Dynamically populated -->
+            </div>
+        </div>
+
+        <!-- =========================================================================
+             TAB 2: INTERACTIVE SAFETY & EVACUATION SHELTER MAP
+             ========================================================================= -->
+        <div id="mapTab" class="cc-tab-content">
+            <div class="cc-card" style="padding:0;overflow:hidden;border:1px solid var(--cc-border-medium);">
+                <div class="cc-card-header" style="padding:1rem 1.4rem;">
+                    <div>
+                        <div class="cc-card-title">
+                            <i class="fas fa-map-location-dot" style="color:var(--cc-safe-green);"></i>
+                            Local Safety, Hazard & Evacuation Radar
+                        </div>
+                        <p style="font-size:0.8rem;color:var(--cc-text-muted);margin:0.2rem 0 0;">
+                            Interactive map of your current location, official hazard perimeters, and nearest designated relief shelters. Tap anywhere to pin an incident.
+                        </p>
+                    </div>
+                    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+                        <button type="button" id="btnCitizenLiveShare" class="cc-btn cc-btn-secondary" onclick="toggleCitizenLiveLocationSharing()" style="font-size:0.8rem;padding:0.4rem 0.8rem;">
+                            <i class="fas fa-tower-broadcast"></i> Share Live Location
+                        </button>
+                        <button type="button" class="cc-btn cc-btn-secondary" onclick="locateCitizenOnMap()" style="font-size:0.8rem;padding:0.4rem 0.8rem;">
+                            <i class="fas fa-crosshairs"></i> Recenter GPS
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Responder Live Status Banner -->
+                <div id="responderLiveStatusBanner" style="display:none; padding:10px 1.4rem; background:rgba(2,132,199,0.15); border-left:3px solid #00e5ff; font-size:0.82rem; color:#cbd5e1; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem;">
+                    <div id="responderBannerText"><i class="fas fa-truck-medical" style="color:#00e5ff;"></i> Checking active response unit telemetry...</div>
+                    <button type="button" id="btnOpenDeliveryHud" class="cc-btn cc-btn-primary" style="padding:3px 8px; font-size:0.75rem; display:none;">Open Tracking HUD</button>
+                </div>
+
+                <div id="citizenDisasterMap" style="height:480px;width:100%;background:#090e1a;"></div>
+
+                <div style="padding:1rem 1.4rem;background:var(--cc-bg-surface-0);border-top:1px solid var(--cc-border-subtle);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.8rem;font-size:0.82rem;">
+                    <div style="display:flex;align-items:center;gap:1.2rem;flex-wrap:wrap;">
+                        <span style="display:flex;align-items:center;gap:0.4rem;"><span style="width:10px;height:10px;border-radius:50%;background:#10b981;display:inline-block;"></span> Your Location</span>
+                        <span style="display:flex;align-items:center;gap:0.4rem;"><span style="width:10px;height:10px;border-radius:50%;background:#ef4444;display:inline-block;"></span> Your Reports</span>
+                        <span style="display:flex;align-items:center;gap:0.4rem;"><span style="width:10px;height:10px;border-radius:50%;background:#00e5ff;display:inline-block;"></span> Assigned Responder</span>
+                        <span style="display:flex;align-items:center;gap:0.4rem;"><span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;display:inline-block;"></span> Hazard Warning</span>
+                    </div>
+                    <span id="pinnedLocationNotice" style="color:var(--cc-cyan);font-family:var(--cc-font-mono);">Click map to pin hazard location</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- =========================================================================
+             TAB 3: EMERGENCY REPORTING (DEDICATED FULL INTERFACE)
+             ========================================================================= -->
+        <div id="reportTab" class="cc-tab-content">
+            <div class="cc-card" style="max-width:860px;margin:0 auto;">
+                <div class="cc-card-header">
+                    <div class="cc-card-title">
+                        <i class="fas fa-bullhorn" style="color:var(--cc-critical-red);"></i>
+                        Submit Emergency Disaster Incident Report
+                    </div>
+                    <span class="cc-badge broadcast">Immediate Field Dispatch</span>
+                </div>
+
+                <p style="font-size:0.85rem;color:var(--cc-text-muted);margin-bottom:1.2rem;">
+                    Reports submitted here are delivered in real time to the Municipal Command Center and nearby deployed field responders.
+                </p>
+
+                <div id="reportConfirmationBox" style="display:none;background:rgba(16,185,129,0.15);border:1px solid #10b981;border-radius:8px;padding:1.2rem;margin-bottom:1.5rem;">
+                    <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem;">
+                        <i class="fas fa-circle-check" style="color:#10b981;font-size:1.5rem;"></i>
+                        <h4 style="color:#ffffff;font-size:1.1rem;margin:0;" id="confirmHeader">Report Successfully Dispatched</h4>
+                    </div>
+                    <p style="color:#cbd5e1;font-size:0.88rem;margin:0 0 0.8rem;" id="confirmBody">
+                        Your emergency report has been saved to the database. Reference number:
+                    </p>
+                    <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
+                        <button type="button" class="cc-btn cc-btn-primary" onclick="switchTab('myReportsTab')">
+                            <i class="fas fa-list-check"></i> Track This Incident in My Reports
+                        </button>
+                        <button type="button" class="cc-btn cc-btn-secondary" onclick="resetReportForm()">
+                            <i class="fas fa-plus"></i> Submit Another Report
+                        </button>
+                    </div>
+                </div>
+
+                <form id="citizenReportForm">
+                    <!-- Title & Category Row -->
+                    <div style="display:grid;grid-template-columns:1.2fr 0.8fr;gap:1rem;margin-bottom:1rem;">
+                        <div class="cc-form-group" style="margin-bottom:0;">
+                            <label class="cc-label"><i class="fas fa-heading"></i> Incident Title</label>
+                            <input type="text" id="reportTitle" class="cc-input" placeholder="e.g., Rising flood water trapped 4 senior citizens" required />
+                        </div>
+                        <div class="cc-form-group" style="margin-bottom:0;">
+                            <label class="cc-label"><i class="fas fa-tag"></i> Disaster Category</label>
+                            <select id="reportCategory" class="cc-select" required>
+                                <option value="Flood">Flood / Waterlogging</option>
+                                <option value="Cyclone">Cyclone / Gale Wind</option>
+                                <option value="Heavy Rain">Heavy Rainfall / Flash Flood</option>
+                                <option value="Fire Hazard">Fire / Explosion Hazard</option>
+                                <option value="Earthquake">Earthquake / Tremors</option>
+                                <option value="Building Collapse">Structural Collapse</option>
+                                <option value="Landslide">Landslide / Mudflow</option>
+                                <option value="Medical Emergency">Medical Trauma Emergency</option>
+                                <option value="Other">Other Distress Hazard</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Severity & Location Row -->
+                    <div style="display:grid;grid-template-columns:0.8fr 1.2fr;gap:1rem;margin-bottom:1rem;">
+                        <div class="cc-form-group" style="margin-bottom:0;">
+                            <label class="cc-label"><i class="fas fa-triangle-exclamation"></i> Severity Observation</label>
+                            <select id="reportSeverity" class="cc-select" required>
+                                <option value="High" selected>High (Life Threatening / Urgent)</option>
+                                <option value="Moderate">Moderate (Severe / Road Blocked)</option>
+                                <option value="Low">Low (Observation / Minor Damage)</option>
+                            </select>
+                        </div>
+                        <div class="cc-form-group" style="margin-bottom:0;">
+                            <label class="cc-label"><i class="fas fa-map-pin"></i> Incident Landmark / Address</label>
+                            <input type="text" id="reportLocation" class="cc-input" placeholder="e.g., Cross-cut Road, Gandhipuram, Coimbatore" required />
+                        </div>
+                    </div>
+
+                    <!-- GPS Location Capture Box -->
+                    <div style="background:rgba(15,23,42,0.6);border:1px solid var(--cc-border-medium);border-radius:8px;padding:0.9rem;margin-bottom:1.2rem;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.6rem;margin-bottom:0.4rem;">
+                            <label class="cc-label" style="margin-bottom:0;">
+                                <i class="fas fa-location-crosshairs" style="color:var(--cc-cyan);"></i> GPS Coordinates (Optional Device Telemetry)
+                            </label>
+                            <div style="display:flex;gap:0.5rem;">
+                                <button type="button" class="cc-btn cc-btn-secondary" onclick="detectGpsLocation()" style="font-size:0.78rem;padding:0.35rem 0.75rem;">
+                                    <i class="fas fa-crosshairs"></i> Acquire Device GPS
+                                </button>
+                                <button type="button" class="cc-btn cc-btn-secondary" onclick="switchTab('mapTab')" style="font-size:0.78rem;padding:0.35rem 0.75rem;">
+                                    <i class="fas fa-map-pin"></i> Pin on Map
+                                </button>
+                            </div>
+                        </div>
+                        <div id="gpsStatusDisplay" style="font-size:0.82rem;color:#94a3b8;font-family:var(--cc-font-mono);">
+                            Device GPS not acquired. Click "Acquire Device GPS" to record precision coordinates.
+                        </div>
+                    </div>
+
+                    <!-- Detailed Description -->
+                    <div class="cc-form-group">
+                        <label class="cc-label"><i class="fas fa-comment-medical"></i> Detailed Situation Description</label>
+                        <textarea id="reportMessage" class="cc-textarea" style="min-height:100px;" placeholder="Detail what happened, number of people trapped, road access barriers, rising water levels, or special medical needs..." required></textarea>
+                    </div>
+
+                    <!-- Photo & Video Evidence Capture Cluster -->
+                    <div class="cc-form-group">
+                        <label class="cc-label"><i class="fas fa-camera"></i> Photographic / Video Evidence (Optional)</label>
+                        <div style="display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center;">
+                            <button type="button" class="cc-btn cc-btn-secondary" onclick="openLiveCameraModal()" style="font-size:0.85rem;">
+                                <i class="fas fa-camera" style="color:var(--cc-cyan);"></i> Open Live Camera / Record Video
+                            </button>
+                            <label class="cc-btn cc-btn-secondary" style="font-size:0.85rem;cursor:pointer;margin-bottom:0;">
+                                <i class="fas fa-upload"></i> Upload From Device
+                                <input type="file" id="reportPhotoInput" accept="image/*,video/*" style="display:none;" onchange="previewReportImage(event)" />
+                            </label>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div id="uploadProgressBarContainer" style="display:none;margin-top:0.6rem;background:#1e293b;border-radius:4px;height:6px;overflow:hidden;">
+                            <div id="uploadProgressBar" style="width:0%;height:100%;background:var(--cc-cyan);transition:width 0.2s;"></div>
+                        </div>
+
+                        <!-- Preview Box -->
+                        <div id="imagePreviewContainer" style="display:none;margin-top:1rem;position:relative;max-width:320px;">
+                            <img id="imagePreview" src="" alt="Preview" style="width:100%;max-height:200px;object-fit:cover;border-radius:8px;border:1px solid var(--cc-border-medium);" />
+                            <div id="previewMetaTag" style="position:absolute;bottom:8px;left:8px;background:rgba(0,0,0,0.7);padding:2px 8px;border-radius:4px;font-size:0.72rem;color:#ffffff;font-family:var(--cc-font-mono);">Evidence Attached</div>
+                            <button type="button" onclick="removeReportImage()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.8);color:#ffffff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;">
+                                &times;
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="btnSubmitReport" class="cc-btn cc-btn-danger" style="width:100%;padding:0.95rem;font-size:1rem;font-weight:700;">
+                        <i class="fas fa-paper-plane"></i> Submit Incident Report to Responders
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- =========================================================================
+             TAB 4: MY INCIDENTS & LIVE TRACKING INTERFACE
+             ========================================================================= -->
+        <div id="myReportsTab" class="cc-tab-content">
+            <div class="cc-filter-controls-bar">
+                <div>
+                    <h2 style="font-size:1.15rem;font-weight:700;color:#ffffff;margin:0;">
+                        My Submitted Incident Reports
+                    </h2>
+                    <p style="font-size:0.8rem;color:var(--cc-text-muted);margin:0.2rem 0 0;">
+                        Live triage updates and responder assignments for your emergency dispatches.
+                    </p>
+                </div>
+                <div style="display:flex;gap:0.6rem;align-items:center;flex-wrap:wrap;">
+                    <select id="filterReportStatus" onchange="filterMyReportsList(this.value)" style="background:#090e1a;border:1px solid #334155;color:#f8fafc;padding:0.35rem 0.7rem;border-radius:6px;font-size:0.8rem;">
+                        <option value="ALL">All Statuses</option>
+                        <option value="Pending">Pending Acknowledgment Only</option>
+                        <option value="Acknowledged">Responders Dispatched Only</option>
+                        <option value="Resolved">Resolved / Cleared Only</option>
+                    </select>
+                    <button class="cc-btn cc-btn-secondary" onclick="loadMyReports()" style="padding:0.35rem 0.8rem;font-size:0.82rem;">
+                        <i class="fas fa-rotate"></i> Refresh Status
+                    </button>
+                </div>
+            </div>
+
+            <div id="myReportsList">
+                <!-- Dynamically loaded -->
+            </div>
+        </div>
+
+        <!-- =========================================================================
+             TAB 5: DISASTER SAFETY GUIDELINES
+             ========================================================================= -->
+        <div id="safetyTab" class="cc-tab-content">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:1.5rem;">
+                <div class="cc-card">
+                    <div class="cc-card-title" style="color:#38bdf8;">
+                        <i class="fas fa-cloud-showers-heavy"></i> Flood Safety Guidelines
+                    </div>
+                    <ul style="color:#cbd5e1;font-size:0.9rem;padding-left:1.2rem;line-height:1.6;margin-top:0.8rem;">
+                        <li>Do not walk or drive through moving flood waters ("Turn Around, Don't Drown").</li>
+                        <li>Move essential valuables, medicine, and food to upper floors in inundation zones.</li>
+                        <li>Disconnect electrical appliances and main switches before water enters premises.</li>
+                        <li>Drink boiled or bottled water to prevent water-borne disease outbreaks.</li>
+                    </ul>
+                </div>
+
+                <div class="cc-card">
+                    <div class="cc-card-title" style="color:#a855f7;">
+                        <i class="fas fa-wind"></i> Cyclone & Severe Storm Protocol
+                    </div>
+                    <ul style="color:#cbd5e1;font-size:0.9rem;padding-left:1.2rem;line-height:1.6;margin-top:0.8rem;">
+                        <li>Secure loose exterior objects (tins, roofs, outdoor furniture, solar panels).</li>
+                        <li>Keep battery-powered emergency radios, torches, and power banks charged.</li>
+                        <li>Stay indoors away from windows during the passage of the storm center ("eye").</li>
+                        <li>Follow official evacuation orders issued by State Disaster Authorities.</li>
+                    </ul>
+                </div>
+
+                <div class="cc-card">
+                    <div class="cc-card-title" style="color:#ef4444;">
+                        <i class="fas fa-house-crack"></i> Earthquake Action Steps
+                    </div>
+                    <ul style="color:#cbd5e1;font-size:0.9rem;padding-left:1.2rem;line-height:1.6;margin-top:0.8rem;">
+                        <li><strong>DROP, COVER, HOLD ON:</strong> Drop under a sturdy desk or table.</li>
+                        <li>Stay away from glass windows, exterior walls, and falling lighting fixtures.</li>
+                        <li>Do not use elevators during tremors; use staircase exits once shaking stops.</li>
+                        <li>If outdoors, move safely away from power lines, poles, and high-rise facades.</li>
+                    </ul>
+                </div>
+
+                <div class="cc-card">
+                    <div class="cc-card-title" style="color:#f59e0b;">
+                        <i class="fas fa-fire"></i> Fire Hazard Emergency Procedure
+                    </div>
+                    <ul style="color:#cbd5e1;font-size:0.9rem;padding-left:1.2rem;line-height:1.6;margin-top:0.8rem;">
+                        <li>Crawl low under smoke; cleaner air is closer to the floor.</li>
+                        <li>Feel doors with the back of your hand before opening; do not open warm doors.</li>
+                        <li>Dial 101 or 112 immediately once safely outside the burning structure.</li>
+                        <li>Never re-enter a burning building for pets or personal possessions.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- =========================================================================
+         CAMERA / VIDEO CAPTURE MODAL
+         ========================================================================= -->
+    <div id="cameraModal" class="cc-pin-modal-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(5,8,17,0.92);backdrop-filter:blur(16px);align-items:center;justify-content:center;z-index:9999;">
+        <div style="background:var(--cc-bg-surface-1);border:1px solid var(--cc-border-medium);border-radius:var(--cc-radius-lg);padding:1.5rem;max-width:540px;width:92%;text-align:center;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                <h3 style="color:#ffffff;font-size:1.15rem;font-weight:700;margin:0;"><i class="fas fa-camera"></i> Live Situational Camera</h3>
+                <button type="button" onclick="closeCameraModal()" style="background:none;border:none;color:#94a3b8;font-size:1.5rem;cursor:pointer;">&times;</button>
+            </div>
+
+            <div style="position:relative;background:#000;border-radius:8px;overflow:hidden;margin-bottom:1rem;aspect-ratio:4/3;">
+                <video id="cameraVideo" autoplay playsinline style="width:100%;height:100%;object-fit:cover;"></video>
+                <div id="recordingBadge" style="display:none;position:absolute;top:10px;left:10px;background:rgba(239,68,68,0.9);color:#fff;padding:4px 8px;border-radius:4px;font-size:0.75rem;font-weight:700;display:flex;align-items:center;gap:0.4rem;">
+                    <i class="fas fa-circle cc-pulse-dot"></i> REC <span id="recordingTimer">00:00</span>
+                </div>
+            </div>
+
+            <canvas id="cameraCanvas" style="display:none;"></canvas>
+
+            <div style="display:flex;gap:0.6rem;justify-content:center;flex-wrap:wrap;">
+                <button type="button" class="cc-btn cc-btn-primary" onclick="snapPhotoFromCamera()">
+                    <i class="fas fa-camera"></i> Take Photograph
+                </button>
+                <button type="button" class="cc-btn cc-btn-danger" id="btnToggleVideoRec" onclick="toggleVideoRecording()">
+                    <i class="fas fa-video"></i> Record Video Clip
+                </button>
+                <button type="button" class="cc-btn cc-btn-secondary" onclick="closeCameraModal()">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         FAST EMERGENCY SOS MODAL
+         ========================================================================= -->
+    <div id="fastSosModal" class="cc-pin-modal-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(5,8,17,0.9);backdrop-filter:blur(16px);align-items:center;justify-content:center;z-index:9999;">
+        <div class="cc-pin-modal-box" style="background:var(--cc-bg-surface-1);border:2px solid var(--cc-critical-red);border-radius:var(--cc-radius-lg);padding:2rem;max-width:480px;width:90%;text-align:center;box-shadow:0 0 50px var(--cc-critical-red-glow);">
+            <div style="width:64px;height:64px;border-radius:50%;background:rgba(239,68,68,0.2);color:var(--cc-critical-red);font-size:2rem;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;border:2px solid var(--cc-critical-red);">
+                <i class="fas fa-tower-broadcast"></i>
+            </div>
+            <h3 style="color:#ffffff;font-size:1.35rem;font-weight:700;margin-bottom:0.4rem;">Transmit Emergency SOS</h3>
+            <p style="color:#cbd5e1;font-size:0.88rem;margin-bottom:1.2rem;">
+                This transmits an immediate high-priority distress signal directly to emergency response coordinators.
+            </p>
+
+            <div style="background:rgba(0,0,0,0.4);border:1px solid var(--cc-border-medium);border-radius:8px;padding:0.9rem;text-align:left;margin-bottom:1.2rem;font-size:0.85rem;">
+                <div style="color:#94a3b8;font-size:0.75rem;text-transform:uppercase;">Signal Location</div>
+                <div id="sosDetectedLocation" style="color:#ffffff;font-weight:600;margin-top:0.2rem;">Detecting high-accuracy GPS...</div>
+            </div>
+
+            <div style="display:flex;gap:0.8rem;">
+                <button type="button" class="cc-btn cc-btn-secondary" onclick="closeFastSosModal()" style="flex:1;">Cancel</button>
+                <button type="button" id="confirmSosBtn" class="cc-btn cc-btn-danger" onclick="executeFastSosDispatch()" style="flex:1.4;">
+                    <i class="fas fa-bolt"></i> Dispatch SOS Now
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         SLIDE-IN NOTIFICATIONS DRAWER
+         ========================================================================= -->
+    <div id="drawerOverlay" class="cc-drawer-overlay" onclick="toggleNotificationDrawer()"></div>
+    <aside id="citizenNotifDrawer" class="cc-notifications-drawer">
+        <div class="cc-notif-header">
+            <h3 style="color:#ffffff;font-size:1.1rem;font-weight:700;margin:0;display:flex;align-items:center;gap:0.5rem;">
+                <i class="fas fa-bell" style="color:var(--cc-cyan);"></i> Notifications
+            </h3>
+            <button type="button" onclick="toggleNotificationDrawer()" style="background:none;border:none;color:#94a3b8;font-size:1.4rem;cursor:pointer;">&times;</button>
+        </div>
+        <div class="cc-notif-list" id="notificationsList">
+            <!-- Dynamically populated -->
+        </div>
+        <div style="padding:1rem 1.4rem;border-top:1px solid var(--cc-border-subtle);text-align:center;">
+            <button type="button" class="cc-btn cc-btn-secondary" style="width:100%;font-size:0.82rem;" onclick="clearAllNotifications()">
+                <i class="fas fa-check-double"></i> Mark All as Read
+            </button>
+        </div>
+    </aside>
+
+    <script>
+        // Initialize Loading Screen
+        RoleLoadingScreen.initOnLoad('Citizen');
+
+        // Global State
+        let base64PhotoData = null;
+        let selectedSector = 'Coimbatore';
+        let rawBroadcastAlerts = [];
+        let rawOfficialAlerts = [];
+        let rawMyReports = [];
+        let mediaStream = null;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let recInterval = null;
+        let recSeconds = 0;
+
+        // Initialize HUD Clock
+        CommandCenter.initHudClock('hudClockDisplay');
+
+        // Authentication & Role Check
+        (async function() {
+            if (window.AuthHelper && window.AuthHelper.initUrlAuth) {
+                window.AuthHelper.initUrlAuth();
             }
-        } catch (error) {
-            alert('✗ Network error: ' + error.message);
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Report to Responders';
-        }
-    }
-</script>
+            const token = localStorage.getItem('token');
+            const userRole = localStorage.getItem('userRole');
 
-<script>
-    const token = localStorage.getItem('token');
-    
-    if (!token) {
-        window.location.href = '/index.html';
-    }
+            RoleLoadingScreen.hide();
 
-    // Check URL parameters for tab navigation (from alerts.html redirect)
-    const urlParams = new URLSearchParams(window.location.search);
-    const tabParam = urlParams.get('tab');
-    if (tabParam === 'alerts') {
-        // Delay to ensure DOM is loaded
-        setTimeout(() => showTab('alerts'), 100);
-    }
-
-    // Check if user is Citizen
-    try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        const role = payload.role || 'Citizen';
-        
-        if (role !== 'Citizen') {
-            alert('Access Denied: This page is for Citizens only');
-            if (role === 'Admin') {
-                window.location.href = '/admin-dashboard.html';
-            } else if (role === 'Responder') {
-                window.location.href = '/responder-dashboard.html';
+            if (!token) {
+                window.location.href = '/index.html';
+                return;
             }
-        }
-        
-        const userName = payload.sub ? payload.sub.split('@')[0] : 'Citizen';
-        document.getElementById('citizenName').innerText = userName + ' (Citizen)';
-    } catch (e) {
-        console.error('Token error:', e);
-        window.location.href = '/index.html';
-    }
 
-    // Tab switching
-    function showTab(tabName) {
-        // Hide all tabs
-        document.querySelectorAll('.tab-content').forEach(tab => {
-            tab.classList.remove('active');
-        });
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.classList.remove('active');
-        });
-        
-        // Show selected tab
-        if (tabName === 'report') {
-            document.getElementById('reportTab').classList.add('active');
-            document.querySelectorAll('.tab')[0].classList.add('active');
-        } else if (tabName === 'alerts') {
-            document.getElementById('alertsTab').classList.add('active');
-            document.querySelectorAll('.tab')[1].classList.add('active');
-            loadAlerts();
-        }
-    }
+            try {
+                const response = await fetch('/api/auth/profile', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
 
-    // Handle report submission
-    document.getElementById('reportForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const reportData = {
-            zone: document.getElementById('zone').value,
-            incidentType: document.getElementById('incidentType').value,
-            description: document.getElementById('description').value,
-            reportedBy: JSON.parse(atob(token.split('.')[1])).sub,
-            timestamp: new Date().toISOString()
-        };
-
-        const submitBtn = document.getElementById('submitBtn');
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
-
-        try {
-            // For now, store in localStorage (in production, send to backend)
-            const reports = JSON.parse(localStorage.getItem('citizenReports') || '[]');
-            reports.push(reportData);
-            localStorage.setItem('citizenReports', JSON.stringify(reports));
-
-            showMessage('✓ Emergency report submitted successfully! Responders have been notified.', 'success', 'reportMessageDisplay');
-            document.getElementById('reportForm').reset();
-        } catch (error) {
-            showMessage('✗ Failed to submit report: ' + error.message, 'error', 'reportMessageDisplay');
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Emergency Report';
-        }
-    });
-
-    // Load alerts
-    let citizenLastAlertCount = 0;
-    
-    // Show citizen alert notification
-    function showCitizenAlertNotification(alert) {
-        const toast = document.getElementById('citizenAlertToast');
-        const message = document.getElementById('citizenAlertMessage');
-        
-        message.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <strong>ALERT:</strong> ${alert.title} in ${alert.region}!`;
-        toast.style.display = 'block';
-        
-        // Play notification sound
-        try {
-            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleAoSPaDj8bE2ExlQr+3wtzITF0uw6e66MBQWULTq8LcvExZOsOnvty4TGEqw6O64LxMXSrDn7rctExdJrujuuC4TF0qv5+64LBMXSq7n7bgtExdJrebtuC4TF0mt5e24LBMXSK3l7bgtExZIrOXtuC0TFkeu5e24LRMWR67l7bgtExZHr+XtuC4TFkew5u64LhIWRLDm7rguEhZDsObwuC4SFkOx5vC4LhIWQrHl8LguERZBsOXvuC4RFkCw5e+4LhAWQLHm8LguEBZAsObwuC4QFkCw5vC4LhAWQLHm8LguD');
-            audio.volume = 0.3;
-            audio.play().catch(() => {});
-        } catch(e) {}
-        
-        setTimeout(() => {
-            toast.style.display = 'none';
-        }, 8000);
-    }
-    
-    function loadAlerts() {
-        // Load only broadcasted alerts for citizens
-        fetch('/api/alerts/broadcasted')
-            .then(res => res.json())
-            .then(alerts => {
-                // Check for new alerts
-                const sortedAlerts = alerts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-                
-                if (sortedAlerts.length > 0) {
-                    const latestAlert = sortedAlerts[0];
-                    const alertTime = new Date(latestAlert.createdAt).getTime();
-                    const now = Date.now();
-                    
-                    // If new alert (within last 30 seconds) or count increased
-                    if (citizenLastAlertCount > 0 && alerts.length > citizenLastAlertCount) {
-                        showCitizenAlertNotification(latestAlert);
-                    } else if (citizenLastAlertCount === 0 && alerts.length > 0) {
-                        // First load - show for recent alerts
-                        if (now - alertTime < 30000) {
-                            showCitizenAlertNotification(latestAlert);
-                        }
-                    }
-                    
-                    citizenLastAlertCount = alerts.length;
+                if (!response.ok) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('userRole');
+                    window.location.href = '/index.html';
+                    return;
                 }
-                
-                displayAlerts(alerts);
-            })
-            .catch(err => {
+
+                const userData = await response.json();
+                if (userData.name) {
+                    document.getElementById('citizenName').innerText = userData.name;
+                }
+            } catch (e) {
+                console.error('Validation error:', e);
+            }
+
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                if (!document.getElementById('citizenName').innerText.includes(' ')) {
+                    document.getElementById('citizenName').innerText = payload.sub || 'Citizen User';
+                }
+            } catch (e) {}
+
+            // Check URL parameters for tab selection
+            const urlParams = new URLSearchParams(window.location.search);
+            const tabParam = urlParams.get('tab');
+            if (tabParam === 'alerts' || tabParam === 'alertsTab') switchTab('alertsTab');
+            else if (tabParam === 'report' || tabParam === 'reportTab') switchTab('reportTab');
+            else if (tabParam === 'my-reports' || tabParam === 'myReportsTab') switchTab('myReportsTab');
+            else if (tabParam === 'map' || tabParam === 'mapTab') switchTab('mapTab');
+            else if (tabParam === 'safety' || tabParam === 'safetyTab') switchTab('safetyTab');
+            else if (tabParam && document.getElementById(tabParam)) switchTab(tabParam);
+
+            loadUnifiedAlerts();
+            loadMyReports();
+            loadNotifications();
+        })();
+
+        // Tab Switching
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.cc-tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.cc-tab-btn').forEach(el => el.classList.remove('active'));
+
+            const targetTab = document.getElementById(tabId);
+            if (targetTab) targetTab.classList.add('active');
+
+            if (btn) {
+                btn.classList.add('active');
+            } else {
+                const matchedBtn = Array.from(document.querySelectorAll('.cc-tab-btn')).find(b => b.getAttribute('onclick')?.includes(tabId));
+                if (matchedBtn) matchedBtn.classList.add('active');
+            }
+
+            if (tabId === 'mapTab') {
+                initCitizenMap();
+                setTimeout(() => {
+                    if (citizenMap) citizenMap.invalidateSize();
+                }, 200);
+            }
+        }
+
+        // Change Operational Sector
+        function changeOperationalSector(sector) {
+            selectedSector = sector;
+            CommandCenter.showToast(`Active safety view changed to: ${sector}`, 'info');
+            filterAlertsFeed();
+            if (citizenMap) {
+                if (sector === 'Chennai') citizenMap.setView([13.0827, 80.2707], 12);
+                else if (sector === 'Madurai') citizenMap.setView([9.9252, 78.1198], 12);
+                else if (sector === 'Tiruchirappalli') citizenMap.setView([10.7905, 78.7047], 12);
+                else if (sector === 'Salem') citizenMap.setView([11.6643, 78.1460], 12);
+                else citizenMap.setView([11.0168, 76.9558], 12); // Coimbatore baseline
+            }
+        }
+
+        // =========================================================================
+        // UNIFIED ALERTS (NDMA SACHET + BROADCASTS + FILTERS)
+        // =========================================================================
+        async function loadUnifiedAlerts() {
+            const grid = document.getElementById('alertsGrid');
+            try {
+                const [broadcastRes, officialRes] = await Promise.allSettled([
+                    fetch('/api/alerts/broadcasted'),
+                    fetch('/api/official-alerts/active')
+                ]);
+
+                rawBroadcastAlerts = (broadcastRes.status === 'fulfilled' && broadcastRes.value.ok) ? 
+                    await broadcastRes.value.json() : [];
+
+                rawOfficialAlerts = (officialRes.status === 'fulfilled' && officialRes.value.ok) ? 
+                    await officialRes.value.json() : [];
+
+                document.getElementById('badgeWarningCount').innerText = rawBroadcastAlerts.length + rawOfficialAlerts.length;
+                filterAlertsFeed();
+            } catch (err) {
                 console.error('Error loading alerts:', err);
-                document.getElementById('alertsGrid').innerHTML = `
-                    <div style="text-align:center;padding:3rem;color:#64748b;">
-                        <i class="fas fa-exclamation-circle" style="font-size:3rem;"></i>
-                        <p style="margin-top:1rem;">Error loading alerts</p>
+                grid.innerHTML = `
+                    <div style="text-align:center;padding:3rem;color:#64748b;grid-column:1/-1;">
+                        <i class="fas fa-exclamation-circle" style="font-size:3rem;color:#ef4444;"></i>
+                        <p style="margin-top:1rem;">Failed to retrieve active disaster warnings.</p>
                     </div>
                 `;
-            });
-    }
-
-    function displayAlerts(alerts) {
-        const grid = document.getElementById('alertsGrid');
-        
-        if (alerts.length === 0) {
-            grid.innerHTML = `
-                <div style="text-align:center;padding:3rem;color:#64748b;">
-                    <i class="fas fa-check-circle" style="font-size:3rem;"></i>
-                    <p style="margin-top:1rem;">No active alerts at the moment</p>
-                </div>
-            `;
-            return;
-        }
-
-        grid.innerHTML = '';
-        
-        alerts.forEach(alert => {
-            const card = document.createElement('div');
-            card.className = `alert-card ${alert.severity.toLowerCase()}`;
-            
-            let icon = 'fa-exclamation-triangle';
-            if (alert.disasterType.includes('Cyclone')) icon = 'fa-wind';
-            else if (alert.disasterType.includes('Rain')) icon = 'fa-cloud-rain';
-            else if (alert.disasterType.includes('Flood')) icon = 'fa-water';
-            else if (alert.disasterType.includes('Earthquake')) icon = 'fa-house-crack';
-            
-            const severityColor = alert.severity === 'High' ? '#ef4444' : 
-                                 alert.severity === 'Medium' ? '#f59e0b' : '#10b981';
-            
-            card.innerHTML = `
-                <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;">
-                    <i class="fas ${icon}" style="font-size:2rem;color:${severityColor};"></i>
-                    <div class="alert-title" style="color:${severityColor};">${alert.title}</div>
-                </div>
-                
-                <div style="background:rgba(255,255,255,0.05);padding:1rem;border-radius:8px;margin:1rem 0;">
-                    ${alert.message}
-                </div>
-                
-                <div class="alert-detail">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <span>Type: ${alert.disasterType}</span>
-                </div>
-                
-                <div class="alert-detail">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <span>Severity: <span style="color:${severityColor};font-weight:600;">${alert.severity}</span></span>
-                </div>
-                
-                <div class="alert-detail">
-                    <i class="fas fa-map-marker-alt"></i>
-                    <span>Region: ${alert.region}</span>
-                </div>
-                
-                <div class="alert-detail">
-                    <i class="fas fa-clock"></i>
-                    <span>${new Date(alert.createdAt).toLocaleString('en-IN')}</span>
-                </div>
-                
-                ${alert.mediaUrl ? `
-                <div style="margin:1rem 0;">
-                    <img src="${alert.mediaUrl}" style="max-width:100%;border-radius:8px;max-height:200px;object-fit:cover;" onerror="this.style.display='none'">
-                </div>
-                ` : ''}
-                
-                <button onclick="sendMessageToResponder('${alert.title}', ${alert.alertId})" style="width:100%;margin-top:1rem;padding:0.8rem;background:linear-gradient(135deg,#10b981,#34d399);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;transition:all 0.3s;">
-                    <i class="fas fa-envelope"></i> Contact Responder
-                </button>
-            `;
-            
-            grid.appendChild(card);
-        });
-    }
-
-    function showMessage(text, type, elementId) {
-        const messageBox = document.getElementById(elementId);
-        messageBox.innerHTML = `<div class="message ${type}">${text}</div>`;
-        setTimeout(() => {
-            messageBox.innerHTML = '';
-        }, 5000);
-    }
-    
-    // Send message to responder
-    async function sendMessageToResponder(alertTitle, alertId) {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            alert('Please login first');
-            return;
-        }
-        
-        const message = prompt('Enter your message to the responder:');
-        if (!message) return;
-        
-        try {
-            const response = await fetch('/api/messages', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    message: message,
-                    receiverEmail: 'responder@disaster.gov.in',
-                    receiverRole: 'Responder',
-                    relatedAlertId: alertId
-                })
-            });
-            
-            if (response.ok) {
-                alert('Message sent to responder successfully!');
-            } else {
-                const error = await response.text();
-                alert('Failed to send message: ' + error);
             }
-        } catch (error) {
-            alert('Network error: ' + error.message);
         }
-    }
-</script>
 
+        function filterAlertsFeed() {
+            const hazardFilter = document.getElementById('filterHazardCategory')?.value || 'ALL';
+            const sourceFilter = document.getElementById('filterSourceAgency')?.value || 'ALL';
+
+            let filteredOfficial = rawOfficialAlerts;
+            let filteredBroadcast = rawBroadcastAlerts;
+
+            // Source Agency Filter
+            if (sourceFilter === 'NDMA') filteredBroadcast = [];
+            else if (sourceFilter === 'MUNICIPAL') filteredOfficial = [];
+
+            // Hazard Category Filter
+            if (hazardFilter !== 'ALL') {
+                const reg = new RegExp(hazardFilter, 'i');
+                filteredOfficial = filteredOfficial.filter(a => reg.test(a.hazardType || '') || reg.test(a.headline || ''));
+                filteredBroadcast = filteredBroadcast.filter(b => reg.test(b.disasterType || '') || reg.test(b.title || ''));
+            }
+
+            // Sector Filter
+            if (selectedSector !== 'All') {
+                const secReg = new RegExp(selectedSector, 'i');
+                filteredBroadcast = filteredBroadcast.filter(b => secReg.test(b.region || '') || /All India|Tamil Nadu/i.test(b.region || ''));
+                filteredOfficial = filteredOfficial.filter(o => secReg.test(o.areaDescription || '') || /India|Tamil Nadu/i.test(o.areaDescription || ''));
+            }
+
+            displayAlerts(filteredBroadcast, filteredOfficial);
+        }
+
+        function displayAlerts(broadcastAlerts, officialAlerts) {
+            const grid = document.getElementById('alertsGrid');
+            const total = broadcastAlerts.length + officialAlerts.length;
+
+            if (total === 0) {
+                grid.innerHTML = `
+                    <div style="text-align:center;padding:3.5rem;color:#64748b;grid-column:1/-1;">
+                        <i class="fas fa-shield-check" style="font-size:3.5rem;color:var(--cc-safe-green);opacity:0.6;"></i>
+                        <h3 style="color:#f8fafc;margin-top:1rem;font-size:1.2rem;">No Active Disaster Warnings in Sector</h3>
+                        <p style="font-size:0.9rem;color:#94a3b8;margin-top:0.3rem;">Connected to NDMA SACHET CAP 1.2 feed. Normal baseline conditions.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = '';
+
+            // 1. Render Official NDMA SACHET Warnings
+            officialAlerts.forEach(alert => {
+                const card = document.createElement('div');
+                const sev = (alert.severity || 'Moderate').toLowerCase();
+                card.className = `cc-alert-feed-item ${sev}`;
+
+                let icon = 'fa-exclamation-triangle';
+                const hazard = alert.hazardType || 'Advisory';
+                if (/cyclone|storm|wind/i.test(hazard)) icon = 'fa-wind';
+                else if (/rain|thunderstorm/i.test(hazard)) icon = 'fa-cloud-rain';
+                else if (/flood/i.test(hazard)) icon = 'fa-water';
+                else if (/earthquake/i.test(hazard)) icon = 'fa-house-crack';
+
+                const sevBadgeClass = /high|extreme|severe/i.test(sev) ? 'severity-extreme' : 
+                                     /medium|moderate/i.test(sev) ? 'severity-moderate' : 'severity-low';
+
+                card.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.8rem;">
+                        <span class="cc-badge ndma">
+                            <i class="fas fa-shield-alt"></i> Official NDMA SACHET
+                        </span>
+                        <span class="cc-badge ${sevBadgeClass}">${alert.severity || 'MODERATE'}</span>
+                    </div>
+
+                    <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.8rem;">
+                        <i class="fas ${icon}" style="font-size:1.8rem;color:var(--cc-cyan);"></i>
+                        <h3 style="font-size:1.15rem;font-weight:700;color:#f8fafc;margin:0;">${hazard}</h3>
+                    </div>
+
+                    <div style="background:rgba(255,255,255,0.03);padding:0.9rem;border-radius:8px;margin-bottom:0.9rem;color:#cbd5e1;font-size:0.88rem;line-height:1.45;">
+                        ${alert.headline || alert.description || 'Verified Meteorological Advisory'}
+                    </div>
+
+                    <div style="display:flex;flex-direction:column;gap:0.35rem;font-size:0.82rem;color:#94a3b8;margin-bottom:0.8rem;">
+                        <div><i class="fas fa-location-dot" style="color:var(--cc-cyan);width:16px;"></i> <strong>Area:</strong> ${alert.areaDescription || 'Regional'}</div>
+                        <div><i class="fas fa-building-columns" style="color:#64748b;width:16px;"></i> <strong>Source:</strong> ${alert.sourceAgency || 'NDMA Control Room'}</div>
+                        <div><i class="fas fa-clock" style="color:#64748b;width:16px;"></i> <strong>Effective:</strong> ${(window.formatIndianDateTime ? window.formatIndianDateTime(alert.effectiveTime || alert.publishedTime) : new Date(alert.effectiveTime || alert.publishedTime).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }))}</div>
+                    </div>
+
+                    ${alert.instruction ? `
+                    <div style="background:rgba(30,41,59,0.7);border-left:3px solid #38bdf8;padding:0.6rem 0.8rem;border-radius:4px;font-size:0.82rem;color:#cbd5e1;margin-bottom:0.8rem;">
+                        <strong style="color:#38bdf8;">Safety Instruction:</strong> ${alert.instruction}
+                    </div>` : ''}
+
+                    <div style="display:flex;justify-content:flex-end;">
+                        <a href="https://sachet.ndma.gov.in/" target="_blank" style="color:var(--cc-cyan);font-size:0.8rem;text-decoration:none;font-weight:600;display:flex;align-items:center;gap:0.3rem;">
+                            <i class="fas fa-arrow-up-right-from-square"></i> Official Portal Source
+                        </a>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            // 2. Render Administrator Emergency Broadcasts
+            broadcastAlerts.forEach(alert => {
+                const card = document.createElement('div');
+                card.className = `cc-alert-feed-item ${alert.severity.toLowerCase()}`;
+
+                let icon = 'fa-exclamation-triangle';
+                if (/cyclone/i.test(alert.disasterType)) icon = 'fa-wind';
+                else if (/rain/i.test(alert.disasterType)) icon = 'fa-cloud-rain';
+                else if (/flood/i.test(alert.disasterType)) icon = 'fa-water';
+                else if (/earthquake/i.test(alert.disasterType)) icon = 'fa-house-crack';
+
+                card.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.8rem;">
+                        <span class="cc-badge broadcast">
+                            <i class="fas fa-tower-broadcast"></i> Municipal Broadcast
+                        </span>
+                        <span class="cc-badge severity-${alert.severity.toLowerCase()}">${alert.severity}</span>
+                    </div>
+
+                    <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.8rem;">
+                        <i class="fas ${icon}" style="font-size:1.8rem;color:var(--cc-critical-red);"></i>
+                        <h3 style="font-size:1.15rem;font-weight:700;color:#f8fafc;margin:0;">${alert.title}</h3>
+                    </div>
+
+                    <div style="background:rgba(255,255,255,0.03);padding:0.9rem;border-radius:8px;margin-bottom:0.9rem;color:#cbd5e1;font-size:0.88rem;line-height:1.45;">
+                        ${alert.message}
+                    </div>
+
+                    <div style="display:flex;flex-direction:column;gap:0.35rem;font-size:0.82rem;color:#94a3b8;margin-bottom:0.8rem;">
+                        <div><i class="fas fa-location-dot" style="color:var(--cc-critical-red);width:16px;"></i> <strong>Target Sector:</strong> ${alert.region}</div>
+                        <div><i class="fas fa-clock" style="color:#64748b;width:16px;"></i> <strong>Time:</strong> ${(window.formatIndianDateTime ? window.formatIndianDateTime(alert.createdAt) : new Date(alert.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }))}</div>
+                    </div>
+
+                    ${alert.mediaUrl ? `
+                    <div style="margin:0.8rem 0;cursor:pointer;" onclick="if(window.openMediaLightbox) openMediaLightbox('${alert.mediaUrl}', '${(alert.title || 'Official Alert').replace(/'/g, "\\'")}', 'PHOTO')">
+                        <img src="${alert.mediaUrl}" style="width:100%;max-height:180px;object-fit:cover;border-radius:6px;border:1px solid var(--cc-border-medium);" onerror="if(window.handleEvidenceImageError) handleEvidenceImageError(this, '${alert.mediaUrl}'); else this.style.display='none';">
+                    </div>` : ''}
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // =========================================================================
+        // EMERGENCY REPORTING (DEDICATED FULL INTERFACE)
+        // =========================================================================
+        let detectedDeviceCoords = null;
+
+        function detectGpsLocation() {
+            if (!navigator.geolocation) {
+                CommandCenter.showToast('Geolocation is not supported by your browser', 'error');
+                return;
+            }
+
+            const statusEl = document.getElementById('gpsStatusDisplay');
+            statusEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Requesting GPS sensor access...';
+
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const lat = pos.coords.latitude.toFixed(5);
+                    const lon = pos.coords.longitude.toFixed(5);
+                    const acc = Math.round(pos.coords.accuracy);
+                    detectedDeviceCoords = `${lat}, ${lon}`;
+
+                    statusEl.innerHTML = `
+                        <span style="color:#10b981;"><i class="fas fa-check-circle"></i> Device Location Locked:</span> 
+                        <strong>${lat}° N, ${lon}° E</strong> | Precision: &plusmn;${acc} meters
+                    `;
+
+                    // Only set as location if field is empty
+                    const locField = document.getElementById('reportLocation');
+                    if (!locField.value.trim()) {
+                        locField.value = `Near GPS: ${lat}, ${lon} (${selectedSector})`;
+                    }
+                    CommandCenter.showToast(`GPS Coordinates Acquired (&plusmn;${acc}m accuracy)`, 'success');
+                },
+                (err) => {
+                    statusEl.innerHTML = `<span style="color:#ef4444;"><i class="fas fa-triangle-exclamation"></i> GPS Access Denied / Error:</span> ${err.message}`;
+                    CommandCenter.showToast('GPS unavailable. Please enter landmark manually.', 'warning');
+                },
+                { enableHighAccuracy: true, timeout: 9000 }
+            );
+        }
+
+        // Photo / Video File Preview
+        function previewReportImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const isVideo = file.type.startsWith('video/');
+            const reader = new FileReader();
+
+            reader.onload = (e) => {
+                base64PhotoData = e.target.result;
+                const img = document.getElementById('imagePreview');
+                img.src = base64PhotoData;
+                document.getElementById('previewMetaTag').innerText = isVideo ? 'Video Clip Attached' : 'Photo Attached';
+                document.getElementById('imagePreviewContainer').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeReportImage() {
+            base64PhotoData = null;
+            document.getElementById('reportPhotoInput').value = '';
+            document.getElementById('imagePreviewContainer').style.display = 'none';
+        }
+
+        // Submit Incident Report Form
+        document.getElementById('citizenReportForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/index.html';
+                return;
+            }
+
+            const title = document.getElementById('reportTitle').value.trim();
+            const category = document.getElementById('reportCategory').value;
+            const severity = document.getElementById('reportSeverity').value;
+            const location = document.getElementById('reportLocation').value.trim();
+            const rawDescription = document.getElementById('reportMessage').value.trim();
+            const btn = document.getElementById('btnSubmitReport');
+
+            // Format message to embed structured title, category, severity, and description
+            const formattedMessage = `[${category} | Severity: ${severity}] ${title}\n\n${rawDescription}${detectedDeviceCoords ? `\n\n[Device GPS: ${detectedDeviceCoords}]` : ''}`;
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Dispatching Incident Report to Responders...';
+
+            try {
+                const response = await fetch('/api/citizen-reports', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({
+                        location: location,
+                        message: formattedMessage,
+                        photoData: base64PhotoData
+                    })
+                });
+
+                if (response.ok) {
+                    const savedReport = await response.json();
+                    const refId = `#INC-2026-${savedReport.reportId}`;
+
+                    // Display Confirmation Box
+                    const confirmBox = document.getElementById('reportConfirmationBox');
+                    document.getElementById('confirmHeader').innerText = `Distress Report Successfully Transmitted`;
+                    document.getElementById('confirmBody').innerHTML = `
+                        Incident reference: <strong style="color:var(--cc-cyan);font-family:var(--cc-font-mono);font-size:1rem;">${refId}</strong>.<br>
+                        Dispatched to nearby emergency responders and added to your incident history.
+                    `;
+                    confirmBox.style.display = 'block';
+                    confirmBox.scrollIntoView({ behavior: 'smooth' });
+
+                    // Add to Notifications
+                    addNotification({
+                        title: `Report Submitted (${refId})`,
+                        body: `Emergency report "${title}" logged into municipal operations queue.`,
+                        time: (window.formatIndianTime ? window.formatIndianTime(new Date()) : new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true })),
+                        type: 'report'
+                    });
+
+                    CommandCenter.showToast(`✓ Report ${refId} registered successfully!`, 'success');
+                    if (window.CommandCenterSound) CommandCenterSound.playSuccess();
+
+                    document.getElementById('citizenReportForm').reset();
+                    removeReportImage();
+                    loadMyReports();
+                } else {
+                    const err = await response.json();
+                    CommandCenter.showToast(err.message || 'Submission failed', 'error');
+                }
+            } catch (err) {
+                CommandCenter.showToast('Network error: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Incident Report to Responders';
+            }
+        });
+
+        function resetReportForm() {
+            document.getElementById('reportConfirmationBox').style.display = 'none';
+            document.getElementById('citizenReportForm').reset();
+            removeReportImage();
+        }
+
+        // =========================================================================
+        // MY INCIDENTS & LIVE TRACKING INTERFACE
+        // =========================================================================
+        async function loadMyReports() {
+            const listEl = document.getElementById('myReportsList');
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            try {
+                const res = await fetch('/api/citizen-reports/my-reports', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (res.ok) {
+                    rawMyReports = await res.json();
+                    document.getElementById('badgeMyReportCount').innerText = rawMyReports.length;
+                    filterMyReportsList(document.getElementById('filterReportStatus')?.value || 'ALL');
+                }
+            } catch (e) {
+                console.error('My reports fetch error:', e);
+            }
+        }
+
+        function filterMyReportsList(statusFilter) {
+            const listEl = document.getElementById('myReportsList');
+            let reports = rawMyReports;
+
+            if (statusFilter !== 'ALL') {
+                reports = reports.filter(r => (r.status || 'Pending') === statusFilter);
+            }
+
+            if (!reports || reports.length === 0) {
+                listEl.innerHTML = `
+                    <div class="cc-card" style="text-align:center;padding:3rem;color:#64748b;">
+                        <i class="fas fa-inbox" style="font-size:3rem;opacity:0.4;margin-bottom:0.8rem;"></i>
+                        <h3 style="color:#f8fafc;font-size:1.1rem;">No Incident Reports Found</h3>
+                        <p style="font-size:0.88rem;color:#94a3b8;margin-top:0.3rem;">There are no reports matching this filter criteria.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            listEl.innerHTML = '';
+            reports.forEach(report => {
+                const card = document.createElement('div');
+                card.className = 'cc-card';
+                card.style.marginBottom = '1.2rem';
+
+                const status = report.status || 'Pending';
+                const isResolved = status === 'Resolved';
+                const isAck = status === 'Acknowledged' || isResolved;
+                const refNum = `#INC-2026-${report.reportId}`;
+
+                // Parse structured category/severity from message if present
+                let cat = 'Rescue';
+                let sev = 'High';
+                let bodyMsg = report.message;
+
+                const match = report.message.match(/^\[(.*?) \| Severity: (.*?)\] (.*?)\n\n([\s\S]*)/);
+                if (match) {
+                    cat = match[1];
+                    sev = match[2];
+                    bodyMsg = match[4];
+                }
+
+                // 4-Stage Stepper Calculation
+                // 1: Submitted, 2: Acknowledged, 3: En Route / In Progress, 4: Resolved
+                let stageIdx = 0; // Submitted
+                if (status === 'Acknowledged') stageIdx = 1;
+                else if (status === 'In Progress' || status === 'En Route') stageIdx = 2;
+                else if (status === 'Resolved') stageIdx = 3;
+
+                const pct = (stageIdx / 3) * 100;
+
+                const statusBadge = isResolved ? 
+                    '<span class="cc-badge severity-low"><i class="fas fa-check-double"></i> Resolved / Cleared</span>' :
+                    (isAck ? 
+                        '<span class="cc-badge severity-moderate"><i class="fas fa-truck-medical"></i> Responders Deployed</span>' : 
+                        '<span class="cc-badge severity-extreme"><i class="fas fa-clock"></i> Pending Acknowledgment</span>');
+
+                card.innerHTML = `
+                    <div class="cc-card-header" style="padding-bottom:0.5rem;margin-bottom:0.6rem;">
+                        <div style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;">
+                            <span style="font-family:var(--cc-font-mono);color:var(--cc-cyan);font-weight:700;">${refNum}</span>
+                            <span class="cc-badge" style="background:#1e293b;border-color:#475569;color:#94a3b8;">${cat}</span>
+                            <span class="cc-badge severity-${sev.toLowerCase()}">${sev} Priority</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:0.6rem;">
+                            <span style="color:#64748b;font-size:0.75rem;font-family:var(--cc-font-mono);">${(window.formatIndianDateTime ? window.formatIndianDateTime(report.timestamp) : new Date(report.timestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }))}</span>
+                            ${statusBadge}
+                        </div>
+                    </div>
+
+                    <p style="color:#f1f5f9;font-size:0.95rem;margin-bottom:0.6rem;line-height:1.45;">${bodyMsg}</p>
+
+                    <div style="font-size:0.85rem;color:#94a3b8;margin-bottom:0.9rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.4rem;">
+                        <span><i class="fas fa-location-dot" style="color:var(--cc-cyan);"></i> ${report.location}</span>
+                        ${isAck ? `
+                        <span style="color:var(--cc-safe-green);font-size:0.8rem;font-weight:600;">
+                            <i class="fas fa-id-badge"></i> Assigned Unit: Emergency Response Unit (${selectedSector})
+                        </span>` : ''}
+                    </div>
+
+                    ${report.photoData && report.photoData.length > 500 && !report.photoData.includes('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ') ? `
+                    <div style="margin-bottom:0.9rem;cursor:pointer;" onclick="if(window.openMediaLightbox) openMediaLightbox('${report.photoData}', 'Incident Evidence (Report #${report.reportId})', 'PHOTO')">
+                        <img src="${report.photoData}" alt="Evidence" style="width:100%;max-height:160px;object-fit:cover;border-radius:6px;border:1px solid var(--cc-border-medium);" onerror="if(window.handleEvidenceImageError) handleEvidenceImageError(this, '${report.photoData}');" />
+                    </div>` : ''}
+
+                    <!-- 4-Stage Operational Progress Timeline -->
+                    <div class="cc-incident-timeline">
+                        <div class="cc-timeline-track-line">
+                            <div class="cc-timeline-track-progress" style="width:${pct}%;"></div>
+                        </div>
+
+                        <div class="cc-timeline-stage completed">
+                            <div class="cc-timeline-bubble"><i class="fas fa-check"></i></div>
+                            <div class="cc-timeline-title">Submitted</div>
+                        </div>
+
+                        <div class="cc-timeline-stage ${stageIdx >= 1 ? (stageIdx === 1 ? 'active' : 'completed') : ''}">
+                            <div class="cc-timeline-bubble">${stageIdx >= 1 ? '<i class="fas fa-check"></i>' : '2'}</div>
+                            <div class="cc-timeline-title">Acknowledged</div>
+                        </div>
+
+                        <div class="cc-timeline-stage ${stageIdx >= 2 ? (stageIdx === 2 ? 'active' : 'completed') : ''}">
+                            <div class="cc-timeline-bubble">${stageIdx >= 2 ? '<i class="fas fa-check"></i>' : '3'}</div>
+                            <div class="cc-timeline-title">En Route</div>
+                        </div>
+
+                        <div class="cc-timeline-stage ${stageIdx === 3 ? 'completed active' : ''}">
+                            <div class="cc-timeline-bubble">${stageIdx === 3 ? '<i class="fas fa-check"></i>' : '4'}</div>
+                            <div class="cc-timeline-title">Resolved</div>
+                        </div>
+                    </div>
+
+                    <!-- Tactical Operational Action Buttons -->
+                    <div style="display:flex;flex-wrap:wrap;gap:0.6rem;margin-top:0.9rem;padding-top:0.9rem;border-top:1px solid rgba(255,255,255,0.08);">
+                        <button type="button" class="cc-btn cc-btn-primary" style="padding:0.45rem 0.9rem;font-size:0.82rem;" onclick="window.IncidentRoom.open(${report.reportId}, 'CITIZEN_REPORT', '${escapeJs(report.location || '')}')">
+                            <i class="fas fa-comments"></i> Comms Room & Live Chat
+                        </button>
+                        <button type="button" class="cc-btn cc-btn-secondary" style="padding:0.45rem 0.9rem;font-size:0.82rem;" onclick="window.MediaCapture.open({ incidentId: ${report.reportId}, incidentType: 'CITIZEN_REPORT', onSuccess: () => loadMyReports() })">
+                            <i class="fas fa-camera"></i> Attach More Proof
+                        </button>
+                        ${isAck ? `
+                        <button type="button" class="cc-btn" style="padding:0.45rem 0.9rem;font-size:0.82rem;background:linear-gradient(135deg, #00e5ff, #0077ff);color:#030a16;font-weight:700;" onclick="window.ResponderTracking.open(${report.reportId})">
+                            <i class="fas fa-satellite-dish"></i> Track Responders Live (GPS Radar)
+                        </button>` : ''}
+                        ${report.status === 'Pending' ? `
+                        <button type="button" class="cc-btn cc-btn-danger" style="padding:0.45rem 0.9rem;font-size:0.82rem;" onclick="cancelMyReport(${report.reportId})">
+                            <i class="fas fa-ban"></i> Cancel Distress Report
+                        </button>` : ''}
+                    </div>
+                `;
+                listEl.appendChild(card);
+            });
+        }
+
+        async function cancelMyReport(reportId) {
+            let confirmed = false;
+            if (window.showConfirm) {
+                confirmed = await window.showConfirm({
+                    title: 'Cancel Distress Report',
+                    message: `Are you sure you want to cancel Emergency Report #${reportId}? This cannot be undone.`,
+                    confirmText: 'Confirm Cancellation',
+                    type: 'danger'
+                });
+            } else {
+                confirmed = confirm('Are you sure you want to cancel this report?');
+            }
+            if (!confirmed) return;
+
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch(`/api/citizen-reports/${reportId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    if (window.showToast) window.showToast('Distress report cancelled successfully', 'info');
+                    loadMyReports();
+                } else {
+                    if (window.showToast) window.showToast(data.message || 'Failed to cancel report', 'error');
+                }
+            } catch (e) {
+                if (window.showToast) window.showToast('Network error: ' + e.message, 'error');
+            }
+        }
+
+        // =========================================================================
+        // CAMERA & VIDEO CAPTURE ENGINE
+        // =========================================================================
+        async function openLiveCameraModal() {
+            const modal = document.getElementById('cameraModal');
+            modal.style.display = 'flex';
+
+            const video = document.getElementById('cameraVideo');
+            try {
+                mediaStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+                    audio: true
+                });
+                video.srcObject = mediaStream;
+            } catch (err) {
+                console.warn('Camera error:', err);
+                CommandCenter.showToast('Camera access denied or unavailable: ' + err.message, 'error');
+                closeCameraModal();
+            }
+        }
+
+        function closeCameraModal() {
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(t => t.stop());
+                mediaStream = null;
+            }
+            if (recInterval) {
+                clearInterval(recInterval);
+                recInterval = null;
+            }
+            document.getElementById('cameraModal').style.display = 'none';
+        }
+
+        function snapPhotoFromCamera() {
+            const video = document.getElementById('cameraVideo');
+            const canvas = document.getElementById('cameraCanvas');
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            base64PhotoData = canvas.toDataURL('image/jpeg', 0.85);
+            document.getElementById('imagePreview').src = base64PhotoData;
+            document.getElementById('previewMetaTag').innerText = 'Camera Photo Captured';
+            document.getElementById('imagePreviewContainer').style.display = 'block';
+
+            closeCameraModal();
+            CommandCenter.showToast('Photograph captured and attached!', 'success');
+        }
+
+        function toggleVideoRecording() {
+            const btn = document.getElementById('btnToggleVideoRec');
+            const badge = document.getElementById('recordingBadge');
+
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                // Stop recording
+                mediaRecorder.stop();
+                clearInterval(recInterval);
+                btn.innerHTML = '<i class="fas fa-video"></i> Record Video Clip';
+                btn.className = 'cc-btn cc-btn-danger';
+                badge.style.display = 'none';
+            } else {
+                // Start recording
+                recordedChunks = [];
+                try {
+                    mediaRecorder = new MediaRecorder(mediaStream);
+                    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+                    mediaRecorder.onstop = () => {
+                        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                        const reader = new FileReader();
+                        reader.onload = e => {
+                            base64PhotoData = e.target.result;
+                            document.getElementById('imagePreview').src = base64PhotoData;
+                            document.getElementById('previewMetaTag').innerText = 'Video Clip Recorded';
+                            document.getElementById('imagePreviewContainer').style.display = 'block';
+                            closeCameraModal();
+                            CommandCenter.showToast('Video clip recorded and attached!', 'success');
+                        };
+                        reader.readAsDataURL(blob);
+                    };
+
+                    mediaRecorder.start();
+                    recSeconds = 0;
+                    badge.style.display = 'flex';
+                    recInterval = setInterval(() => {
+                        recSeconds++;
+                        const mins = String(Math.floor(recSeconds / 60)).padStart(2, '0');
+                        const secs = String(recSeconds % 60).padStart(2, '0');
+                        document.getElementById('recordingTimer').innerText = `${mins}:${secs}`;
+                    }, 1000);
+
+                    btn.innerHTML = '<i class="fas fa-stop"></i> Stop Recording';
+                    btn.className = 'cc-btn cc-btn-primary';
+                } catch (e) {
+                    CommandCenter.showToast('Video recording not supported on this browser', 'error');
+                }
+            }
+        }
+
+        // =========================================================================
+        // NOTIFICATIONS DRAWER ENGINE
+        // =========================================================================
+        function toggleNotificationDrawer() {
+            const drawer = document.getElementById('citizenNotifDrawer');
+            const overlay = document.getElementById('drawerOverlay');
+            if (drawer.classList.contains('open')) {
+                drawer.classList.remove('open');
+                overlay.style.display = 'none';
+            } else {
+                drawer.classList.add('open');
+                overlay.style.display = 'block';
+                loadNotifications();
+            }
+        }
+
+        function getNotificationStore() {
+            const token = localStorage.getItem('token');
+            let key = 'citizen_notifs_default';
+            try {
+                if (token) key = 'citizen_notifs_' + JSON.parse(atob(token.split('.')[1])).sub;
+            } catch(e) {}
+            return key;
+        }
+
+        function loadNotifications() {
+            const key = getNotificationStore();
+            let notifs = JSON.parse(localStorage.getItem(key) || 'null');
+
+            if (!notifs) {
+                // Baseline default notification events derived from active state
+                notifs = [
+                    { title: 'Emergency Safety Hub Connected', body: 'System telemetry established with National Disaster Management Authority.', time: 'Just now', type: 'system' },
+                    { title: 'Official Warning Advisory Active', body: 'Cyclone & heavy rainfall watch active for Coastal Districts.', time: '10 mins ago', type: 'warning' },
+                    { title: 'Local Safe Shelters Open', body: '3 designated community evacuation bases operational in Coimbatore sector.', time: '1 hr ago', type: 'shelter' }
+                ];
+                localStorage.setItem(key, JSON.stringify(notifs));
+            }
+
+            const listEl = document.getElementById('notificationsList');
+            document.getElementById('notifBadgeCount').innerText = notifs.length;
+
+            if (notifs.length === 0) {
+                listEl.innerHTML = '<div style="text-align:center;color:#64748b;padding:2rem;">No new notifications.</div>';
+                return;
+            }
+
+            listEl.innerHTML = '';
+            notifs.forEach(n => {
+                const item = document.createElement('div');
+                item.className = 'cc-notif-item';
+                item.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem;">
+                        <strong style="color:#ffffff;font-size:0.88rem;">${n.title}</strong>
+                        <span style="font-size:0.72rem;color:#94a3b8;font-family:var(--cc-font-mono);">${n.time}</span>
+                    </div>
+                    <div style="color:#cbd5e1;line-height:1.4;">${n.body}</div>
+                `;
+                listEl.appendChild(item);
+            });
+        }
+
+        function addNotification(notif) {
+            const key = getNotificationStore();
+            let notifs = JSON.parse(localStorage.getItem(key) || '[]');
+            notifs.unshift(notif);
+            if (notifs.length > 25) notifs.pop();
+            localStorage.setItem(key, JSON.stringify(notifs));
+            loadNotifications();
+        }
+
+        function clearAllNotifications() {
+            const key = getNotificationStore();
+            localStorage.setItem(key, '[]');
+            loadNotifications();
+            CommandCenter.showToast('All notifications marked as read', 'info');
+        }
+
+        // =========================================================================
+        // CITIZEN TACTICAL MAP ENGINE
+        // =========================================================================
+        let citizenMap = null;
+        let citizenMarker = null;
+        let citizenAccuracyCircle = null;
+        let pinnedMarker = null;
+        let citizenReportsLayerGroup = null;
+        let responderTrackingLayerGroup = null;
+        let alertsLayerGroup = null;
+        let responderRoutePolyline = null;
+        let isCitizenLiveSharing = false;
+        let citizenLiveWatchId = null;
+        let activeCitizenEmergencyReportId = null;
+
+        function initCitizenMap() {
+            if (citizenMap) return;
+            const mapContainer = document.getElementById('citizenDisasterMap');
+            if (!mapContainer || typeof L === 'undefined') return;
+
+            citizenMap = L.map('citizenDisasterMap', {
+                zoomControl: true,
+                attributionControl: false
+            }).setView([20.5937, 78.9629], 5);
+
+            CommandCenter.getTacticalTileLayer().addTo(citizenMap);
+
+            alertsLayerGroup = L.layerGroup().addTo(citizenMap);
+            citizenReportsLayerGroup = L.layerGroup().addTo(citizenMap);
+            responderTrackingLayerGroup = L.layerGroup().addTo(citizenMap);
+
+            // Map click listener to pin incident location with confirmation
+            citizenMap.on('click', (e) => {
+                const lat = parseFloat(e.latlng.lat.toFixed(5));
+                const lng = parseFloat(e.latlng.lng.toFixed(5));
+
+                if (pinnedMarker) {
+                    citizenMap.removeLayer(pinnedMarker);
+                }
+
+                pinnedMarker = L.marker([lat, lng], {
+                    icon: L.divIcon({
+                        html: `<div style="background:#ef4444;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;border:2px solid #fff;box-shadow:0 0 16px #ef4444;"><i class="fas fa-bullseye"></i></div>`,
+                        className: 'custom-pin-marker',
+                        iconSize: [34, 34],
+                        iconAnchor: [17, 17]
+                    })
+                }).addTo(citizenMap);
+
+                pinnedMarker.bindPopup(`
+                    <div style="text-align:center;font-family:Inter,sans-serif;padding:6px;min-width:200px;">
+                        <strong style="color:#ef4444;font-size:0.95rem;"><i class="fas fa-map-pin"></i> Emergency Location Pinned</strong><br>
+                        <span style="font-size:0.8rem;color:#cbd5e1;font-family:monospace;display:block;margin:4px 0;">${lat}° N, ${lng}° E</span>
+                        <div style="font-size:0.75rem;color:#94a3b8;margin-bottom:8px;">Ready to bind coordinates to your incident dispatch.</div>
+                        <button class="cc-btn cc-btn-danger" style="width:100%;padding:5px 10px;font-size:0.8rem;font-weight:700;" onclick="usePinnedLocationForReport(${lat}, ${lng})">
+                            <i class="fas fa-check"></i> Use This Location
+                        </button>
+                    </div>
+                `).openPopup();
+
+                const notice = document.getElementById('pinnedLocationNotice');
+                if (notice) notice.innerHTML = `Pinned: <strong>${lat}, ${lng}</strong>`;
+            });
+
+            locateCitizenOnMap();
+            loadWarningsOnCitizenMap();
+            loadMyReportsOnMap();
+            pollAssignedResponderLocation();
+            setInterval(pollAssignedResponderLocation, 6000);
+            setInterval(loadMyReportsOnMap, 15000);
+        }
+
+        function locateCitizenOnMap() {
+            if (!citizenMap) return;
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((pos) => {
+                    const lat = pos.coords.latitude;
+                    const lon = pos.coords.longitude;
+                    const accuracy = pos.coords.accuracy;
+
+                    if (citizenMarker) citizenMap.removeLayer(citizenMarker);
+                    if (citizenAccuracyCircle) citizenMap.removeLayer(citizenAccuracyCircle);
+
+                    citizenMarker = L.marker([lat, lon], {
+                        icon: L.divIcon({
+                            html: `<div class="cc-marker-pulsing" style="background:#10b981;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#ffffff;font-size:16px;border:2px solid #ffffff;box-shadow:0 0 16px rgba(16,185,129,0.9);"><i class="fas fa-house-user"></i></div>`,
+                            className: 'custom-citizen-marker',
+                            iconSize: [36, 36],
+                            iconAnchor: [18, 18]
+                        })
+                    }).addTo(citizenMap);
+
+                    if (accuracy && accuracy <= 1000) {
+                        citizenAccuracyCircle = L.circle([lat, lon], {
+                            radius: accuracy,
+                            color: '#10b981',
+                            weight: 1,
+                            fillColor: '#10b981',
+                            fillOpacity: 0.1
+                        }).addTo(citizenMap);
+                    }
+
+                    citizenMarker.bindPopup(`<strong>Your Current Location</strong><br><span style="font-size:0.8rem;color:#94a3b8;">GPS Accuracy: ±${Math.round(accuracy)}m</span>`).openPopup();
+                    citizenMap.flyTo([lat, lon], 14, { duration: 1.2 });
+                }, () => {
+                    citizenMap.setView([13.0827, 80.2707], 11);
+                }, { enableHighAccuracy: true, timeout: 8000 });
+            }
+        }
+
+        async function loadMyReportsOnMap() {
+            if (!citizenMap || !citizenReportsLayerGroup) return;
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            try {
+                const res = await fetch('/api/citizen-reports/my-reports', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) return;
+
+                const reports = await res.json();
+                citizenReportsLayerGroup.clearLayers();
+
+                if (!reports || reports.length === 0) return;
+
+                // Track most recent active/pending report for live location sharing
+                const activeRep = reports.find(r => r.status && r.status.toLowerCase() !== 'resolved' && r.status.toLowerCase() !== 'cancelled');
+                if (activeRep) {
+                    activeCitizenEmergencyReportId = activeRep.reportId;
+                }
+
+                reports.forEach(r => {
+                    if (r.isDeleted) return;
+                    if (!r.latitude || !r.longitude) return;
+
+                    const isResolved = (r.status && r.status.toLowerCase() === 'resolved');
+                    const markerColor = isResolved ? '#10b981' : '#ef4444';
+
+                    const incidentIcon = L.divIcon({
+                        className: 'tactical-citizen-incident-marker',
+                        html: `
+                            <div style="position:relative;width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:${markerColor};border:2px solid #ffffff;border-radius:50%;box-shadow:0 0 16px ${markerColor};cursor:pointer;">
+                                <i class="fas fa-bullseye" style="color:#ffffff;font-size:14px;"></i>
+                            </div>
+                        `,
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 16],
+                        popupAnchor: [0, -16]
+                    });
+
+                    const marker = L.marker([r.latitude, r.longitude], { icon: incidentIcon }).addTo(citizenReportsLayerGroup);
+                    marker.bindPopup(`
+                        <div style="font-family:Inter,sans-serif;color:#fff;background:#091322;padding:10px 14px;border-radius:8px;border:1px solid ${markerColor};min-width:210px;font-size:0.85rem;">
+                            <strong style="color:${markerColor};font-size:0.95rem;">Emergency Report #${r.reportId}</strong><br>
+                            <span style="font-size:0.8rem;color:#cbd5e1;">Status: <b>${r.status || 'Pending'}</b></span><br>
+                            <span style="font-size:0.75rem;color:#94a3b8;">${escapeHtml(r.location || '')}</span>
+                            <p style="font-size:0.78rem;color:#e2e8f0;margin:6px 0 0;background:rgba(255,255,255,0.05);padding:6px;border-radius:4px;">"${escapeHtml(r.message || '')}"</p>
+                        </div>
+                    `);
+                });
+            } catch (err) {
+                console.warn('Error loading citizen reports on map:', err);
+            }
+        }
+
+        async function pollAssignedResponderLocation() {
+            const banner = document.getElementById('responderLiveStatusBanner');
+            const bannerText = document.getElementById('responderBannerText');
+            const btnHud = document.getElementById('btnOpenDeliveryHud');
+            if (!banner || !bannerText) return;
+
+            if (!activeCitizenEmergencyReportId) {
+                banner.style.display = 'none';
+                return;
+            }
+
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch(`/api/tracking/latest/${activeCitizenEmergencyReportId}`, {
+                    headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+                });
+                if (!res.ok) return;
+
+                const telemetry = await res.json();
+                if (!telemetry || telemetry.status === 'NO_SESSION' || !telemetry.latitude || !telemetry.longitude) {
+                    banner.style.display = 'flex';
+                    banner.style.borderLeftColor = '#64748b';
+                    bannerText.innerHTML = '<i class="fas fa-info-circle" style="color:#94a3b8;"></i> Responder location is not currently being shared.';
+                    if (btnHud) btnHud.style.display = 'none';
+                    if (responderTrackingLayerGroup) responderTrackingLayerGroup.clearLayers();
+                    if (responderRoutePolyline) {
+                        citizenMap.removeLayer(responderRoutePolyline);
+                        responderRoutePolyline = null;
+                    }
+                    return;
+                }
+
+                banner.style.display = 'flex';
+                if (btnHud) {
+                    btnHud.style.display = 'inline-block';
+                    btnHud.onclick = () => window.ResponderTracking.open(activeCitizenEmergencyReportId);
+                }
+
+                const isStale = Boolean(telemetry.isStale);
+                if (isStale) {
+                    banner.style.borderLeftColor = '#f59e0b';
+                    const lastTime = telemetry.lastHeartbeatAt ? (window.CommandCenter ? CommandCenter.formatIst(telemetry.lastHeartbeatAt) : telemetry.lastHeartbeatAt) : 'recently';
+                    bannerText.innerHTML = `<i class="fas fa-triangle-exclamation" style="color:#f59e0b;"></i> Last location update: ${lastTime} — Location may be outdated.`;
+                } else {
+                    banner.style.borderLeftColor = '#00e5ff';
+                    const eta = telemetry.etaText || 'Calculating route';
+                    bannerText.innerHTML = `<i class="fas fa-truck-medical fa-beat" style="color:#00e5ff;"></i> Assigned Unit <strong>${escapeHtml(telemetry.responderName || 'Emergency Response Team')}</strong> is En Route &bull; ETA: <strong style="color:#00e5ff;">${eta}</strong>`;
+                }
+
+                // Plot live responder marker
+                if (responderTrackingLayerGroup) {
+                    responderTrackingLayerGroup.clearLayers();
+
+                    const respIcon = L.divIcon({
+                        className: 'live-responder-pin',
+                        html: `
+                            <div style="position:relative;width:36px;height:36px;background:radial-gradient(circle,#00e5ff 0%,#0284c7 100%);border:2px solid #ffffff;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(0,229,255,0.8);">
+                                <i class="fas fa-truck-medical" style="color:#030a16;font-size:15px;"></i>
+                            </div>
+                        `,
+                        iconSize: [36, 36],
+                        iconAnchor: [18, 18]
+                    });
+
+                    const respMarker = L.marker([telemetry.latitude, telemetry.longitude], { icon: respIcon }).addTo(responderTrackingLayerGroup);
+                    respMarker.bindPopup(`
+                        <div style="font-family:Inter,sans-serif;color:#fff;background:#091322;padding:10px 14px;border-radius:8px;border:1px solid #00e5ff;min-width:200px;font-size:0.85rem;">
+                            <strong style="color:#00e5ff;"><i class="fas fa-truck-medical"></i> ${escapeHtml(telemetry.responderName || 'Assigned Responder')}</strong><br>
+                            <span style="font-size:0.8rem;color:#cbd5e1;">Status: <b style="color:#10b981;">EN ROUTE</b></span><br>
+                            ${telemetry.etaText ? `<span style="font-size:0.78rem;color:#f59e0b;font-weight:700;"><i class="fas fa-clock"></i> ETA: ${telemetry.etaText}</span><br>` : ''}
+                            <button onclick="window.ResponderTracking.open(${activeCitizenEmergencyReportId})" style="width:100%;margin-top:6px;background:linear-gradient(135deg,#0284c7,#00e5ff);color:#030a16;border:none;padding:5px 8px;border-radius:4px;font-weight:700;font-size:0.78rem;cursor:pointer;">
+                                Open Radar HUD
+                            </button>
+                        </div>
+                    `);
+
+                    // Draw route polyline if destination is known
+                    if (telemetry.destinationLatitude && telemetry.destinationLongitude) {
+                        const routeCoords = telemetry.routeCoordinates && telemetry.routeCoordinates.length > 0
+                            ? telemetry.routeCoordinates
+                            : [[telemetry.latitude, telemetry.longitude], [telemetry.destinationLatitude, telemetry.destinationLongitude]];
+
+                        if (responderRoutePolyline) citizenMap.removeLayer(responderRoutePolyline);
+                        responderRoutePolyline = L.polyline(routeCoords, {
+                            color: '#00e5ff',
+                            weight: 4,
+                            opacity: 0.85,
+                            dashArray: '8, 8'
+                        }).addTo(citizenMap);
+                    }
+                }
+            } catch (err) {
+                console.warn('Could not poll assigned responder location:', err);
+            }
+        }
+
+        // Toggle Citizen Live Location Sharing ("Share My Live Location During Emergency")
+        async function toggleCitizenLiveLocationSharing() {
+            const btn = document.getElementById('btnCitizenLiveShare');
+            const token = localStorage.getItem('token');
+
+            if (!activeCitizenEmergencyReportId) {
+                if (window.showToast) window.showToast('Please submit an incident report first before sharing live location.', 'warning');
+                return;
+            }
+
+            if (isCitizenLiveSharing) {
+                // Stop sharing
+                if (citizenLiveWatchId) {
+                    navigator.geolocation.clearWatch(citizenLiveWatchId);
+                    citizenLiveWatchId = null;
+                }
+                isCitizenLiveSharing = false;
+                if (btn) {
+                    btn.classList.remove('cc-btn-danger');
+                    btn.classList.add('cc-btn-secondary');
+                    btn.innerHTML = '<i class="fas fa-tower-broadcast"></i> Share Live Location';
+                }
+                try {
+                    await fetch(`/api/citizen-reports/${activeCitizenEmergencyReportId}/live-location/stop`, {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+                    });
+                } catch (e) {}
+                if (window.showToast) window.showToast('Live emergency location broadcast stopped.', 'info');
+            } else {
+                // Start sharing
+                if (!navigator.geolocation) {
+                    if (window.showToast) window.showToast('Geolocation is not supported by your browser.', 'error');
+                    return;
+                }
+
+                isCitizenLiveSharing = true;
+                if (btn) {
+                    btn.classList.remove('cc-btn-secondary');
+                    btn.classList.add('cc-btn-danger');
+                    btn.innerHTML = '<i class="fas fa-tower-broadcast fa-fade" style="color:#fff;"></i> Stop Live Sharing';
+                }
+
+                citizenLiveWatchId = navigator.geolocation.watchPosition(
+                    async (pos) => {
+                        try {
+                            await fetch(`/api/citizen-reports/${activeCitizenEmergencyReportId}/live-location/update`, {
+                                method: 'POST',
+                                headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    latitude: pos.coords.latitude,
+                                    longitude: pos.coords.longitude,
+                                    accuracy: pos.coords.accuracy
+                                })
+                            });
+                        } catch (e) {}
+                    },
+                    (err) => console.warn('Live watch error:', err.message),
+                    { enableHighAccuracy: true }
+                );
+
+                if (window.showToast) window.showToast('Live emergency location broadcast active. Responders can track your beacon.', 'success');
+            }
+        }
+
+        async function loadWarningsOnCitizenMap() {
+            try {
+                const res = await fetch('/api/official-alerts/active');
+                if (res.ok) {
+                    const warnings = await res.json();
+                    warnings.forEach(w => {
+                        if (w.latitude && w.longitude) {
+                            const marker = L.marker([w.latitude, w.longitude], {
+                                icon: CommandCenter.createTacticalMarker(w.hazardType || 'Advisory', w.severity || 'Moderate')
+                            }).addTo(alertsLayerGroup || citizenMap);
+
+                            marker.bindPopup(`
+                                <strong>${w.headline || w.hazardType}</strong><br>
+                                <span style="color:#f59e0b;">Area: ${w.areaDescription || 'Regional'}</span><br>
+                                <p style="font-size:0.8rem;margin:4px 0;">${w.instruction || 'Follow official guidance.'}</p>
+                            `);
+                        }
+                    });
+                }
+            } catch (e) {}
+        }
+
+        function usePinnedLocationForReport(lat, lng) {
+            document.getElementById('reportLocation').value = `Pinned Coordinates: ${lat}, ${lng}`;
+            switchTab('reportTab');
+            CommandCenter.showToast(`Location set to ${lat}, ${lng}`, 'success');
+        }
+
+        // =========================================================================
+        // FAST SOS MODAL DISPATCH
+        // =========================================================================
+        let detectedSosCoords = null;
+
+        function openFastSosModal() {
+            const modal = document.getElementById('fastSosModal');
+            if (modal) modal.style.display = 'flex';
+            if (window.CommandCenterSound) CommandCenterSound.playAlert();
+
+            const locEl = document.getElementById('sosDetectedLocation');
+            if (locEl) locEl.innerText = 'Acquiring high-accuracy GPS coordinates...';
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    pos => {
+                        detectedSosCoords = `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
+                        if (locEl) locEl.innerHTML = `<span style="color:#10b981;">✓ GPS Locked:</span> ${detectedSosCoords} (Accuracy: ~${Math.round(pos.coords.accuracy)}m)`;
+                    },
+                    err => {
+                        detectedSosCoords = 'Peelamedu, Coimbatore (Detected Zone)';
+                        if (locEl) locEl.innerHTML = `<span style="color:#f59e0b;">Zone Approximate:</span> ${detectedSosCoords}`;
+                    },
+                    { enableHighAccuracy: true, timeout: 6000 }
+                );
+            } else {
+                detectedSosCoords = 'Peelamedu, Coimbatore';
+                if (locEl) locEl.innerText = detectedSosCoords;
+            }
+        }
+
+        function closeFastSosModal() {
+            const modal = document.getElementById('fastSosModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        async function executeFastSosDispatch() {
+            const btn = document.getElementById('confirmSosBtn');
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/index.html';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Transmitting...';
+
+            try {
+                const res = await fetch('/api/citizen-reports', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({
+                        location: detectedSosCoords || 'Immediate Civilian Distress Location',
+                        message: 'EMERGENCY SOS: Citizen triggered urgent life-safety distress signal. Immediate evacuation and search-rescue response required.',
+                        photoData: null
+                    })
+                });
+
+                if (res.ok) {
+                    const saved = await res.json();
+                    if (window.CommandCenterSound) CommandCenterSound.playSuccess();
+                    closeFastSosModal();
+
+                    addNotification({
+                        title: `Emergency SOS Dispatched (#SOS-${saved.reportId})`,
+                        body: 'Distress signal received by dispatch center. Emergency teams assigned.',
+                        time: (window.formatIndianTime ? window.formatIndianTime(new Date()) : new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true })),
+                        type: 'sos'
+                    });
+
+                    CommandCenter.showToast('🚨 SOS Transmitted! Dispatchers and field rescue units have received your distress coordinates.', 'success');
+                    loadMyReports();
+                    switchTab('myReportsTab');
+                } else {
+                    CommandCenter.showToast('Failed to transmit SOS signal. Please call 112 directly.', 'error');
+                }
+            } catch (err) {
+                CommandCenter.showToast('Transmission error: ' + err.message + ' - Please call 112', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-bolt"></i> Dispatch SOS Now';
+            }
+        }
+
+        function escapeJs(str) {
+            if (!str) return '';
+            return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
+        }
+
+        // Emergency SOS Sound Local Alarm Controls
+        function toggleLocalSosAlarm() {
+            if (window.EmergencyAlertSystem) {
+                if (EmergencyAlertSystem.isPlaying()) {
+                    EmergencyAlertSystem.stopAlarm();
+                    updateSosSoundButtonState(false);
+                } else {
+                    EmergencyAlertSystem.triggerAlarm();
+                    updateSosSoundButtonState(true);
+                }
+            } else {
+                console.warn('EmergencyAlertSystem not loaded');
+            }
+        }
+
+        function updateSosSoundButtonState(isPlaying) {
+            const btn = document.getElementById('sosSoundBtn');
+            if (!btn) return;
+            const shortcut = (window.EmergencyAlertSystem && EmergencyAlertSystem.getShortcut) ? EmergencyAlertSystem.getShortcut() : 'TAB';
+            if (isPlaying) {
+                btn.classList.add('sos-alarm-active-pulse');
+                btn.style.background = '#dc2626';
+                btn.style.borderColor = '#f87171';
+                btn.innerHTML = `<i class="fas fa-stop-circle fa-beat" style="--fa-animation-duration: 0.8s;color:#ffffff;"></i> <span style="font-weight:700;">STOP SOS SOUND</span>`;
+                btn.title = 'Local device audible alarm sounding! Click to silence.';
+            } else {
+                btn.classList.remove('sos-alarm-active-pulse');
+                btn.style.background = '';
+                btn.style.borderColor = '';
+                btn.innerHTML = `<i class="fas fa-bullhorn" id="sosSoundBtnIcon"></i> <span id="sosSoundBtnText">SOS Sound</span> <kbd id="sosShortcutBadge" style="background:rgba(0,0,0,0.3);padding:0.1rem 0.35rem;border-radius:4px;font-size:0.75rem;margin-left:0.25rem;">${shortcut}</kbd>`;
+                btn.title = `Sound audible SOS alert on this device (Shortcut: ${shortcut})`;
+            }
+        }
+
+        // Keep SOS Sound button synced with EmergencyAlertSystem state
+        setInterval(function() {
+            if (window.EmergencyAlertSystem) {
+                const playing = EmergencyAlertSystem.isPlaying();
+                const btn = document.getElementById('sosSoundBtn');
+                if (btn) {
+                    const hasPulse = btn.classList.contains('sos-alarm-active-pulse');
+                    if (playing && !hasPulse) {
+                        updateSosSoundButtonState(true);
+                    } else if (!playing && hasPulse) {
+                        updateSosSoundButtonState(false);
+                    }
+                }
+            }
+        }, 300);
+
+        // Auto refresh alerts every 30s
+        setInterval(loadUnifiedAlerts, 30000);
+    </script>
 </body>
 </html>

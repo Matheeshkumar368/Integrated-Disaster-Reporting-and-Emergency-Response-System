@@ -6,496 +6,571 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
     <meta http-equiv="Pragma" content="no-cache"/>
     <meta http-equiv="Expires" content="0"/>
-    <title>Analytics & Reports - Disaster Management</title>
+    <title>Incident Telemetry & Analytics | NDMA Mission Control</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome & Command Center CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link rel="stylesheet" href="toast-manager.css?v=2" />
+    <script src="toast-manager.js?v=2"></script>
+    <script src="/js/emergency-alert.js?v=3"></script>
+    <link rel="stylesheet" href="command-center.css?v=3" />
+    <link rel="stylesheet" href="role-loading.css?v=2" />
+
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #0f1a2a 0%, #0a1420 100%);
-            color: #e0e0e0;
-            min-height: 100vh;
-            padding-bottom: 5rem;
-        }
-        .header {
-            background: linear-gradient(135deg, #1e3a8a, #3b82f6);
-            padding: 1.8rem 1rem;
-            text-align: center;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.5);
-        }
-        .header h1 {
-            font-size: 2.4rem;
-            color: white;
-            font-weight: 700;
-            text-shadow: 0 2px 8px rgba(0,0,0,0.4);
-        }
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 1.5rem;
-        }
-        .stats-grid {
+        .charts-grid-2x2 {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: 1.5rem;
             margin-bottom: 2rem;
         }
-        .stat-card {
-            background: rgba(30, 41, 59, 0.95);
-            border-radius: 16px;
-            padding: 1.5rem;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
-            border-left: 4px solid;
-            transition: transform 0.3s;
-        }
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
-        .stat-card.total { border-left-color: #3b82f6; }
-        .stat-card.active { border-left-color: #ef4444; }
-        .stat-card.acknowledged { border-left-color: #f59e0b; }
-        .stat-card.resolved { border-left-color: #22c55e; }
-        .stat-icon {
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-        }
-        .stat-number {
-            font-size: 3rem;
-            font-weight: bold;
-            margin: 0.5rem 0;
-        }
-        .stat-label {
-            color: #94a3b8;
-            font-size: 1.1rem;
-        }
-        .charts-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        .chart-card {
-            background: rgba(30, 41, 59, 0.95);
-            border-radius: 16px;
-            padding: 1.5rem;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
-        }
-        .chart-card h3 {
-            color: #3b82f6;
-            margin-bottom: 1rem;
-            font-size: 1.3rem;
-        }
-        .table-card {
-            background: rgba(30, 41, 59, 0.95);
-            border-radius: 16px;
-            padding: 1.5rem;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
-            margin-bottom: 2rem;
-        }
-        .table-card h3 {
-            color: #3b82f6;
-            margin-bottom: 1rem;
-            font-size: 1.3rem;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            padding: 1rem;
-            text-align: left;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        th {
-            background: rgba(59,130,246,0.2);
-            color: #3b82f6;
-            font-weight: 600;
-        }
-        tr:hover {
-            background: rgba(255,255,255,0.05);
-        }
-        .badge {
-            padding: 0.3rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
-        .badge.high { background: rgba(239,68,68,0.2); color: #ef4444; }
-        .badge.medium { background: rgba(245,158,11,0.2); color: #f59e0b; }
-        .badge.low { background: rgba(16,185,129,0.2); color: #10b981; }
-        .badge.active { background: rgba(239,68,68,0.2); color: #ef4444; }
-        .badge.acknowledged { background: rgba(59,130,246,0.2); color: #3b82f6; }
-        .badge.resolved { background: rgba(34,197,94,0.2); color: #22c55e; }
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: #1e293b;
-            display: flex;
-            justify-content: space-around;
-            padding: 1rem 0;
-            box-shadow: 0 -6px 20px rgba(0,0,0,0.5);
-            z-index: 1000;
-        }
-        .bottom-nav a {
-            color: #94a3b8;
-            text-decoration: none;
-            text-align: center;
-            font-size: 0.95rem;
-            transition: all 0.3s;
-        }
-        .bottom-nav a i {
-            font-size: 1.9rem;
-            display: block;
-            margin-bottom: 0.4rem;
-        }
-        .bottom-nav a.active,
-        .bottom-nav a:hover {
-            color: #3b82f6;
-            transform: translateY(-3px);
-        }
-        @media (max-width: 768px) {
-            .charts-grid {
+
+        @media (max-width: 900px) {
+            .charts-grid-2x2 {
                 grid-template-columns: 1fr;
             }
         }
+
+        .chart-card-container {
+            background: rgba(14, 23, 38, 0.7);
+            border: 1px solid var(--cc-border);
+            border-radius: var(--cc-radius-lg);
+            padding: 1.25rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            position: relative;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--cc-border);
+        }
+
+        .chart-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .chart-canvas-wrap {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+
+        .telemetry-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .telemetry-table th {
+            background: rgba(20, 32, 52, 0.8);
+            color: var(--cc-accent-glow);
+            font-family: var(--cc-font-mono);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid var(--cc-border);
+            text-align: left;
+        }
+
+        .telemetry-table td {
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid rgba(30, 41, 59, 0.5);
+            color: var(--cc-text-secondary);
+        }
+
+        .telemetry-table tr:hover td {
+            background: rgba(14, 165, 233, 0.05);
+            color: #ffffff;
+        }
     </style>
 </head>
+
 <body>
-
-<div class="header">
-    <h1><i class="fas fa-chart-line"></i> Analytics & Reports</h1>
-</div>
-
-<div class="container">
-    <!-- Statistics Cards -->
-    <div class="stats-grid">
-        <div class="stat-card total">
-            <div class="stat-icon" style="color:#3b82f6;">
-                <i class="fas fa-bell"></i>
+    <!-- =========================================================================
+         TACTICAL TOP HUD HEADER
+         ========================================================================= -->
+    <header class="cc-hud-header">
+        <div class="cc-hud-branding">
+            <div class="cc-hud-badge-icon">
+                <i class="fas fa-chart-line"></i>
             </div>
-            <div class="stat-number" id="totalAlerts">0</div>
-            <div class="stat-label">Total Alerts</div>
-        </div>
-        
-        <div class="stat-card active">
-            <div class="stat-icon" style="color:#ef4444;">
-                <i class="fas fa-exclamation-triangle"></i>
+            <div class="cc-hud-title-group">
+                <h1>
+                    INCIDENT TELEMETRY & ANALYTICS
+                    <span class="cc-badge"><i class="fas fa-satellite cc-pulse-dot"></i> REAL-TIME METRICS</span>
+                </h1>
+                <div class="cc-hud-subtitle">NATIONAL OPERATIONS &bull; REGIONAL THREAT & RESOLUTION METRICS</div>
             </div>
-            <div class="stat-number" id="activeAlerts">0</div>
-            <div class="stat-label">Active Alerts</div>
         </div>
-        
-        <div class="stat-card acknowledged">
-            <div class="stat-icon" style="color:#f59e0b;">
-                <i class="fas fa-check-circle"></i>
+
+        <div class="cc-hud-telemetry">
+            <div class="cc-telemetry-pill live" id="telemetryStatusPill">
+                <span class="cc-pulse-dot"></span>
+                <span>TELEMETRY: LIVE</span>
             </div>
-            <div class="stat-number" id="acknowledgedAlerts">0</div>
-            <div class="stat-label">Acknowledged</div>
-        </div>
-        
-        <div class="stat-card resolved">
-            <div class="stat-icon" style="color:#22c55e;">
-                <i class="fas fa-check-double"></i>
+            <div class="cc-telemetry-pill" id="hudClockDisplay"></div>
+            <div class="cc-telemetry-pill" style="border-color: rgba(56,189,248,0.35);">
+                <i class="fas fa-user-shield" style="color:var(--cc-cyan);"></i>
+                <span id="adminName">Admin User</span>
             </div>
-            <div class="stat-number" id="resolvedAlerts">0</div>
-            <div class="stat-label">Resolved</div>
+            <button class="cc-btn cc-btn-danger" onclick="AuthHelper.logout()" style="padding:0.4rem 0.85rem;font-size:0.8rem;">
+                <i class="fas fa-power-off"></i> Exit
+            </button>
         </div>
-    </div>
+    </header>
 
-    <!-- Charts -->
-    <div class="charts-grid">
-        <div class="chart-card">
-            <h3><i class="fas fa-chart-pie"></i> Alerts by Severity</h3>
-            <canvas id="severityChart"></canvas>
+    <!-- =========================================================================
+         TACTICAL NAVIGATION BAR
+         ========================================================================= -->
+    <nav class="cc-nav-bar">
+        <ul class="cc-nav-links">
+            <li><a href="/admin-dashboard.html" class="cc-nav-link"><i class="fas fa-map-location-dot"></i> Mission Control</a></li>
+            <li><a href="/admin-alerts.html" class="cc-nav-link"><i class="fas fa-bullhorn"></i> Emergency Broadcasts</a></li>
+            <li><a href="/admin-tasks.html" class="cc-nav-link"><i class="fas fa-truck-medical"></i> Responder Tasks</a></li>
+            <li><a href="/reports.html" class="cc-nav-link active"><i class="fas fa-chart-line"></i> Incident Telemetry</a></li>
+            <li><a href="/admin-profile.html" class="cc-nav-link"><i class="fas fa-shield-halved"></i> Security & 2FA PIN</a></li>
+        </ul>
+        <div class="cc-nav-user-actions">
+            <button class="cc-btn cc-btn-secondary" onclick="window.location.href='/admin-dashboard.html'" style="font-size:0.82rem;padding:0.45rem 0.9rem;">
+                <i class="fas fa-satellite"></i> Live Tactical Map
+            </button>
         </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="cc-main-container">
         
-        <div class="chart-card">
-            <h3><i class="fas fa-chart-bar"></i> Alerts by Region</h3>
-            <canvas id="regionChart"></canvas>
-        </div>
-        
-        <div class="chart-card">
-            <h3><i class="fas fa-chart-doughnut"></i> Alerts by Type</h3>
-            <canvas id="typeChart"></canvas>
-        </div>
-        
-        <div class="chart-card">
-            <h3><i class="fas fa-chart-area"></i> Alert Status Distribution</h3>
-            <canvas id="statusChart"></canvas>
-        </div>
-    </div>
+        <!-- Header Banner -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h2 style="font-size: 1.5rem; font-weight: 700; color: #fff; margin: 0; display: flex; align-items: center; gap: 0.6rem;">
+                    <i class="fas fa-chart-pie" style="color: var(--cc-accent-glow);"></i> Comprehensive Incident Telemetry
+                </h2>
+                <p style="margin: 0.25rem 0 0; color: var(--cc-text-muted); font-size: 0.85rem;">
+                    Aggregated intelligence on active threats, disaster types, regional density, and field resolution timelines.
+                </p>
+            </div>
 
-    <!-- Recent Alerts Table -->
-    <div class="table-card">
-        <h3><i class="fas fa-table"></i> Recent Alerts</h3>
-        <div style="overflow-x:auto;">
-            <table id="alertsTable">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Title</th>
-                        <th>Type</th>
-                        <th>Severity</th>
-                        <th>Region</th>
-                        <th>Status</th>
-                        <th>Created</th>
-                    </tr>
-                </thead>
-                <tbody id="alertsTableBody">
-                    <tr>
-                        <td colspan="7" style="text-align:center;padding:2rem;color:#64748b;">
-                            <i class="fas fa-spinner fa-spin" style="font-size:2rem;"></i>
-                            <p style="margin-top:1rem;">Loading alerts...</p>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+            <div style="display: flex; gap: 0.75rem;">
+                <button type="button" class="cc-btn cc-btn-secondary" onclick="exportTelemetryCSV()">
+                    <i class="fas fa-file-csv"></i> Export Incident Telemetry (CSV)
+                </button>
+                <button type="button" class="cc-btn cc-btn-primary" onclick="loadTelemetryData()">
+                    <i class="fas fa-rotate"></i> Refresh Telemetry
+                </button>
+            </div>
         </div>
-    </div>
-</div>
 
-<nav class="bottom-nav">
-    <a href="/admin-dashboard.html">
-        <i class="fas fa-tachometer-alt"></i>
-        <span>Dashboard</span>
-    </a>
-    <a href="/reports.html" class="active">
-        <i class="fas fa-chart-bar"></i>
-        <span>Reports</span>
-    </a>
-    <a href="/admin-profile.html">
-        <i class="fas fa-user-shield"></i>
-        <span>Profile</span>
-    </a>
-</nav>
+        <!-- 4 Key Stat HUD Cards -->
+        <section class="cc-stat-grid" aria-label="Key Incident Metrics">
+            <div class="cc-stat-card">
+                <div class="cc-stat-label">Total Recorded Alerts</div>
+                <div class="cc-stat-value" id="statTotal" style="color: var(--cc-accent-glow);">--</div>
+                <div class="cc-stat-sub"><i class="fas fa-database"></i> All Recorded Incidents</div>
+            </div>
 
-<script src="/js/emergency-alert.js"></script>
-<script>
-    // Access Control - Only Admin can access this page
-    (function() {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            window.location.href = '/index.html';
-            return;
-        }
-        try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            const role = payload.role;
-            if (role !== 'Admin') {
-                alert('Access Denied: This page is for Admin only');
-                if (role === 'Responder') {
-                    window.location.href = '/responder-dashboard.html';
-                } else if (role === 'Citizen') {
-                    window.location.href = '/citizen-dashboard.html';
-                } else {
+            <div class="cc-stat-card">
+                <div class="cc-stat-label">Active Threat Warnings</div>
+                <div class="cc-stat-value" id="statActive" style="color: var(--cc-alert-extreme);">--</div>
+                <div class="cc-stat-sub"><i class="fas fa-triangle-exclamation"></i> Immediate Hazard</div>
+            </div>
+
+            <div class="cc-stat-card">
+                <div class="cc-stat-label">Acknowledged / En Route</div>
+                <div class="cc-stat-value" id="statAck" style="color: var(--cc-alert-severe);">--</div>
+                <div class="cc-stat-sub"><i class="fas fa-truck-fast"></i> Units Deployed</div>
+            </div>
+
+            <div class="cc-stat-card">
+                <div class="cc-stat-label">Resolved Operations</div>
+                <div class="cc-stat-value" id="statResolved" style="color: var(--cc-status-success);">--</div>
+                <div class="cc-stat-sub"><i class="fas fa-circle-check"></i> Safely Mitigated</div>
+            </div>
+        </section>
+
+        <!-- 2x2 Dark Chart.js Grid -->
+        <div class="charts-grid-2x2">
+            
+            <!-- Severity Chart -->
+            <div class="chart-card-container">
+                <div class="chart-header">
+                    <div class="chart-title">
+                        <i class="fas fa-gauge-high" style="color: var(--cc-alert-extreme);"></i> Threat Severity Distribution
+                    </div>
+                    <span class="cc-badge cc-badge-extreme">CRITICALITY</span>
+                </div>
+                <div class="chart-canvas-wrap">
+                    <canvas id="chartSeverity"></canvas>
+                </div>
+            </div>
+
+            <!-- Status Distribution -->
+            <div class="chart-card-container">
+                <div class="chart-header">
+                    <div class="chart-title">
+                        <i class="fas fa-timeline" style="color: var(--cc-accent-primary);"></i> Lifecycle Status Progression
+                    </div>
+                    <span class="cc-badge cc-badge-moderate">OPERATIONAL</span>
+                </div>
+                <div class="chart-canvas-wrap">
+                    <canvas id="chartStatus"></canvas>
+                </div>
+            </div>
+
+            <!-- Regional Density -->
+            <div class="chart-card-container">
+                <div class="chart-header">
+                    <div class="chart-title">
+                        <i class="fas fa-map-pin" style="color: var(--cc-alert-severe);"></i> Regional Inundation / Density
+                    </div>
+                    <span class="cc-badge cc-badge-official">GEOGRAPHY</span>
+                </div>
+                <div class="chart-canvas-wrap">
+                    <canvas id="chartRegion"></canvas>
+                </div>
+            </div>
+
+            <!-- Category Classification -->
+            <div class="chart-card-container">
+                <div class="chart-header">
+                    <div class="chart-title">
+                        <i class="fas fa-cloud-bolt" style="color: #a855f7;"></i> Disaster Category Classification
+                    </div>
+                    <span class="cc-badge cc-badge-official">CLASSIFICATION</span>
+                </div>
+                <div class="chart-canvas-wrap">
+                    <canvas id="chartCategory"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Recent Alerts Telemetry Table -->
+        <div class="cc-card" style="margin-bottom: 2rem;">
+            <div class="cc-card-header">
+                <div class="cc-card-title">
+                    <i class="fas fa-table-list"></i> Real-Time Incident Telemetry Log
+                </div>
+                <span class="cc-badge cc-badge-official">LIVE FEED SYNCHRONIZED</span>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table class="telemetry-table" id="telemetryTable">
+                    <thead>
+                        <tr>
+                            <th>REF ID</th>
+                            <th>INCIDENT HEADLINE</th>
+                            <th>CATEGORY</th>
+                            <th>SEVERITY</th>
+                            <th>TARGET REGION</th>
+                            <th>OPERATIONAL STATUS</th>
+                            <th>TIMESTAMP (IST)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="telemetryTableBody">
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 2.5rem; color: var(--cc-text-muted);">
+                                <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem; margin-bottom: 0.5rem; display: block;"></i>
+                                Ingesting telemetry records from NDMA Core...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Scripts -->
+    <script src="auth-helper.js?v=2"></script>
+    <script src="command-center.js?v=3"></script>
+    <script src="role-loading.js?v=2"></script>
+
+    <script>
+        let cachedAlerts = [];
+        let chartInstances = {};
+
+        // Authentication guard
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('token');
+            const role = localStorage.getItem('userRole');
+
+            if (!token || role !== 'Admin') {
+                if (window.showToast) {
+                    window.showToast('Access Restricted: Admin credentials required.', 'error');
+                }
+                setTimeout(() => {
                     window.location.href = '/index.html';
+                }, 1000);
+                return;
+            }
+
+            if (window.CommandCenter && CommandCenter.initHudClock) {
+                CommandCenter.initHudClock('hudClockDisplay');
+            }
+            const adminName = localStorage.getItem('userName') || 'Admin User';
+            const nameEl = document.getElementById('adminName');
+            if (nameEl) nameEl.textContent = adminName;
+
+            // Global Chart.js dark theme defaults
+            Chart.defaults.color = '#94a3b8';
+            Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.08)';
+            Chart.defaults.font.family = "'Inter', sans-serif";
+
+            loadTelemetryData();
+            setInterval(loadTelemetryData, 60000); // 60s auto refresh
+
+            if (window.RoleLoadingScreen) {
+                RoleLoadingScreen.hide();
+            }
+        });
+
+        // Load Alert Telemetry
+        async function loadTelemetryData() {
+            try {
+                const response = await fetch('/api/alerts');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                cachedAlerts = await response.json();
+                renderMetrics(cachedAlerts);
+                renderCharts(cachedAlerts);
+                renderTable(cachedAlerts);
+            } catch (err) {
+                console.error('Error fetching telemetry:', err);
+                const tbody = document.getElementById('telemetryTableBody');
+                if (tbody) {
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#ef4444;padding:2rem;">Failed to load incident telemetry: ${err.message}</td></tr>`;
                 }
             }
-        } catch (e) {
-            window.location.href = '/index.html';
         }
-    })();
 
-    let severityChart, regionChart, typeChart, statusChart;
-
-    // Role-based dashboard redirect
-    function goToDashboard() {
-        const token = localStorage.getItem('token');
-        const storedRole = localStorage.getItem('userRole');
-        if (!token) {
-            window.location.href = '/index.html';
-            return;
+        // Render Metric Counters
+        function renderMetrics(alerts) {
+            document.getElementById('statTotal').innerText = alerts.length;
+            document.getElementById('statActive').innerText = alerts.filter(a => a.status === 'Active').length;
+            document.getElementById('statAck').innerText = alerts.filter(a => a.status === 'Acknowledged').length;
+            document.getElementById('statResolved').innerText = alerts.filter(a => a.status === 'Resolved').length;
         }
-        try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            const role = storedRole || payload.role || 'Citizen';
-            if (role === 'Admin') {
-                window.location.href = '/admin-dashboard.html';
-            } else if (role === 'Responder') {
-                window.location.href = '/responder-dashboard.html';
-            } else {
-                window.location.href = '/citizen-dashboard.html';
-            }
-        } catch (e) {
-            // Try stored role
-            if (storedRole === 'Admin') {
-                window.location.href = '/admin-dashboard.html';
-            } else if (storedRole === 'Responder') {
-                window.location.href = '/responder-dashboard.html';
-            } else {
-                localStorage.removeItem('token');
-                localStorage.removeItem('userRole');
-                window.location.href = '/index.html';
-            }
-        }
-    }
 
-    // Load all data
-    function loadReports() {
-        fetch('/api/alerts')
-            .then(res => res.json())
-            .then(alerts => {
-                updateStatistics(alerts);
-                updateCharts(alerts);
-                updateTable(alerts);
-            })
-            .catch(err => {
-                console.error('Error loading reports:', err);
+        // Render Charts
+        function renderCharts(alerts) {
+            // 1. Severity Chart
+            const sevHigh = alerts.filter(a => a.severity === 'High').length;
+            const sevMed = alerts.filter(a => a.severity === 'Medium').length;
+            const sevLow = alerts.filter(a => a.severity === 'Low').length;
+
+            if (chartInstances.severity) chartInstances.severity.destroy();
+            chartInstances.severity = new Chart(document.getElementById('chartSeverity'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Extreme (High)', 'Severe (Medium)', 'Moderate (Low)'],
+                    datasets: [{
+                        data: [sevHigh, sevMed, sevLow],
+                        backgroundColor: ['#ef4444', '#f59e0b', '#10b981'],
+                        borderWidth: 2,
+                        borderColor: '#0e1726'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14 } }
+                    }
+                }
             });
-    }
 
-    // Update statistics cards
-    function updateStatistics(alerts) {
-        document.getElementById('totalAlerts').innerText = alerts.length;
-        document.getElementById('activeAlerts').innerText = alerts.filter(a => a.status === 'Active').length;
-        document.getElementById('acknowledgedAlerts').innerText = alerts.filter(a => a.status === 'Acknowledged').length;
-        document.getElementById('resolvedAlerts').innerText = alerts.filter(a => a.status === 'Resolved').length;
-    }
+            // 2. Status Chart
+            const stActive = alerts.filter(a => a.status === 'Active').length;
+            const stAck = alerts.filter(a => a.status === 'Acknowledged').length;
+            const stRes = alerts.filter(a => a.status === 'Resolved').length;
 
-    // Update charts
-    function updateCharts(alerts) {
-        // Severity Chart
-        const severityCounts = {
-            'High': alerts.filter(a => a.severity === 'High').length,
-            'Medium': alerts.filter(a => a.severity === 'Medium').length,
-            'Low': alerts.filter(a => a.severity === 'Low').length
-        };
-
-        if (severityChart) severityChart.destroy();
-        severityChart = new Chart(document.getElementById('severityChart'), {
-            type: 'pie',
-            data: {
-                labels: ['High', 'Medium', 'Low'],
-                datasets: [{
-                    data: [severityCounts.High, severityCounts.Medium, severityCounts.Low],
-                    backgroundColor: ['#ef4444', '#f59e0b', '#10b981']
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { labels: { color: '#e0e0e0' } }
-                }
-            }
-        });
-
-        // Region Chart
-        const regionCounts = {};
-        alerts.forEach(a => {
-            regionCounts[a.region] = (regionCounts[a.region] || 0) + 1;
-        });
-
-        if (regionChart) regionChart.destroy();
-        regionChart = new Chart(document.getElementById('regionChart'), {
-            type: 'bar',
-            data: {
-                labels: Object.keys(regionCounts),
-                datasets: [{
-                    label: 'Alerts by Region',
-                    data: Object.values(regionCounts),
-                    backgroundColor: '#3b82f6'
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { labels: { color: '#e0e0e0' } }
+            if (chartInstances.status) chartInstances.status.destroy();
+            chartInstances.status = new Chart(document.getElementById('chartStatus'), {
+                type: 'bar',
+                data: {
+                    labels: ['Active Threat', 'Acknowledged', 'Resolved'],
+                    datasets: [{
+                        label: 'Incidents',
+                        data: [stActive, stAck, stRes],
+                        backgroundColor: ['#ef4444', '#f59e0b', '#10b981'],
+                        borderRadius: 6
+                    }]
                 },
-                scales: {
-                    y: { ticks: { color: '#e0e0e0' }, grid: { color: 'rgba(255,255,255,0.1)' } },
-                    x: { ticks: { color: '#e0e0e0' }, grid: { color: 'rgba(255,255,255,0.1)' } }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        x: { grid: { display: false } }
+                    }
                 }
-            }
-        });
+            });
 
-        // Type Chart
-        const typeCounts = {};
-        alerts.forEach(a => {
-            typeCounts[a.disasterType] = (typeCounts[a.disasterType] || 0) + 1;
-        });
+            // 3. Regional Chart
+            const regionMap = {};
+            alerts.forEach(a => {
+                const r = a.region || 'Unspecified';
+                regionMap[r] = (regionMap[r] || 0) + 1;
+            });
+            const topRegions = Object.keys(regionMap).slice(0, 6);
 
-        if (typeChart) typeChart.destroy();
-        typeChart = new Chart(document.getElementById('typeChart'), {
-            type: 'doughnut',
-            data: {
-                labels: Object.keys(typeCounts),
-                datasets: [{
-                    data: Object.values(typeCounts),
-                    backgroundColor: ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#7c3aed', '#ec4899']
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { labels: { color: '#e0e0e0' } }
-                }
-            }
-        });
-
-        // Status Chart
-        const statusCounts = {
-            'Active': alerts.filter(a => a.status === 'Active').length,
-            'Acknowledged': alerts.filter(a => a.status === 'Acknowledged').length,
-            'Resolved': alerts.filter(a => a.status === 'Resolved').length
-        };
-
-        if (statusChart) statusChart.destroy();
-        statusChart = new Chart(document.getElementById('statusChart'), {
-            type: 'bar',
-            data: {
-                labels: ['Active', 'Acknowledged', 'Resolved'],
-                datasets: [{
-                    label: 'Alert Status',
-                    data: [statusCounts.Active, statusCounts.Acknowledged, statusCounts.Resolved],
-                    backgroundColor: ['#ef4444', '#f59e0b', '#22c55e']
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { labels: { color: '#e0e0e0' } }
+            if (chartInstances.region) chartInstances.region.destroy();
+            chartInstances.region = new Chart(document.getElementById('chartRegion'), {
+                type: 'bar',
+                data: {
+                    labels: topRegions,
+                    datasets: [{
+                        label: 'Incidents by Region',
+                        data: topRegions.map(k => regionMap[k]),
+                        backgroundColor: '#0ea5e9',
+                        borderRadius: 6
+                    }]
                 },
-                scales: {
-                    y: { ticks: { color: '#e0e0e0' }, grid: { color: 'rgba(255,255,255,0.1)' } },
-                    x: { ticks: { color: '#e0e0e0' }, grid: { color: 'rgba(255,255,255,0.1)' } }
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y: { grid: { display: false } }
+                    }
                 }
-            }
-        });
-    }
+            });
 
-    // Update table
-    function updateTable(alerts) {
-        const tbody = document.getElementById('alertsTableBody');
-        tbody.innerHTML = '';
+            // 4. Category Classification
+            const catMap = {};
+            alerts.forEach(a => {
+                const c = a.disasterType || 'General';
+                catMap[c] = (catMap[c] || 0) + 1;
+            });
 
-        if (alerts.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:#64748b;">No alerts found</td></tr>';
-            return;
+            if (chartInstances.category) chartInstances.category.destroy();
+            chartInstances.category = new Chart(document.getElementById('chartCategory'), {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(catMap),
+                    datasets: [{
+                        data: Object.values(catMap),
+                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'],
+                        borderWidth: 2,
+                        borderColor: '#0e1726'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12 } }
+                    }
+                }
+            });
         }
 
-        // Show latest 10 alerts
-        alerts.slice(0, 10).forEach(alert => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>#${alert.alertId}</td>
-                <td>${alert.title}</td>
-                <td>${alert.disasterType}</td>
-                <td><span class="badge ${alert.severity.toLowerCase()}">${alert.severity}</span></td>
-                <td>${alert.region}</td>
-                <td><span class="badge ${alert.status.toLowerCase()}">${alert.status}</span></td>
-                <td>${new Date(alert.createdAt).toLocaleDateString('en-IN')}</td>
-            `;
-            tbody.appendChild(row);
-        });
-    }
+        // Render Table
+        function renderTable(alerts) {
+            const tbody = document.getElementById('telemetryTableBody');
+            tbody.innerHTML = '';
 
-    // Load reports on page load
-    loadReports();
-    setInterval(loadReports, 60000); // Refresh every minute
-</script>
+            if (alerts.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--cc-text-muted);">No incident telemetry logged in database.</td></tr>`;
+                return;
+            }
 
+            alerts.slice(0, 25).forEach(alert => {
+                const tr = document.createElement('tr');
+                
+                let sevBadge = `<span class="cc-badge cc-badge-moderate">LOW</span>`;
+                if (alert.severity === 'High') sevBadge = `<span class="cc-badge cc-badge-extreme">HIGH</span>`;
+                else if (alert.severity === 'Medium') sevBadge = `<span class="cc-badge cc-badge-severe">MEDIUM</span>`;
+
+                let stBadge = `<span class="cc-badge cc-badge-extreme">ACTIVE</span>`;
+                if (alert.status === 'Acknowledged') stBadge = `<span class="cc-badge cc-badge-severe">ACKNOWLEDGED</span>`;
+                else if (alert.status === 'Resolved') stBadge = `<span class="cc-badge cc-badge-moderate">RESOLVED</span>`;
+
+                const dateStr = alert.createdAt ? new Date(alert.createdAt).toLocaleString('en-IN') : 'N/A';
+
+                tr.innerHTML = `
+                    <td style="font-family: var(--cc-font-mono); color: var(--cc-accent-glow); font-weight: 600;">#ALT-${alert.alertId}</td>
+                    <td style="font-weight: 600; color: #ffffff;">${escapeHtml(alert.title || 'Untitled')}</td>
+                    <td>${escapeHtml(alert.disasterType || 'General')}</td>
+                    <td>${sevBadge}</td>
+                    <td><i class="fas fa-location-dot" style="color:var(--cc-accent-glow); margin-right:4px;"></i>${escapeHtml(alert.region || 'National')}</td>
+                    <td>${stBadge}</td>
+                    <td style="font-family: var(--cc-font-mono); font-size: 0.8rem;">${dateStr}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Export Telemetry to CSV
+        function exportTelemetryCSV() {
+            if (!cachedAlerts || cachedAlerts.length === 0) {
+                if (window.showToast) {
+                    window.showToast('No telemetry records available to export.', 'info');
+                } else {
+                    window.showToast('No telemetry records available to export.', 'info');
+                }
+                return;
+            }
+
+            let csv = 'Alert_ID,Title,Disaster_Type,Severity,Region,Status,Created_At,Message\n';
+            cachedAlerts.forEach(a => {
+                const line = [
+                    a.alertId,
+                    `"${(a.title || '').replace(/"/g, '""')}"`,
+                    `"${(a.disasterType || '').replace(/"/g, '""')}"`,
+                    a.severity,
+                    `"${(a.region || '').replace(/"/g, '""')}"`,
+                    a.status,
+                    `"${a.createdAt || ''}"`,
+                    `"${(a.message || '').replace(/"/g, '""')}"`
+                ].join(',');
+                csv += line + '\n';
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `incident_telemetry_${Date.now()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function handleLogout() {
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.href = '/index.html';
+        }
+    </script>
 </body>
 </html>

@@ -2,6 +2,7 @@ package com.disaster.management.entity;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -30,7 +31,7 @@ public class RescueTask {
     
     private String priority; // High, Medium, Low
     
-    private String status; // Pending, In Progress, Completed
+    private String status; // Pending, In Progress, Completed, Resolved
     
     private LocalDateTime deadline;
     
@@ -42,6 +43,7 @@ public class RescueTask {
     
     private String assignedResponderName;
     
+    @Column(columnDefinition = "TEXT")
     private String notes;
     
     // Location coordinates
@@ -49,6 +51,27 @@ public class RescueTask {
     private Double longitude;
     
     private String locationName; // Human-readable location name
+
+    @Column(name = "citizen_report_id")
+    private Long citizenReportId;
+
+    @Column(name = "acknowledged_at")
+    private LocalDateTime acknowledgedAt;
+
+    @Column(name = "acknowledged_by")
+    private String acknowledgedBy;
+
+    @Column(name = "en_route_at")
+    private LocalDateTime enRouteAt;
+
+    @Column(name = "arrived_at")
+    private LocalDateTime arrivedAt;
+
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
+
+    @Column(name = "completion_summary", columnDefinition = "TEXT")
+    private String completionSummary;
 
     public RescueTask() {
         this.createdAt = LocalDateTime.now();
@@ -100,4 +123,25 @@ public class RescueTask {
 
     public String getLocationName() { return locationName; }
     public void setLocationName(String locationName) { this.locationName = locationName; }
+
+    public Long getCitizenReportId() { return citizenReportId; }
+    public void setCitizenReportId(Long citizenReportId) { this.citizenReportId = citizenReportId; }
+
+    public LocalDateTime getAcknowledgedAt() { return acknowledgedAt; }
+    public void setAcknowledgedAt(LocalDateTime acknowledgedAt) { this.acknowledgedAt = acknowledgedAt; }
+
+    public String getAcknowledgedBy() { return acknowledgedBy; }
+    public void setAcknowledgedBy(String acknowledgedBy) { this.acknowledgedBy = acknowledgedBy; }
+
+    public LocalDateTime getEnRouteAt() { return enRouteAt; }
+    public void setEnRouteAt(LocalDateTime enRouteAt) { this.enRouteAt = enRouteAt; }
+
+    public LocalDateTime getArrivedAt() { return arrivedAt; }
+    public void setArrivedAt(LocalDateTime arrivedAt) { this.arrivedAt = arrivedAt; }
+
+    public LocalDateTime getCompletedAt() { return completedAt; }
+    public void setCompletedAt(LocalDateTime completedAt) { this.completedAt = completedAt; }
+
+    public String getCompletionSummary() { return completionSummary; }
+    public void setCompletionSummary(String completionSummary) { this.completionSummary = completionSummary; }
 }

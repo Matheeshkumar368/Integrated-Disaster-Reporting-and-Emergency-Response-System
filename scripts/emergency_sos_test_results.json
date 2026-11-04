@@ -1,0 +1,122 @@
+{
+  "timestamp": "2026-11-02T08:06:41.598Z",
+  "passed": 23,
+  "failed": 0,
+  "log": [
+    {
+      "name": "Citizen Authentication & JWT Issuance",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Login Payload Hydrates Emergency SOS Preferences",
+      "status": "PASS",
+      "details": "Key: Tab, Vol: 85%"
+    },
+    {
+      "name": "Unauthenticated Access to /api/auth/sos-settings Denied (HTTP 401)",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "GET /api/auth/sos-settings Fetches Persisted User Settings",
+      "status": "PASS",
+      "details": "Key: Tab, Volume: 85%"
+    },
+    {
+      "name": "PUT /api/auth/sos-settings Updates Settings (Tab, 85%, Enabled)",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Verified Persistent State Across API Invocations",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Emergency SOS Settings Card Rendered in Profile with TAB Key Badge",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Captured Screenshot: emergency_sos_settings_card.png",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Pressing TAB Triggers Emergency SOS Sound & Fullscreen Indicator Overlay",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Captured Screenshot: emergency_sos_alarm_activated_overlay.png",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "STOP ALARM Button Immediately Silences Audio & Hides Overlay",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Form & Input Protection Guard: TAB Key Inside Form Inputs Never Fires Alarm",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Key-Hold Repeat Guard: Holding Down Shortcut Prevents Flapping & Repeated Activation",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Test Sound Audition Successfully Plays Morse SOS Pattern",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Custom Shortcut Successfully Reconfigured to F8 with 75% Volume",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Reconfigured Shortcut F8 Successfully Triggers Alarm",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Emergency SOS Shortcut Successfully Disabled",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Disabled Shortcut Prevents Any Alarm Activation",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Reset to Defaults Restores TAB Shortcut, 80% Volume, Enabled",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Reusable Emergency SOS Settings Modal Opens via Global API",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "Captured Screenshot: emergency_sos_modal.png",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "EmergencyAlertSystem Automatically Active in Citizen Safety Hub",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "name": "TAB Shortcut Directly Operates from Citizen Dashboard View",
+      "status": "PASS",
+      "details": ""
+    }
+  ]
+}

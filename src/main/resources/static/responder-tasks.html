@@ -3,14 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rescue Operations - Responder</title>
+        <title>Assigned Field Tasks | NDMA Tactical Field Operations</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="command-center.css?v=3">
+    <link rel="stylesheet" href="role-loading.css?v=2">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <!-- Toast and Dialog Manager -->
+    <script src="toast-manager.js?v=2"></script>
+    <link rel="stylesheet" href="media-capture.css?v=1" />
+    <link rel="stylesheet" href="responder-tracking.css?v=1" />
+    <link rel="stylesheet" href="incident-room.css?v=1" />
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="auth-helper.js?v=2"></script>
+    <script src="role-loading.js?v=2"></script>
+    <script src="command-center.js?v=3"></script>
+    <script src="media-capture.js?v=1"></script>
+    <script src="responder-tracking.js?v=1"></script>
+    <script src="incident-room.js?v=1"></script>
+    <script src="/js/emergency-alert.js?v=3"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #1e3a5f 0%, #0d2137 100%);
+            font-family: 'Inter', sans-serif;
+            background: #050811;
             min-height: 100vh;
             color: #fff;
         }
@@ -511,24 +532,65 @@
 </head>
 <body>
     <div id="notification"></div>
-    
-    <header class="header">
-        <h1><i class="fas fa-ambulance"></i> Rescue Operations</h1>
-        <div class="header-actions">
-            <div class="availability-toggle">
+    <!-- =========================================================================
+         TACTICAL HUD HEADER
+         ========================================================================= -->
+    <header class="cc-hud-header">
+        <div class="cc-hud-branding">
+            <div class="cc-hud-badge-icon" style="background:linear-gradient(135deg,rgba(168,85,247,0.2),rgba(59,130,246,0.2));border-color:rgba(168,85,247,0.4);">
+                <i class="fas fa-truck-fast" style="color:var(--cc-purple);"></i>
+            </div>
+            <div class="cc-hud-title-group">
+                <h1>
+                    ASSIGNED FIELD RESCUE TASKS
+                    <span class="cc-badge severity-moderate"><i class="fas fa-circle cc-pulse-dot"></i> UNIT DEPLOYED</span>
+                </h1>
+                <div class="cc-hud-subtitle">TACTICAL RESCUE QUEUE &bull; ASSIGNED DISPATCH DIRECTIVES</div>
+            </div>
+        </div>
+
+        <div class="cc-hud-telemetry">
+            <div class="availability-toggle" style="background: rgba(14, 23, 38, 0.8); border: 1px solid var(--cc-border); padding: 0.35rem 0.75rem; border-radius: var(--cc-radius-pill); display: flex; align-items: center; gap: 0.5rem;">
                 <input type="checkbox" id="availabilityToggle" checked onchange="toggleAvailability()">
-                <label for="availabilityToggle">Available for Rescue</label>
-                <span id="availabilityStatus" class="availability-status available">
-                    <span class="status-dot available"></span> Available
+                <label for="availabilityToggle" style="font-size: 0.8rem; cursor: pointer; color: var(--cc-text-primary);">Field Ready</label>
+                <span id="availabilityStatus" class="availability-status available" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">
+                    <span class="status-dot available"></span> Active
                 </span>
             </div>
-            <button class="btn btn-danger" onclick="logout()">
-                <i class="fas fa-sign-out-alt"></i> Logout
+            <div class="cc-telemetry-pill" id="hudClockDisplay"></div>
+            <div class="cc-telemetry-pill" style="border-color:rgba(168,85,247,0.4);">
+                <i class="fas fa-id-badge" style="color:var(--cc-purple);"></i>
+                <span id="responderName">Emergency Responder</span>
+            </div>
+            <div class="cc-telemetry-pill live">
+                <i class="fas fa-location-crosshairs"></i>
+                <span id="assignedZoneBadge">Zone: Active</span>
+            </div>
+            <button class="cc-btn cc-btn-danger" onclick="AuthHelper.logout()" style="padding:0.4rem 0.85rem;font-size:0.8rem;">
+                <i class="fas fa-power-off"></i> Off Duty
             </button>
         </div>
     </header>
+
+    <!-- =========================================================================
+         NAVIGATION BAR
+         ========================================================================= -->
+    <nav class="cc-nav-bar">
+        <ul class="cc-nav-links">
+            <li><a href="/responder-dashboard.html" class="cc-nav-link"><i class="fas fa-list-check"></i> Tactical Incident Queue</a></li>
+            <li><a href="/responder-rescue.html" class="cc-nav-link"><i class="fas fa-map-location"></i> Live Rescue Operations</a></li>
+            <li><a href="/responder-tasks.html" class="cc-nav-link active"><i class="fas fa-clipboard-check"></i> Assigned Field Tasks</a></li>
+            <li><a href="/emergency-videos.html" class="cc-nav-link"><i class="fas fa-film"></i> Survival Videos</a></li>
+            <li><a href="/responder-profile.html" class="cc-nav-link"><i class="fas fa-user-gear"></i> Unit Profile & Zone</a></li>
+        </ul>
+        <div class="cc-nav-user-actions">
+            <button class="cc-btn cc-btn-secondary" onclick="loadTasks()" style="font-size:0.82rem;padding:0.4rem 0.85rem;">
+                <i class="fas fa-rotate"></i> Refresh Tasks
+            </button>
+        </div>
+    </nav>
     
-    <div class="container">
+    <main class="cc-main-container">
         <!-- Stats -->
         <div class="stats-grid">
             <div class="stat-card pending">
@@ -658,7 +720,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </main>
     
     <script>
         let tasks = [];
@@ -669,6 +731,9 @@
         
         // Check authentication and load data
         (function() {
+            if (window.AuthHelper && window.AuthHelper.initUrlAuth) {
+                window.AuthHelper.initUrlAuth();
+            }
             const token = localStorage.getItem('token');
             const storedRole = localStorage.getItem('userRole');
             
@@ -682,8 +747,8 @@
                 const role = storedRole || payload.role;
                 
                 if (role !== 'Responder') {
-                    alert('Access denied. Responder only.');
-                    window.location.href = '/index.html';
+                    if (window.showToast) window.showToast('Access denied. Responder privileges required.', 'error');
+                    setTimeout(() => { window.location.href = '/index.html'; }, 600);
                     return;
                 }
                 
@@ -703,6 +768,15 @@
             loadReports();
             loadMyInfo();
             loadAvailability();
+            if (window.CommandCenter && CommandCenter.initHudClock) {
+                CommandCenter.initHudClock('hudClockDisplay');
+            }
+            const respName = localStorage.getItem('userName') || 'Emergency Responder';
+            const nameEl = document.getElementById('responderName');
+            if (nameEl) nameEl.textContent = respName;
+            if (window.RoleLoadingScreen) {
+                RoleLoadingScreen.hide();
+            }
         })();
         
         async function loadMyInfo() {
@@ -719,6 +793,8 @@
                 
                 if (data.status === 'success') {
                     document.getElementById('myZone').value = data.location || data.role || 'Not Assigned';
+                    const zoneBadge = document.getElementById('assignedZoneBadge');
+                    if (zoneBadge && data.location) zoneBadge.textContent = 'Zone: ' + data.location;
                     loadZoneResponders(data.location || '');
                 }
             } catch(e) {
@@ -817,10 +893,16 @@
         }
         
         function showNotification(message, type) {
+            if (window.showToast) {
+                window.showToast(message, type || 'info');
+                return;
+            }
             const notif = document.getElementById('notification');
-            notif.textContent = message;
-            notif.className = type + ' show';
-            setTimeout(() => notif.classList.remove('show'), 3000);
+            if (notif) {
+                notif.textContent = message;
+                notif.className = type + ' show';
+                setTimeout(() => notif.classList.remove('show'), 3000);
+            }
         }
         
         async function loadTasks() {
@@ -868,60 +950,108 @@
             const container = document.getElementById('tasksContainer');
             
             if (tasks.length === 0) {
-                container.innerHTML = '<div class="empty-state"><i class="fas fa-clipboard-list"></i><p>No tasks assigned to you yet.</p></div>';
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-clipboard-list" style="font-size:2.5rem;opacity:0.5;margin-bottom:0.8rem;"></i><p>No tasks assigned to you currently.</p></div>';
                 return;
             }
             
             container.innerHTML = tasks.map(task => {
-                let taskClass = task.priority.toLowerCase();
-                if (task.status === 'Accepted') taskClass += ' accepted';
-                else if (task.status === 'Rejected') taskClass += ' rejected';
+                const prio = (task.priority || 'High').toLowerCase();
+                const st = (task.status || 'Pending');
+                const locQuery = (task.latitude && task.longitude) ? 
+                    `${task.latitude},${task.longitude}` : encodeURIComponent(task.locationName || task.zone || 'Coimbatore');
+                
+                // State-driven Action Controls
+                let actionsHtml = '';
+                if (st === 'Pending' || st === 'Assigned') {
+                    actionsHtml = `
+                        <button class="btn btn-primary" onclick="updateStatus(${task.taskId}, 'Acknowledged', 'Task acknowledged by unit')">
+                            <i class="fas fa-check"></i> Acknowledge
+                        </button>
+                        <button class="btn btn-success" onclick="acceptTask(${task.taskId})">
+                            <i class="fas fa-thumbs-up"></i> Accept
+                        </button>
+                    `;
+                } else if (st === 'Acknowledged' || st === 'Accepted') {
+                    actionsHtml = `
+                        <button class="btn" style="background:linear-gradient(135deg, #0284c7, #00e5ff);color:#030a16;font-weight:700;" onclick="startResponseWithGps(${task.taskId})">
+                            <i class="fas fa-person-running"></i> Start Response (En Route)
+                        </button>
+                    `;
+                } else if (st === 'En Route') {
+                    actionsHtml = `
+                        <button class="btn btn-warning" onclick="updateStatus(${task.taskId}, 'Arrived', 'Unit arrived on scene')">
+                            <i class="fas fa-location-crosshairs"></i> Mark Arrived On Scene
+                        </button>
+                    `;
+                } else if (st === 'Arrived' || st === 'In Progress') {
+                    actionsHtml = `
+                        <button class="btn btn-success" onclick="updateStatus(${task.taskId}, 'Completed', 'Rescue operation successfully completed')">
+                            <i class="fas fa-check-double"></i> Resolve Incident
+                        </button>
+                    `;
+                } else if (st === 'Completed' || st === 'Resolved') {
+                    actionsHtml = `
+                        <span style="background:rgba(16,185,129,0.2);color:#10b981;border:1px solid #10b981;padding:5px 10px;border-radius:6px;font-size:0.8rem;font-weight:600;">
+                            <i class="fas fa-shield-check"></i> Mission Resolved & Cleared
+                        </span>
+                    `;
+                }
                 
                 return `
-                <div class="task-card ${taskClass}">
-                    <h3>${task.title}</h3>
-                    <span class="status ${task.status.toLowerCase().replace(' ', '-')}">${task.status}</span>
-                    <p>${task.description || 'No description'}</p>
-                    
-                    ${task.victimName || task.victimCount ? `
-                    <div class="victim-info">
-                        <h4><i class="fas fa-user-injured"></i> Victim Information</h4>
-                        ${task.victimName ? `<p><strong>Name:</strong> ${task.victimName}</p>` : ''}
-                        ${task.victimCount ? `<p><strong>Victims:</strong> ${task.victimCount}</p>` : ''}
-                        ${task.victimCondition ? `<p><strong>Condition:</strong> ${task.victimCondition}</p>` : ''}
-                        ${task.victimPhone ? `<p><strong>Contact:</strong> ${task.victimPhone}</p>` : ''}
+                <div class="task-card ${prio}" style="position:relative;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;">
+                        <span style="font-family:var(--cc-font-mono);font-size:0.8rem;color:#00e5ff;font-weight:700;">#TASK-${task.taskId}</span>
+                        <span class="status ${st.toLowerCase().replace(' ', '-')}">${st}</span>
                     </div>
-                    ` : ''}
+
+                    <h3 style="font-size:1.15rem;margin-bottom:0.4rem;color:#f8fafc;">${task.title}</h3>
+                    <p style="color:#cbd5e1;font-size:0.88rem;line-height:1.45;margin-bottom:0.6rem;">${task.description || 'No description provided.'}</p>
                     
-                    <div class="meta">
-                        <span><i class="fas fa-map-marker-alt"></i> ${task.zone || 'N/A'}</span>
-                        <span><i class="fas fa-flag"></i> ${task.priority}</span>
-                        ${task.deadline ? `<span><i class="fas fa-clock"></i> Due: ${new Date(task.deadline).toLocaleString()}</span>` : ''}
+                    <div class="meta" style="font-size:0.8rem;color:#94a3b8;margin-bottom:0.6rem;">
+                        <span><i class="fas fa-location-dot" style="color:var(--cc-cyan);"></i> ${task.locationName || task.zone || 'Zone N/A'}</span>
+                        <span><i class="fas fa-flag" style="color:#f59e0b;"></i> ${task.priority || 'High'} Priority</span>
+                        <span><i class="fas fa-user-shield" style="color:#a855f7;"></i> By: ${task.createdBy || 'Central Dispatch'}</span>
+                        <span><i class="fas fa-clock" style="color:#64748b;"></i> ${(window.formatIndianDateTime ? window.formatIndianDateTime(task.createdAt || Date.now()) : new Date(task.createdAt || Date.now()).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }))}</span>
                     </div>
-                    ${task.latitude && task.longitude ? `<p style="font-size:0.8rem;color:#60a5fa"><i class="fas fa-crosshairs"></i> ${task.latitude}, ${task.longitude}</p>` : ''}
-                    ${task.locationName ? `<p style="font-size:0.85rem;color:#94a3b8"><i class="fas fa-location-arrow"></i> ${task.locationName}</p>` : ''}
-                    
-                    ${task.status === 'Pending' ? `
-                    <div class="accept-reject-btns">
-                        <button class="btn-accept" onclick="acceptTask(${task.taskId})">
-                            <i class="fas fa-check"></i> Accept Task
+
+                    ${task.latitude && task.longitude ? `
+                    <div style="font-size:0.78rem;font-family:var(--cc-font-mono);color:#38bdf8;margin-bottom:0.6rem;">
+                        <i class="fas fa-crosshairs"></i> Target GPS: ${task.latitude}, ${task.longitude}
+                    </div>` : ''}
+
+                    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.8rem;padding-bottom:0.8rem;border-bottom:1px solid rgba(255,255,255,0.08);">
+                        <button type="button" class="btn" style="background:rgba(255,255,255,0.08);padding:0.35rem 0.65rem;font-size:0.78rem;" onclick="viewTaskDetails(${task.taskId})">
+                            <i class="fas fa-eye"></i> View Details
                         </button>
-                        <button class="btn-reject" onclick="rejectTask(${task.taskId})">
-                            <i class="fas fa-times"></i> Reject
+                        <button type="button" class="btn" style="background:rgba(255,255,255,0.08);padding:0.35rem 0.65rem;font-size:0.78rem;" onclick="window.IncidentRoom.open(${task.taskId}, 'TASK', '${escapeJs(task.locationName || '')}')">
+                            <i class="fas fa-comments" style="color:#10b981;"></i> Comms Chat
                         </button>
+                        <button type="button" class="btn" style="background:rgba(255,255,255,0.08);padding:0.35rem 0.65rem;font-size:0.78rem;" onclick="window.MediaCapture.open({ incidentId: ${task.taskId}, incidentType: 'TASK', onSuccess: () => loadTasks() })">
+                            <i class="fas fa-camera" style="color:#38bdf8;"></i> Evidence
+                        </button>
+                        <button type="button" class="btn" style="background:rgba(255,255,255,0.08);padding:0.35rem 0.65rem;font-size:0.78rem;" onclick="window.ResponderTracking.open(${task.taskId})">
+                            <i class="fas fa-crosshairs" style="color:#a855f7;"></i> Radar
+                        </button>
+                        <a href="https://www.google.com/maps/dir/?api=1&destination=${locQuery}" target="_blank" class="btn" style="background:rgba(56,189,248,0.15);border:1px solid rgba(56,189,248,0.3);color:#38bdf8;padding:0.35rem 0.65rem;font-size:0.78rem;text-decoration:none;">
+                            <i class="fas fa-diamond-turn-right"></i> Navigate
+                        </a>
                     </div>
-                    ` : ''}
                     
-                    <div class="actions">
-                        ${task.status === 'Accepted' ? `<button class="btn btn-warning" onclick="updateStatus(${task.taskId}, 'In Progress')"><i class="fas fa-play"></i> Start Rescue</button>` : ''}
-                        ${task.status === 'In Progress' ? `<button class="btn btn-success" onclick="updateStatus(${task.taskId}, 'Completed')"><i class="fas fa-check"></i> Complete</button>` : ''}
+                    <div class="actions" style="margin-top:0.6rem;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+                        ${actionsHtml}
                     </div>
-                    <div class="notes-section">
-                        <textarea id="note-${task.taskId}" placeholder="Add notes about this rescue operation..."></textarea>
-                        <button class="btn btn-primary" onclick="addNote(${task.taskId})" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">
-                            <i class="fas fa-plus"></i> Add Note
+
+                    ${task.notes ? `
+                    <div class="notes-section" style="margin-top:0.8rem;padding-top:0.6rem;">
+                        <strong style="font-size:0.75rem;color:var(--cc-cyan);font-family:var(--cc-font-mono);"><i class="fas fa-file-waveform"></i> Field SitRep History:</strong>
+                        <div class="notes-list" style="margin-top:0.3rem;">${task.notes}</div>
+                    </div>` : ''}
+
+                    <div style="margin-top:0.6rem;display:flex;gap:0.5rem;">
+                        <input type="text" id="note-${task.taskId}" placeholder="Add SitRep progress note..." style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);padding:0.4rem 0.6rem;border-radius:6px;color:#fff;font-size:0.8rem;">
+                        <button class="btn btn-primary" onclick="addNote(${task.taskId})" style="padding:0.4rem 0.8rem;font-size:0.8rem;">
+                            <i class="fas fa-plus"></i> Post Note
                         </button>
-                        ${task.notes ? `<div class="notes-list">${task.notes}</div>` : ''}
                     </div>
                 </div>
                 `;
@@ -943,7 +1073,7 @@
                     <div class="meta">
                         <span>${report.reportType}</span>
                         <span>${report.zone}</span>
-                        <span>${new Date(report.timestamp).toLocaleString()}</span>
+                        <span>${(window.formatIndianDateTime ? window.formatIndianDateTime(report.timestamp) : new Date(report.timestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }))}</span>
                     </div>
                     <p>${report.description || 'No description'}</p>
                     ${report.latitude && report.longitude ? `<p style="font-size:0.8rem;color:#60a5fa"><i class="fas fa-crosshairs"></i> ${report.latitude}, ${report.longitude}</p>` : ''}
@@ -1009,19 +1139,23 @@
                 const data = await res.json();
                 
                 if (data.status === 'success') {
-                    showNotification('Task accepted! You can now start the rescue.', 'success');
+                    showNotification('Dispatch accepted — Unit is now En Route.', 'success');
                     loadTasks();
                 } else {
                     showNotification(data.message || 'Error accepting task', 'error');
                 }
             } catch(e) {
                 console.error('Error accepting task:', e);
-                showNotification('Error accepting task', 'error');
+                showNotification('Error accepting task: ' + e.message, 'error');
             }
         }
         
         async function rejectTask(taskId) {
-            const reason = prompt('Please provide a reason for rejecting this task:');
+            const reason = await window.showPrompt({
+                title: 'Reject Task Directive',
+                message: 'Please provide an operational reason for rejecting this assignment:',
+                placeholder: 'Reason for rejection...'
+            });
             if (reason === null) return;
             
             try {
@@ -1041,40 +1175,141 @@
                 const data = await res.json();
                 
                 if (data.status === 'success') {
-                    showNotification('Task rejected. Admin will be notified.', 'success');
+                    showNotification('Task rejected. Central Command notified.', 'warning');
                     loadTasks();
                 } else {
                     showNotification(data.message || 'Error rejecting task', 'error');
                 }
             } catch(e) {
                 console.error('Error rejecting task:', e);
-                showNotification('Error rejecting task', 'error');
+                showNotification('Error rejecting task: ' + e.message, 'error');
             }
         }
         
-        function toggleAvailability() {
+        async function startResponseWithGps(taskId) {
+            await updateStatus(taskId, 'En Route', 'Unit is en route to scene');
+            showNotification('Dispatch accepted — Unit is now En Route.', 'success');
+            if (window.ResponderTransmitter) {
+                await window.ResponderTransmitter.requestPermissionAndStart(taskId);
+            }
+        }
+
+        function viewTaskDetails(taskId) {
+            const task = tasks.find(t => t.taskId === taskId);
+            if (!task) return;
+
+            let modal = document.getElementById('task-detail-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'task-detail-modal';
+                modal.style.cssText = `
+                    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+                    background: rgba(5, 8, 17, 0.85); backdrop-filter: blur(12px);
+                    display: flex; align-items: center; justify-content: center;
+                    z-index: 10000; font-family: inherit;
+                `;
+                document.body.appendChild(modal);
+            }
+
+            modal.innerHTML = `
+                <div style="background: #091322; border: 1px solid var(--cc-border); border-radius: 12px; padding: 24px; max-width: 560px; width: 92%; max-height: 85vh; overflow-y: auto; color: #fff;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:10px;">
+                        <span style="font-family:var(--cc-font-mono); font-size:0.85rem; color:#00e5ff; font-weight:700;">#TASK-${task.taskId}</span>
+                        <span class="status ${task.status.toLowerCase().replace(' ', '-')}">${task.status}</span>
+                        <button type="button" onclick="document.getElementById('task-detail-modal').style.display='none'" style="background:none; border:none; color:#94a3b8; font-size:1.5rem; cursor:pointer;">&times;</button>
+                    </div>
+
+                    <h3 style="font-size:1.25rem; color:#f8fafc; margin-bottom:8px;">${task.title}</h3>
+                    <p style="color:#cbd5e1; font-size:0.9rem; line-height:1.5; margin-bottom:14px;">${task.description || 'No description'}</p>
+
+                    <div style="background:rgba(255,255,255,0.03); border-radius:8px; padding:12px; font-size:0.85rem; color:#94a3b8; display:flex; flex-direction:column; gap:6px; margin-bottom:14px;">
+                        <div><strong style="color:#fff;">Disaster Type:</strong> ${task.disasterType || 'Rescue Operation'}</div>
+                        <div><strong style="color:#fff;">Priority:</strong> <span style="color:#f59e0b;">${task.priority || 'High'}</span></div>
+                        <div><strong style="color:#fff;">Operational Zone:</strong> ${task.zone || 'N/A'}</div>
+                        <div><strong style="color:#fff;">Location:</strong> ${task.locationName || 'N/A'}</div>
+                        ${task.latitude && task.longitude ? `<div><strong style="color:#fff;">GPS Coordinates:</strong> ${task.latitude}, ${task.longitude}</div>` : ''}
+                        <div><strong style="color:#fff;">Assigned Administrator:</strong> ${task.createdBy || 'Central Command'}</div>
+                        <div><strong style="color:#fff;">Assignment Date:</strong> ${(window.formatIndianDateTime ? window.formatIndianDateTime(task.createdAt || Date.now()) : new Date(task.createdAt || Date.now()).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }))}</div>
+                    </div>
+
+                    ${task.notes ? `
+                    <div style="margin-bottom:14px;">
+                        <strong style="font-size:0.85rem; color:#00e5ff;">Field SitRep Notes:</strong>
+                        <div style="background:rgba(0,0,0,0.3); border-radius:6px; padding:10px; font-size:0.82rem; color:#cbd5e1; margin-top:4px; max-height:120px; overflow-y:auto; white-space:pre-wrap;">${task.notes}</div>
+                    </div>` : ''}
+
+                    <div style="display:flex; justify-content:flex-end; gap:8px;">
+                        <button type="button" class="btn" onclick="document.getElementById('task-detail-modal').style.display='none'" style="background:rgba(255,255,255,0.1);">Close</button>
+                    </div>
+                </div>
+            `;
+            modal.style.display = 'flex';
+        }
+
+        function escapeJs(str) {
+            if (!str) return '';
+            return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
+        }
+
+        async function toggleAvailability() {
             const isAvailable = document.getElementById('availabilityToggle').checked;
-            const statusEl = document.getElementById('availabilityStatus');
-            
-            if (isAvailable) {
-                statusEl.className = 'availability-status available';
-                statusEl.innerHTML = '<span class="status-dot available"></span> Available';
-                showNotification('You are now marked as available for rescue tasks', 'success');
-            } else {
-                statusEl.className = 'availability-status unavailable';
-                statusEl.innerHTML = '<span class="status-dot unavailable"></span> Unavailable';
-                showNotification('You are now marked as unavailable', 'error');
+            const targetStatus = isAvailable ? 'Available' : 'Unavailable';
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            try {
+                const res = await fetch('/api/auth/responder/availability', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ availability: targetStatus })
+                });
+
+                const data = await res.json();
+                const statusEl = document.getElementById('availabilityStatus');
+
+                if (res.ok) {
+                    if (isAvailable) {
+                        statusEl.className = 'availability-status available';
+                        statusEl.innerHTML = '<span class="status-dot available"></span> Available';
+                        showNotification('Status updated to Available', 'success');
+                    } else {
+                        statusEl.className = 'availability-status unavailable';
+                        statusEl.innerHTML = '<span class="status-dot unavailable"></span> Unavailable';
+                        showNotification('Status updated to Unavailable', 'error');
+                    }
+                } else {
+                    showNotification(data.message || 'Could not update availability', 'error');
+                    document.getElementById('availabilityToggle').checked = !isAvailable; // revert
+                }
+            } catch (e) {
+                showNotification('Network error: ' + e.message, 'error');
+                document.getElementById('availabilityToggle').checked = !isAvailable;
             }
-            
-            localStorage.setItem('responderAvailable', isAvailable);
         }
         
-        function loadAvailability() {
-            const isAvailable = localStorage.getItem('responderAvailable');
-            if (isAvailable === 'false') {
-                document.getElementById('availabilityToggle').checked = false;
-                toggleAvailability();
-            }
+        async function loadAvailability() {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            try {
+                const res = await fetch('/api/auth/responder/availability', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    const toggle = document.getElementById('availabilityToggle');
+                    const statusEl = document.getElementById('availabilityStatus');
+                    const isAvail = data.availability !== 'Unavailable';
+                    if (toggle) toggle.checked = isAvail;
+                    if (statusEl) {
+                        statusEl.className = 'availability-status ' + (isAvail ? 'available' : 'unavailable');
+                        statusEl.innerHTML = `<span class="status-dot ${isAvail ? 'available' : 'unavailable'}"></span> ${data.availability || 'Available'}`;
+                    }
+                }
+            } catch (e) {}
         }
         
         async function addNote(taskId) {
