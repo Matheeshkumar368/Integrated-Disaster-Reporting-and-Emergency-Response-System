@@ -69,9 +69,35 @@ public class CitizenReport {
     @Column(name = "deleted_by")
     private String deletedBy;
 
+    // Cross-role assignment and progress synchronization fields
+    @Column(name = "assigned_responder_email")
+    private String assignedResponderEmail;
+
+    @Column(name = "assigned_responder_name")
+    private String assignedResponderName;
+
+    @Column(name = "assigned_responder_phone")
+    private String assignedResponderPhone;
+
+    @Column(name = "rescue_task_id")
+    private Long rescueTaskId;
+
+    @Column(name = "progress_stage")
+    private String progressStage = "Submitted"; // Submitted, Assigned, Accepted, On the Way, Reached Location, Assistance in Progress, Resolved
+
+    @Column(name = "assigned_at")
+    private LocalDateTime assignedAt;
+
+    @Column(name = "acknowledged_at")
+    private LocalDateTime acknowledgedAt;
+
+    @Column(name = "resolved_at")
+    private LocalDateTime resolvedAt;
+
     public CitizenReport() {
         this.timestamp = LocalDateTime.now();
         this.status = "Pending";
+        this.progressStage = "Submitted";
         this.incidentType = "General";
         this.isArchived = false;
         this.isDeleted = false;
@@ -151,4 +177,28 @@ public class CitizenReport {
 
     public String getDeletedBy() { return deletedBy; }
     public void setDeletedBy(String deletedBy) { this.deletedBy = deletedBy; }
+
+    public String getAssignedResponderEmail() { return assignedResponderEmail; }
+    public void setAssignedResponderEmail(String assignedResponderEmail) { this.assignedResponderEmail = assignedResponderEmail; }
+
+    public String getAssignedResponderName() { return assignedResponderName; }
+    public void setAssignedResponderName(String assignedResponderName) { this.assignedResponderName = assignedResponderName; }
+
+    public String getAssignedResponderPhone() { return assignedResponderPhone; }
+    public void setAssignedResponderPhone(String assignedResponderPhone) { this.assignedResponderPhone = assignedResponderPhone; }
+
+    public Long getRescueTaskId() { return rescueTaskId; }
+    public void setRescueTaskId(Long rescueTaskId) { this.rescueTaskId = rescueTaskId; }
+
+    public String getProgressStage() { return progressStage != null ? progressStage : "Submitted"; }
+    public void setProgressStage(String progressStage) { this.progressStage = progressStage; }
+
+    public LocalDateTime getAssignedAt() { return assignedAt; }
+    public void setAssignedAt(LocalDateTime assignedAt) { this.assignedAt = assignedAt; }
+
+    public LocalDateTime getAcknowledgedAt() { return acknowledgedAt; }
+    public void setAcknowledgedAt(LocalDateTime acknowledgedAt) { this.acknowledgedAt = acknowledgedAt; }
+
+    public LocalDateTime getResolvedAt() { return resolvedAt; }
+    public void setResolvedAt(LocalDateTime resolvedAt) { this.resolvedAt = resolvedAt; }
 }

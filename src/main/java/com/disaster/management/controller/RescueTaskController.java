@@ -1,5 +1,6 @@
 package com.disaster.management.controller;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -125,6 +126,36 @@ public class RescueTaskController {
         response.put("status", "success");
         response.put("tasks", tasks);
         return ResponseEntity.ok(response);
+    }
+
+    // Get all registered responders for task assignment dropdown
+    @GetMapping("/responders")
+    public ResponseEntity<Map<String, Object>> getResponders() {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            List<User> responders = userRepository.findByRole("Responder");
+            List<Map<String, Object>> responderList = new ArrayList<>();
+            for (User responder : responders) {
+                Map<String, Object> r = new HashMap<>();
+                r.put("id", responder.getId());
+                r.put("name", responder.getName());
+                r.put("email", responder.getEmail());
+                r.put("phone", responder.getPhone());
+                r.put("location", responder.getLocation());
+                r.put("assignedZone", responder.getAssignedZone());
+                r.put("groupClassification", responder.getGroupClassification());
+                r.put("availabilityStatus", responder.getAvailabilityStatus() != null ? responder.getAvailabilityStatus() : "Available");
+                responderList.add(r);
+            }
+            response.put("status", "success");
+            response.put("responders", responderList);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Failed to fetch responders: {}", e.getMessage());
+            response.put("status", "error");
+            response.put("message", "Failed to fetch responders");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
     }
 
     // Get task by ID
@@ -543,15 +574,5 @@ public class RescueTaskController {
             response.put("message", "Failed to delete task");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
-    }
-
-    // Get all responders (Admin only)
-    @GetMapping("/responders")
-    public ResponseEntity<Map<String, Object>> getAllResponders() {
-        Map<String, Object> response = new HashMap<>();
-        List<User> responders = userRepository.findByRole("Responder");
-        response.put("status", "success");
-        response.put("responders", responders);
-        return ResponseEntity.ok(response);
     }
 }

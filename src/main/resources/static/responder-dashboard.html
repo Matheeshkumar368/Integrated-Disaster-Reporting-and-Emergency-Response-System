@@ -677,8 +677,8 @@
             const s = status.trim().toLowerCase();
             if (s === 'pending' || s === 'assigned') return 0;
             if (s === 'acknowledged' || s === 'accepted') return 1;
-            if (s === 'en route' || s === 'in progress') return 2;
-            if (s === 'arrived') return 3;
+            if (s === 'en route' || s === 'on the way') return 2;
+            if (s === 'arrived' || s === 'reached location' || s === 'in progress' || s === 'assistance in progress') return 3;
             if (s === 'completed' || s === 'resolved') return 4;
             return 0;
         }

@@ -557,6 +557,9 @@
                 <button type="button" class="cc-sub-tab-btn" id="tabAlertsAll" onclick="switchFeedView('alerts', 'ALL')">
                     <i class="fas fa-layer-group"></i> All Alerts (<span id="tabTotalCount">0</span>)
                 </button>
+                <button type="button" class="cc-sub-tab-btn" id="tabCitizenReports" onclick="switchFeedView('citizen', 'ALL')">
+                    <i class="fas fa-triangle-exclamation" style="color:var(--cc-critical-red);"></i> Citizen Distress Reports (<span id="tabCitizenCount">0</span>)
+                </button>
                 <button type="button" class="cc-sub-tab-btn" id="tabActiveTasks" onclick="switchFeedView('tasks', 'ALL')">
                     <i class="fas fa-truck-medical"></i> Field Mission Cards (<span id="tabMissionCount">0</span>)
                 </button>
@@ -1286,6 +1289,7 @@
         let currentAlertStatusFilter = 'Active';
         let cachedAlerts = [];
         let cachedTasks = [];
+        let cachedAdminCitizenReports = [];
 
         function switchFeedView(mode, filter) {
             currentFeedMode = mode;
@@ -1301,12 +1305,145 @@
                 const titleEl = document.getElementById('feedSectionTitle');
                 if (titleEl) titleEl.textContent = 'Live Broadcasted Emergency Alerts';
                 renderAlertCards();
+            } else if (mode === 'citizen') {
+                const el = document.getElementById('tabCitizenReports');
+                if (el) el.classList.add('active');
+                const titleEl = document.getElementById('feedSectionTitle');
+                if (titleEl) titleEl.textContent = 'Live Citizen Distress & SOS Reports';
+                loadCitizenReportsFeed();
             } else {
                 const el = document.getElementById('tabActiveTasks');
                 if (el) el.classList.add('active');
                 const titleEl = document.getElementById('feedSectionTitle');
                 if (titleEl) titleEl.textContent = 'Field Rescue Operations & Missions';
                 loadActiveMissions();
+            }
+        }
+
+        async function loadCitizenReportsFeed() {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            try {
+                const res = await fetch('/api/citizen-reports', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    cachedAdminCitizenReports = await res.json();
+                    if (Array.isArray(cachedAdminCitizenReports)) {
+                        cachedAdminCitizenReports.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+                    } else {
+                        cachedAdminCitizenReports = [];
+                    }
+                    const badge = document.getElementById('tabCitizenCount');
+                    if (badge) badge.textContent = cachedAdminCitizenReports.length;
+
+                    renderCitizenReportCards();
+                }
+            } catch (err) {
+                console.error('Error loading citizen reports feed:', err);
+            }
+        }
+
+        function renderCitizenReportCards() {
+            const grid = document.getElementById('liveAlertsGrid');
+            const noAlerts = document.getElementById('noAlerts');
+            if (!grid) return;
+
+            if (!cachedAdminCitizenReports || cachedAdminCitizenReports.length === 0) {
+                grid.innerHTML = '';
+                if (noAlerts) {
+                    noAlerts.style.display = 'block';
+                    noAlerts.innerHTML = `
+                        <i class="fas fa-inbox" style="font-size:3rem;margin-bottom:0.8rem;opacity:0.4;"></i>
+                        <p>No citizen distress reports in the queue.</p>
+                    `;
+                }
+                return;
+            }
+
+            if (noAlerts) noAlerts.style.display = 'none';
+            grid.innerHTML = '';
+
+            cachedAdminCitizenReports.forEach(r => {
+                const card = document.createElement('div');
+                card.className = 'cc-card cc-mission-card';
+
+                const status = r.status || 'Pending';
+                const isPending = status.toLowerCase() === 'pending';
+                const isResolved = status.toLowerCase() === 'resolved';
+
+                const badgeClass = isResolved ? 'severity-low' : (isPending ? 'severity-extreme' : 'severity-moderate');
+                const timeStr = r.timestamp ? (window.formatIndianDateTime ? window.formatIndianDateTime(r.timestamp) : new Date(r.timestamp).toLocaleString('en-IN')) : 'Recent';
+
+                card.innerHTML = `
+                    <div class="cc-card-header" style="padding-bottom:0.4rem;margin-bottom:0.6rem;">
+                        <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+                            <span class="cc-badge ${badgeClass}">${status}</span>
+                            <span class="cc-badge" style="background:#1e293b;border-color:#475569;color:#94a3b8;">
+                                <i class="fas fa-bullseye"></i> ${escapeHtml(r.incidentType || 'Distress Report')}
+                            </span>
+                        </div>
+                        <span style="font-family:var(--cc-font-mono);font-size:0.75rem;color:#94a3b8;">
+                            #REPORT-${r.reportId}
+                        </span>
+                    </div>
+
+                    <h3 style="font-size:1.05rem;font-weight:700;color:#f8fafc;margin-bottom:0.4rem;">
+                        <i class="fas fa-location-dot" style="color:var(--cc-cyan);"></i> ${escapeHtml(r.location || 'Field Zone')}
+                    </h3>
+
+                    <p style="color:#cbd5e1;font-size:0.88rem;line-height:1.45;margin-bottom:0.8rem;">
+                        ${escapeHtml(r.message || 'Distress signal received.')}
+                    </p>
+
+                    <div style="font-size:0.8rem;color:#94a3b8;margin-bottom:0.7rem;display:flex;flex-direction:column;gap:0.3rem;">
+                        <div><i class="fas fa-user"></i> <strong>Citizen:</strong> ${escapeHtml(r.citizenEmail || 'Anonymous')}</div>
+                        <div><i class="fas fa-clock"></i> <strong>Reported:</strong> ${timeStr}</div>
+                        ${r.assignedResponderName ? `
+                        <div style="color:var(--cc-safe-green);font-weight:600;">
+                            <i class="fas fa-truck-medical"></i> <strong>Assigned Unit:</strong> ${escapeHtml(r.assignedResponderName)}
+                            ${r.assignedResponderPhone ? `(${escapeHtml(r.assignedResponderPhone)})` : ''}
+                        </div>` : `
+                        <div style="color:#f59e0b;font-style:italic;">
+                            <i class="fas fa-triangle-exclamation"></i> Awaiting Responder Assignment
+                        </div>`}
+                    </div>
+
+                    <div style="display:flex;gap:0.5rem;margin-top:0.8rem;flex-wrap:wrap;">
+                        <a href="/admin-tasks.html?reportId=${r.reportId}" class="cc-btn cc-btn-primary" style="flex:1;text-decoration:none;font-size:0.8rem;padding:0.45rem 0.6rem;text-align:center;">
+                            <i class="fas fa-truck-medical"></i> ${r.assignedResponderName ? 'Reassign / Manage' : 'Assign Unit'}
+                        </a>
+                        <button type="button" class="cc-btn cc-btn-secondary" style="font-size:0.8rem;padding:0.45rem 0.6rem;" onclick="window.IncidentRoom.open(${r.reportId}, 'CITIZEN_REPORT')">
+                            <i class="fas fa-comments"></i> Comms
+                        </button>
+                        ${!isResolved ? `
+                        <button type="button" class="cc-btn cc-btn-success" style="font-size:0.8rem;padding:0.45rem 0.6rem;" onclick="resolveCitizenReportDirect(${r.reportId})">
+                            <i class="fas fa-check"></i> Resolve
+                        </button>` : ''}
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        async function resolveCitizenReportDirect(reportId) {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            try {
+                const res = await fetch(`/api/citizen-reports/${reportId}/resolve`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    CommandCenter.showToast(`Report #${reportId} marked as Resolved`, 'success');
+                    loadCitizenReportsFeed();
+                    loadIncidentsOnMap();
+                } else {
+                    CommandCenter.showToast('Failed to resolve report', 'error');
+                }
+            } catch (err) {
+                CommandCenter.showToast('Network error: ' + err.message, 'error');
             }
         }
 
@@ -1347,6 +1484,17 @@
                     }
                 })
                 .catch(err => console.error('Error loading live alerts:', err));
+
+            // Also keep citizen reports count updated
+            fetch('/api/citizen-reports', { headers: headers })
+                .then(res => res.json())
+                .then(reports => {
+                    const badge = document.getElementById('tabCitizenCount');
+                    if (badge && Array.isArray(reports)) {
+                        badge.innerText = reports.filter(r => !r.isDeleted).length;
+                    }
+                })
+                .catch(() => {});
         }
 
         function renderAlertCards() {

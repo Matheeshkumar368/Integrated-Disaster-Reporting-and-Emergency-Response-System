@@ -869,7 +869,7 @@
 
         // Global State
         let base64PhotoData = null;
-        let selectedSector = 'Coimbatore';
+        let selectedSector = 'All';
         let rawBroadcastAlerts = [];
         let rawOfficialAlerts = [];
         let rawMyReports = [];
@@ -1152,6 +1152,8 @@
         // EMERGENCY REPORTING (DEDICATED FULL INTERFACE)
         // =========================================================================
         let detectedDeviceCoords = null;
+        let detectedDeviceLat = null;
+        let detectedDeviceLng = null;
 
         function detectGpsLocation() {
             if (!navigator.geolocation) {
@@ -1168,6 +1170,8 @@
                     const lon = pos.coords.longitude.toFixed(5);
                     const acc = Math.round(pos.coords.accuracy);
                     detectedDeviceCoords = `${lat}, ${lon}`;
+                    detectedDeviceLat = pos.coords.latitude;
+                    detectedDeviceLng = pos.coords.longitude;
 
                     statusEl.innerHTML = `
                         <span style="color:#10b981;"><i class="fas fa-check-circle"></i> Device Location Locked:</span> 
@@ -1244,9 +1248,14 @@
                         'Authorization': 'Bearer ' + token
                     },
                     body: JSON.stringify({
+                        title: title,
+                        incidentType: category,
+                        severity: severity,
                         location: location,
                         message: formattedMessage,
-                        photoData: base64PhotoData
+                        photoData: base64PhotoData,
+                        latitude: detectedDeviceLat || null,
+                        longitude: detectedDeviceLng || null
                     })
                 });
 
@@ -1361,20 +1370,34 @@
                     bodyMsg = match[4];
                 }
 
-                // 4-Stage Stepper Calculation
-                // 1: Submitted, 2: Acknowledged, 3: En Route / In Progress, 4: Resolved
-                let stageIdx = 0; // Submitted
-                if (status === 'Acknowledged') stageIdx = 1;
-                else if (status === 'In Progress' || status === 'En Route') stageIdx = 2;
-                else if (status === 'Resolved') stageIdx = 3;
+                // Lifecycle stage:
+                // 0: Submitted, 1: Assigned / Acknowledged, 2: En Route, 3: On Scene, 4: Resolved
+                const st = (report.progressStage || status || 'Pending').toLowerCase();
+                const isAssigned = !!(report.assignedResponderName || report.assignedResponderEmail || status === 'Assigned');
+                const isAck = isAssigned && (st.includes('ack') || st.includes('accept') || st.includes('route') || st.includes('arrived') || st.includes('progress') || isResolved);
+                const isEnRoute = st.includes('route') || st.includes('on the way');
+                const isInProgress = st.includes('arrived') || st.includes('reached') || st.includes('progress') || st.includes('assistance');
 
-                const pct = (stageIdx / 3) * 100;
+                let stageIdx = 0; // Submitted
+                if (isResolved) stageIdx = 4;
+                else if (isInProgress) stageIdx = 3;
+                else if (isEnRoute) stageIdx = 2;
+                else if (isAck) stageIdx = 1;
+                else if (isAssigned) stageIdx = 1;
+
+                const pct = (stageIdx / 4) * 100;
 
                 const statusBadge = isResolved ? 
                     '<span class="cc-badge severity-low"><i class="fas fa-check-double"></i> Resolved / Cleared</span>' :
+                    (isInProgress ?
+                        '<span class="cc-badge severity-moderate" style="background:rgba(16,185,129,0.2);color:#34d399;border-color:#059669;"><i class="fas fa-person-digging"></i> Assistance in Progress</span>' :
+                    (isEnRoute ?
+                        '<span class="cc-badge severity-moderate" style="background:rgba(56,189,248,0.2);color:#38bdf8;border-color:#0284c7;"><i class="fas fa-truck-fast"></i> Responder En Route</span>' :
                     (isAck ? 
-                        '<span class="cc-badge severity-moderate"><i class="fas fa-truck-medical"></i> Responders Deployed</span>' : 
-                        '<span class="cc-badge severity-extreme"><i class="fas fa-clock"></i> Pending Acknowledgment</span>');
+                        '<span class="cc-badge severity-moderate"><i class="fas fa-truck-medical"></i> Acknowledged & Dispatched</span>' : 
+                    (isAssigned ?
+                        '<span class="cc-badge severity-moderate" style="background:rgba(245,158,11,0.2);color:#fbbf24;border-color:#d97706;"><i class="fas fa-user-check"></i> Responder Assigned</span>' :
+                        '<span class="cc-badge severity-extreme"><i class="fas fa-clock"></i> Pending Assignment</span>'))));
 
                 card.innerHTML = `
                     <div class="cc-card-header" style="padding-bottom:0.5rem;margin-bottom:0.6rem;">
@@ -1392,11 +1415,18 @@
                     <p style="color:#f1f5f9;font-size:0.95rem;margin-bottom:0.6rem;line-height:1.45;">${bodyMsg}</p>
 
                     <div style="font-size:0.85rem;color:#94a3b8;margin-bottom:0.9rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.4rem;">
-                        <span><i class="fas fa-location-dot" style="color:var(--cc-cyan);"></i> ${report.location}</span>
-                        ${isAck ? `
-                        <span style="color:var(--cc-safe-green);font-size:0.8rem;font-weight:600;">
-                            <i class="fas fa-id-badge"></i> Assigned Unit: Emergency Response Unit (${selectedSector})
-                        </span>` : ''}
+                        <span><i class="fas fa-location-dot" style="color:var(--cc-cyan);"></i> ${report.location || 'Location Not Specified'}</span>
+                        ${report.assignedResponderName ? `
+                        <span style="color:var(--cc-safe-green);font-size:0.82rem;font-weight:600;display:inline-flex;align-items:center;gap:0.4rem;background:rgba(16,185,129,0.12);padding:3px 8px;border-radius:4px;border:1px solid rgba(16,185,129,0.3);">
+                            <i class="fas fa-id-badge"></i> Assigned Unit: <strong>${escapeHtml(report.assignedResponderName)}</strong>
+                            ${report.assignedResponderPhone ? `<a href="tel:${escapeHtml(report.assignedResponderPhone)}" style="color:var(--cc-cyan);margin-left:0.35rem;text-decoration:none;" title="Call Responder"><i class="fas fa-phone"></i> ${escapeHtml(report.assignedResponderPhone)}</a>` : ''}
+                        </span>` : (isAssigned ? `
+                        <span style="color:var(--cc-safe-green);font-size:0.82rem;font-weight:600;">
+                            <i class="fas fa-id-badge"></i> Assigned Unit: Emergency Response Unit (${report.location || 'Field Zone'})
+                        </span>` : `
+                        <span style="color:#94a3b8;font-size:0.8rem;font-style:italic;">
+                            <i class="fas fa-hourglass-start"></i> Awaiting Responder Assignment
+                        </span>`)}
                     </div>
 
                     ${report.photoData && report.photoData.length > 500 && !report.photoData.includes('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ') ? `
@@ -1404,7 +1434,7 @@
                         <img src="${report.photoData}" alt="Evidence" style="width:100%;max-height:160px;object-fit:cover;border-radius:6px;border:1px solid var(--cc-border-medium);" onerror="if(window.handleEvidenceImageError) handleEvidenceImageError(this, '${report.photoData}');" />
                     </div>` : ''}
 
-                    <!-- 4-Stage Operational Progress Timeline -->
+                    <!-- 5-Stage Operational Progress Timeline -->
                     <div class="cc-incident-timeline">
                         <div class="cc-timeline-track-line">
                             <div class="cc-timeline-track-progress" style="width:${pct}%;"></div>
@@ -1417,7 +1447,7 @@
 
                         <div class="cc-timeline-stage ${stageIdx >= 1 ? (stageIdx === 1 ? 'active' : 'completed') : ''}">
                             <div class="cc-timeline-bubble">${stageIdx >= 1 ? '<i class="fas fa-check"></i>' : '2'}</div>
-                            <div class="cc-timeline-title">Acknowledged</div>
+                            <div class="cc-timeline-title">Assigned</div>
                         </div>
 
                         <div class="cc-timeline-stage ${stageIdx >= 2 ? (stageIdx === 2 ? 'active' : 'completed') : ''}">
@@ -1425,10 +1455,16 @@
                             <div class="cc-timeline-title">En Route</div>
                         </div>
 
-                        <div class="cc-timeline-stage ${stageIdx === 3 ? 'completed active' : ''}">
-                            <div class="cc-timeline-bubble">${stageIdx === 3 ? '<i class="fas fa-check"></i>' : '4'}</div>
+                        <div class="cc-timeline-stage ${stageIdx >= 3 ? (stageIdx === 3 ? 'active' : 'completed') : ''}">
+                            <div class="cc-timeline-bubble">${stageIdx >= 3 ? '<i class="fas fa-check"></i>' : '4'}</div>
+                            <div class="cc-timeline-title">On Scene</div>
+                        </div>
+
+                        <div class="cc-timeline-stage ${stageIdx === 4 ? 'completed active' : ''}">
+                            <div class="cc-timeline-bubble">${stageIdx === 4 ? '<i class="fas fa-check"></i>' : '5'}</div>
                             <div class="cc-timeline-title">Resolved</div>
                         </div>
+                    </div>
                     </div>
 
                     <!-- Tactical Operational Action Buttons -->

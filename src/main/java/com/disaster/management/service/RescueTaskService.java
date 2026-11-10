@@ -14,6 +14,7 @@ import com.disaster.management.entity.CitizenReport;
 import com.disaster.management.entity.RescueTask;
 import com.disaster.management.repository.CitizenReportRepository;
 import com.disaster.management.repository.RescueTaskRepository;
+import com.disaster.management.repository.UserRepository;
 
 @Service
 public class RescueTaskService {
@@ -25,6 +26,9 @@ public class RescueTaskService {
 
     @Autowired
     private CitizenReportRepository citizenReportRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     // Create a new rescue task with validation
     @Transactional
@@ -206,12 +210,18 @@ public class RescueTaskService {
                     || targetStatus.equalsIgnoreCase("Rejected");
             case "acknowledged":
             case "accepted":
-                return targetStatus.equalsIgnoreCase("En Route");
+                return targetStatus.equalsIgnoreCase("En Route")
+                    || targetStatus.equalsIgnoreCase("On the Way");
             case "en route":
+            case "on the way":
                 return targetStatus.equalsIgnoreCase("Arrived") 
-                    || targetStatus.equalsIgnoreCase("In Progress");
+                    || targetStatus.equalsIgnoreCase("Reached Location")
+                    || targetStatus.equalsIgnoreCase("In Progress")
+                    || targetStatus.equalsIgnoreCase("Assistance in Progress");
             case "arrived":
+            case "reached location":
             case "in progress":
+            case "assistance in progress":
                 return targetStatus.equalsIgnoreCase("Completed") 
                     || targetStatus.equalsIgnoreCase("Resolved");
             default:
@@ -229,7 +239,10 @@ public class RescueTaskService {
             throw new IllegalArgumentException("Status cannot be empty");
         }
 
-        String[] validStatuses = {"Assigned", "Acknowledged", "En Route", "Arrived", "Completed", "Resolved", "Pending", "In Progress", "Accepted", "Rejected"};
+        String[] validStatuses = {
+            "Assigned", "Acknowledged", "En Route", "On the Way", "Arrived", "Reached Location",
+            "Completed", "Resolved", "Pending", "In Progress", "Assistance in Progress", "Accepted", "Rejected"
+        };
         boolean isValid = false;
         for (String validStatus : validStatuses) {
             if (validStatus.equalsIgnoreCase(status)) {
@@ -238,7 +251,7 @@ public class RescueTaskService {
             }
         }
         if (!isValid) {
-            throw new IllegalArgumentException("Invalid status value. Must be: Pending, In Progress, Completed, Accepted, or Rejected");
+            throw new IllegalArgumentException("Invalid status value. Must be: Pending, Assigned, Acknowledged, Accepted, En Route, On the Way, Arrived, Reached Location, In Progress, Assistance in Progress, Completed, or Resolved");
         }
         
         RescueTask task = rescueTaskRepository.findById(taskId)
@@ -246,17 +259,31 @@ public class RescueTaskService {
 
         task.setStatus(status);
 
-        if ("Acknowledged".equalsIgnoreCase(status) && task.getAcknowledgedAt() == null) {
+        if (("Acknowledged".equalsIgnoreCase(status) || "Accepted".equalsIgnoreCase(status)) && task.getAcknowledgedAt() == null) {
             task.setAcknowledgedAt(LocalDateTime.now());
+            if (task.getCitizenReportId() != null) {
+                try {
+                    citizenReportRepository.findById(task.getCitizenReportId()).ifPresent(r -> {
+                        r.setStatus("Acknowledged");
+                        r.setProgressStage(status);
+                        if (r.getAcknowledgedAt() == null) {
+                            r.setAcknowledgedAt(LocalDateTime.now());
+                        }
+                        citizenReportRepository.save(r);
+                    });
+                } catch (Exception e) {
+                    log.warn("Could not sync citizen report on Acknowledged/Accepted: {}", e.getMessage());
+                }
+            }
         }
 
-        if ("En Route".equalsIgnoreCase(status) && task.getEnRouteAt() == null) {
+        if (("En Route".equalsIgnoreCase(status) || "On the Way".equalsIgnoreCase(status)) && task.getEnRouteAt() == null) {
             task.setEnRouteAt(LocalDateTime.now());
-            // Sync citizen report to In Progress
             if (task.getCitizenReportId() != null) {
                 try {
                     citizenReportRepository.findById(task.getCitizenReportId()).ifPresent(r -> {
                         r.setStatus("In Progress");
+                        r.setProgressStage(status);
                         citizenReportRepository.save(r);
                     });
                 } catch (Exception e) {
@@ -265,17 +292,31 @@ public class RescueTaskService {
             }
         }
 
-        if ("Arrived".equalsIgnoreCase(status) && task.getArrivedAt() == null) {
+        if (("Arrived".equalsIgnoreCase(status) || "Reached Location".equalsIgnoreCase(status)) && task.getArrivedAt() == null) {
             task.setArrivedAt(LocalDateTime.now());
-            // Sync citizen report to In Progress
             if (task.getCitizenReportId() != null) {
                 try {
                     citizenReportRepository.findById(task.getCitizenReportId()).ifPresent(r -> {
                         r.setStatus("In Progress");
+                        r.setProgressStage(status);
                         citizenReportRepository.save(r);
                     });
                 } catch (Exception e) {
                     log.warn("Could not sync citizen report on Arrived: {}", e.getMessage());
+                }
+            }
+        }
+
+        if ("In Progress".equalsIgnoreCase(status) || "Assistance in Progress".equalsIgnoreCase(status)) {
+            if (task.getCitizenReportId() != null) {
+                try {
+                    citizenReportRepository.findById(task.getCitizenReportId()).ifPresent(r -> {
+                        r.setStatus("In Progress");
+                        r.setProgressStage(status);
+                        citizenReportRepository.save(r);
+                    });
+                } catch (Exception e) {
+                    log.warn("Could not sync citizen report on In Progress: {}", e.getMessage());
                 }
             }
         }
@@ -290,6 +331,10 @@ public class RescueTaskService {
                 try {
                     citizenReportRepository.findById(task.getCitizenReportId()).ifPresent(r -> {
                         r.setStatus("Resolved");
+                        r.setProgressStage(status);
+                        if (r.getResolvedAt() == null) {
+                            r.setResolvedAt(LocalDateTime.now());
+                        }
                         citizenReportRepository.save(r);
                         log.info("Cross-role synchronization: Citizen Report #{} marked as Resolved following completion of Rescue Task #{}",
                             r.getReportId(), taskId);
@@ -330,7 +375,33 @@ public class RescueTaskService {
         if ("Pending".equalsIgnoreCase(task.getStatus())) {
             task.setStatus("Assigned");
         }
-        return rescueTaskRepository.save(task);
+        RescueTask savedTask = rescueTaskRepository.save(task);
+
+        if (task.getCitizenReportId() != null) {
+            try {
+                citizenReportRepository.findById(task.getCitizenReportId()).ifPresent(r -> {
+                    r.setAssignedResponderEmail(responderEmail.trim().toLowerCase());
+                    r.setAssignedResponderName(responderName.trim());
+                    userRepository.findByEmail(responderEmail.trim().toLowerCase()).ifPresent(u -> {
+                        if (u.getPhone() != null && !u.getPhone().isEmpty()) {
+                            r.setAssignedResponderPhone(u.getPhone());
+                        }
+                    });
+                    r.setStatus("Assigned");
+                    r.setProgressStage("Assigned");
+                    r.setRescueTaskId(task.getTaskId());
+                    if (r.getAssignedAt() == null) {
+                        r.setAssignedAt(LocalDateTime.now());
+                    }
+                    citizenReportRepository.save(r);
+                    log.info("Synchronized CitizenReport #{} with assigned responder {}", r.getReportId(), responderEmail);
+                });
+            } catch (Exception e) {
+                log.warn("Could not sync citizen report on task assignment: {}", e.getMessage());
+            }
+        }
+
+        return savedTask;
     }
 
     // Update task with validation

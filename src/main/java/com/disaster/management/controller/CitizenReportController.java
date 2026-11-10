@@ -121,6 +121,64 @@ public class CitizenReportController {
         return ResponseEntity.ok(reportService.getPendingReports());
     }
 
+    // Admin assigns a Responder directly to a Citizen Report
+    @PutMapping("/{reportId}/assign")
+    public ResponseEntity<?> assignReport(
+            @PathVariable Long reportId,
+            @RequestParam(required = false) String responderEmail,
+            @RequestBody(required = false) Map<String, String> body) {
+        return executeAssignReport(reportId, responderEmail, body);
+    }
+
+    @PostMapping("/{reportId}/assign")
+    public ResponseEntity<?> assignReportPost(
+            @PathVariable Long reportId,
+            @RequestParam(required = false) String responderEmail,
+            @RequestBody(required = false) Map<String, String> body) {
+        return executeAssignReport(reportId, responderEmail, body);
+    }
+
+    private ResponseEntity<?> executeAssignReport(Long reportId, String responderEmail, Map<String, String> body) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("status", "error", "message", "Authentication required"));
+        }
+
+        boolean isAdmin = auth.getAuthorities().stream()
+            .anyMatch(a -> a.getAuthority().equals("ROLE_Admin"));
+        if (!isAdmin) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of("status", "error", "message", "Access denied: Admin role required to assign responders"));
+        }
+
+        String email = responderEmail;
+        if ((email == null || email.trim().isEmpty()) && body != null) {
+            email = body.get("responderEmail") != null ? body.get("responderEmail") : body.get("email");
+        }
+
+        if (email == null || email.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Responder email is required"));
+        }
+
+        try {
+            CitizenReport updated = reportService.assignResponder(reportId, email.trim(), auth.getName());
+            return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "message", "Responder assigned successfully to incident #" + reportId,
+                "report", updated
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("status", "error", "message", e.getMessage()));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("status", "conflict", "message", e.getMessage()));
+        } catch (Exception e) {
+            log.error("Failed to assign responder to report {}: {}", reportId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("status", "error", "message", "Internal error assigning responder: " + e.getMessage()));
+        }
+    }
+
     // Responders or Admin acknowledges report
     @PutMapping("/{reportId}/acknowledge")
     public ResponseEntity<?> acknowledgeReport(@PathVariable Long reportId) {

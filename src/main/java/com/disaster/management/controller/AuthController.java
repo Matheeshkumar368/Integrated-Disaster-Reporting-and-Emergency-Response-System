@@ -366,6 +366,7 @@ public class AuthController {
                 r.put("location", responder.getLocation());
                 r.put("assignedZone", responder.getAssignedZone());
                 r.put("groupClassification", responder.getGroupClassification());
+                r.put("availabilityStatus", responder.getAvailabilityStatus() != null ? responder.getAvailabilityStatus() : "Available");
                 r.put("additionalDetails", responder.getAdditionalDetails());
                 responderList.add(r);
             }

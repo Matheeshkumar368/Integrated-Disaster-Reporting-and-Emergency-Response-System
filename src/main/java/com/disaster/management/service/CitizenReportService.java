@@ -16,8 +16,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.disaster.management.entity.CitizenReport;
+import com.disaster.management.entity.RescueTask;
+import com.disaster.management.entity.User;
 import com.disaster.management.repository.CitizenReportRepository;
 import com.disaster.management.repository.RescueTaskRepository;
+import com.disaster.management.repository.UserRepository;
 
 @Service
 public class CitizenReportService {
@@ -29,6 +32,9 @@ public class CitizenReportService {
 
     @Autowired
     private RescueTaskRepository taskRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired
     private AdminPinService adminPinService;
@@ -48,31 +54,216 @@ public class CitizenReportService {
         if (report.getStatus() == null || report.getStatus().trim().isEmpty()) {
             report.setStatus("Pending");
         }
+        if (report.getProgressStage() == null || report.getProgressStage().trim().isEmpty()) {
+            report.setProgressStage("Submitted");
+        }
         if (report.getIncidentType() == null || report.getIncidentType().trim().isEmpty()) {
             report.setIncidentType("General");
         }
+        if (report.getTitle() == null || report.getTitle().trim().isEmpty()) {
+            report.setTitle(report.getIncidentType() + " at " + report.getLocation());
+        }
+
+        // Automatic fallback coordinate resolution if GPS coordinates are not explicitly passed
+        if (report.getLatitude() == null || report.getLongitude() == null) {
+            try {
+                IndiaGeoGazetteer.GeoLocation geo = IndiaGeoGazetteer.resolveLocation(
+                    report.getLocation(), report.getTitle(), null
+                );
+                if (geo != null) {
+                    report.setLatitude(geo.latitude());
+                    report.setLongitude(geo.longitude());
+                    if (report.getAccuracy() == null) {
+                        report.setAccuracy(100.0);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Gazetteer resolution note: {}", e.getMessage());
+            }
+        }
+
         report.setIsDeleted(false);
         report.setIsArchived(false);
-        return reportRepository.save(report);
+        CitizenReport saved = reportRepository.save(report);
+
+        try {
+            timelineService.logEvent(
+                saved.getReportId(),
+                "CITIZEN_REPORT",
+                "REPORT_SUBMITTED",
+                saved.getCitizenEmail(),
+                "Citizen",
+                saved.getCitizenEmail(),
+                "Emergency distress report registered: " + saved.getTitle(),
+                null,
+                null
+            );
+        } catch (Exception e) {
+            log.warn("Timeline event logging warning: {}", e.getMessage());
+        }
+
+        return saved;
     }
 
     public List<CitizenReport> getAllReports() {
-        return reportRepository.findByIsDeletedFalseOrderByTimestampDesc();
+        List<CitizenReport> reports = reportRepository.findByIsDeletedFalseOrderByTimestampDesc();
+        reports.forEach(this::enrichReportWithLinkedTask);
+        return reports;
     }
 
     public List<CitizenReport> getPendingReports() {
-        return reportRepository.findByStatusOrderByTimestampDesc("Pending");
+        List<CitizenReport> reports = reportRepository.findByStatusOrderByTimestampDesc("Pending");
+        reports.forEach(this::enrichReportWithLinkedTask);
+        return reports;
     }
 
     public List<CitizenReport> getReportsByCitizen(String email) {
         if (email == null || email.trim().isEmpty()) {
             return List.of();
         }
-        return reportRepository.findByCitizenEmailAndIsDeletedFalseOrderByTimestampDesc(email.trim().toLowerCase());
+        List<CitizenReport> reports = reportRepository.findByCitizenEmailAndIsDeletedFalseOrderByTimestampDesc(email.trim().toLowerCase());
+        reports.forEach(this::enrichReportWithLinkedTask);
+        return reports;
     }
 
     public Optional<CitizenReport> getReportById(Long reportId) {
-        return reportRepository.findById(reportId);
+        Optional<CitizenReport> opt = reportRepository.findById(reportId);
+        opt.ifPresent(this::enrichReportWithLinkedTask);
+        return opt;
+    }
+
+    // Assign a responder directly to a Citizen Report (Admin operation)
+    @Transactional
+    public CitizenReport assignResponder(Long reportId, String responderEmail, String adminEmail) {
+        if (reportId == null) {
+            throw new IllegalArgumentException("Report ID is required");
+        }
+        if (responderEmail == null || responderEmail.trim().isEmpty()) {
+            throw new IllegalArgumentException("Responder email is required");
+        }
+
+        CitizenReport report = reportRepository.findById(reportId)
+            .orElseThrow(() -> new IllegalArgumentException("Citizen Report not found with ID: " + reportId));
+
+        if (Boolean.TRUE.equals(report.getIsDeleted())) {
+            throw new IllegalStateException("Cannot assign responder to a deleted report");
+        }
+
+        User responder = userRepository.findByEmail(responderEmail.trim().toLowerCase())
+            .orElseThrow(() -> new IllegalArgumentException("Responder not found with email: " + responderEmail));
+
+        if (!"Responder".equalsIgnoreCase(responder.getRole())) {
+            throw new IllegalArgumentException("Selected user is not registered as an emergency Responder");
+        }
+
+        String responderName = responder.getName() != null ? responder.getName() : responder.getEmail();
+        String responderPhone = responder.getPhone() != null ? responder.getPhone() : "";
+
+        // Update Citizen Report
+        report.setAssignedResponderEmail(responder.getEmail());
+        report.setAssignedResponderName(responderName);
+        report.setAssignedResponderPhone(responderPhone);
+        report.setStatus("Assigned");
+        report.setProgressStage("Assigned");
+        report.setAssignedAt(LocalDateTime.now());
+
+        // Find or create the linked RescueTask
+        List<RescueTask> existingTasks = taskRepository.findByCitizenReportId(reportId);
+        RescueTask task;
+        if (!existingTasks.isEmpty()) {
+            task = existingTasks.get(0);
+            task.setAssignedTo(responder.getEmail());
+            task.setAssignedResponderName(responderName);
+            task.setStatus("Assigned");
+            task = taskRepository.save(task);
+        } else {
+            task = new RescueTask();
+            task.setCitizenReportId(reportId);
+            task.setTitle("Emergency Response - Report #" + reportId + " (" + (report.getLocation() != null ? report.getLocation() : "Field Zone") + ")");
+            task.setDescription(report.getMessage());
+            task.setZone(report.getLocation() != null ? report.getLocation() : (responder.getAssignedZone() != null ? responder.getAssignedZone() : "General"));
+            task.setPriority(report.getSeverity() != null ? report.getSeverity() : "High");
+            task.setStatus("Assigned");
+            task.setAssignedTo(responder.getEmail());
+            task.setAssignedResponderName(responderName);
+            task.setCreatedBy(adminEmail != null ? adminEmail : "admin@disaster.gov.in");
+            task.setLatitude(report.getLatitude());
+            task.setLongitude(report.getLongitude());
+            task.setLocationName(report.getLocation());
+            task.setCreatedAt(LocalDateTime.now());
+            task = taskRepository.save(task);
+        }
+
+        report.setRescueTaskId(task.getTaskId());
+
+        // Update responder availability status
+        if ("Available".equalsIgnoreCase(responder.getAvailabilityStatus()) || responder.getAvailabilityStatus() == null) {
+            responder.setAvailabilityStatus("On Duty");
+            userRepository.save(responder);
+        }
+
+        CitizenReport saved = reportRepository.save(report);
+
+        // Timeline event
+        try {
+            timelineService.logEvent(
+                reportId,
+                "CITIZEN_REPORT",
+                "RESPONDER_ASSIGNED",
+                adminEmail != null ? adminEmail : "admin@disaster.gov.in",
+                "Admin",
+                responderName,
+                "Assigned to " + responderName + " (" + responder.getEmail() + ")",
+                null,
+                null
+            );
+        } catch (Exception e) {
+            log.warn("Timeline warning: {}", e.getMessage());
+        }
+
+        // Admin audit
+        try {
+            adminPinService.recordAudit(
+                adminEmail != null ? adminEmail : "admin@disaster.gov.in",
+                "ASSIGN_RESPONDER_TO_REPORT",
+                "CitizenReport",
+                String.valueOf(reportId),
+                "SUCCESS",
+                "Assigned " + responderName + " (" + responder.getEmail() + ") to Report #" + reportId,
+                null
+            );
+        } catch (Exception e) {
+            log.warn("Audit record warning: {}", e.getMessage());
+        }
+
+        return saved;
+    }
+
+    // Helper: Enriches CitizenReport with data from linked RescueTask if available
+    private void enrichReportWithLinkedTask(CitizenReport r) {
+        if (r == null) return;
+        try {
+            List<RescueTask> tasks = taskRepository.findByCitizenReportId(r.getReportId());
+            if (!tasks.isEmpty()) {
+                RescueTask t = tasks.get(0);
+                if (r.getRescueTaskId() == null) {
+                    r.setRescueTaskId(t.getTaskId());
+                }
+                if (r.getAssignedResponderEmail() == null && t.getAssignedTo() != null) {
+                    r.setAssignedResponderEmail(t.getAssignedTo());
+                }
+                if (r.getAssignedResponderName() == null && t.getAssignedResponderName() != null) {
+                    r.setAssignedResponderName(t.getAssignedResponderName());
+                }
+                if (r.getAssignedResponderPhone() == null && t.getAssignedTo() != null) {
+                    userRepository.findByEmail(t.getAssignedTo()).ifPresent(u -> r.setAssignedResponderPhone(u.getPhone()));
+                }
+                // Reflect live mission status if report is behind
+                if ("Pending".equalsIgnoreCase(r.getStatus()) && !"Pending".equalsIgnoreCase(t.getStatus())) {
+                    r.setStatus(t.getStatus());
+                }
+            }
+        } catch (Exception ignored) {}
     }
 
     // Paginated and filtered search
@@ -84,8 +275,11 @@ public class CitizenReportService {
             pageable
         );
 
+        List<CitizenReport> content = reportPage.getContent();
+        content.forEach(this::enrichReportWithLinkedTask);
+
         Map<String, Object> result = new HashMap<>();
-        result.put("reports", reportPage.getContent());
+        result.put("reports", content);
         result.put("currentPage", reportPage.getNumber());
         result.put("totalPages", reportPage.getTotalPages());
         result.put("totalElements", reportPage.getTotalElements());
@@ -100,7 +294,25 @@ public class CitizenReportService {
         CitizenReport report = reportRepository.findById(reportId).orElse(null);
         if (report != null && !Boolean.TRUE.equals(report.getIsDeleted())) {
             report.setStatus("Acknowledged");
-            return reportRepository.save(report);
+            report.setProgressStage("Accepted");
+            report.setAcknowledgedAt(LocalDateTime.now());
+            CitizenReport saved = reportRepository.save(report);
+
+            // Synchronize linked task if present
+            try {
+                List<RescueTask> tasks = taskRepository.findByCitizenReportId(reportId);
+                for (RescueTask t : tasks) {
+                    if ("Pending".equalsIgnoreCase(t.getStatus()) || "Assigned".equalsIgnoreCase(t.getStatus())) {
+                        t.setStatus("Acknowledged");
+                        t.setAcknowledgedAt(LocalDateTime.now());
+                        taskRepository.save(t);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Task sync warning on acknowledge: {}", e.getMessage());
+            }
+
+            return saved;
         }
         return null;
     }
@@ -110,7 +322,25 @@ public class CitizenReportService {
         CitizenReport report = reportRepository.findById(reportId).orElse(null);
         if (report != null && !Boolean.TRUE.equals(report.getIsDeleted())) {
             report.setStatus("Resolved");
-            return reportRepository.save(report);
+            report.setProgressStage("Resolved");
+            report.setResolvedAt(LocalDateTime.now());
+            CitizenReport saved = reportRepository.save(report);
+
+            // Synchronize linked task if present
+            try {
+                List<RescueTask> tasks = taskRepository.findByCitizenReportId(reportId);
+                for (RescueTask t : tasks) {
+                    if (!"Completed".equalsIgnoreCase(t.getStatus()) && !"Resolved".equalsIgnoreCase(t.getStatus())) {
+                        t.setStatus("Completed");
+                        t.setCompletedAt(LocalDateTime.now());
+                        taskRepository.save(t);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Task sync warning on resolve: {}", e.getMessage());
+            }
+
+            return saved;
         }
         return null;
     }
