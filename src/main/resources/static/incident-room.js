@@ -379,6 +379,14 @@
                     // Scroll to bottom
                     const container = document.getElementById('room-timeline-stream');
                     if (container) container.scrollTop = container.scrollHeight;
+                } else {
+                    const err = await res.json().catch(() => ({}));
+                    const msg = err.message || ('Failed to post message (' + res.status + ')');
+                    if (window.CommandCenter && window.CommandCenter.showToast) {
+                        window.CommandCenter.showToast(msg, 'danger');
+                    } else {
+                        alert(msg);
+                    }
                 }
             } catch (err) {
                 console.error('Failed to post message:', err);

@@ -183,7 +183,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/citizen-reports/**").authenticated()
                 .requestMatchers("/api/reports/**").authenticated()
                 .requestMatchers("/api/tasks/**").authenticated()
-                .requestMatchers("/api/messages/**").authenticated()
+                .requestMatchers("/api/messages", "/api/messages/**").hasAnyRole("Citizen", "Responder", "Admin")
                 .requestMatchers("/api/auth/profile").authenticated()
                 .requestMatchers("/api/auth/update-profile").authenticated()
                 .requestMatchers("/api/auth/sos-settings/**").authenticated()

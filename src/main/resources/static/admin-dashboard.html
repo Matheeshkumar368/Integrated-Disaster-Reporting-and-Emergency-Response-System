@@ -40,6 +40,8 @@
     <script src="responder-tracking.js?v=2"></script>
     <link rel="stylesheet" href="incident-room.css?v=1" />
     <script src="incident-room.js?v=2"></script>
+    <link rel="stylesheet" href="direct-messaging.css?v=1" />
+    <script src="direct-messaging.js?v=1"></script>
     <link rel="stylesheet" href="smart-assignment.css?v=1" />
     <script src="smart-assignment.js?v=2"></script>
     
@@ -303,6 +305,9 @@
                 <i class="fas fa-user-shield" style="color:var(--cc-cyan);"></i>
                 <span id="adminName">Admin User</span>
             </div>
+            <button type="button" class="cc-btn cc-btn-secondary" onclick="window.DirectMessaging.open()" style="padding:0.4rem 0.85rem;font-size:0.8rem;border-radius:8px;background:rgba(255,255,255,0.08);border-color:rgba(0,229,255,0.3);" title="Direct Tactical Comms with Citizens and Responders">
+                <i class="fas fa-tower-broadcast" style="color:#00e5ff;"></i> Direct Comms
+            </button>
             <!-- Emergency SOS Sound Local Alarm Control & Settings -->
             <div style="display:inline-flex;align-items:center;gap:0.3rem;">
                 <button type="button" id="sosSoundBtn" class="cc-btn cc-btn-danger" onclick="toggleLocalSosAlarm()" style="padding:0.4rem 0.85rem;font-size:0.8rem;border-radius:8px;transition:all 0.25s ease;" title="Sound audible SOS alert on this device (Shortcut: TAB)">

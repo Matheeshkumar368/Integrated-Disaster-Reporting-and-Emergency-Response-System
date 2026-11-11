@@ -53,7 +53,7 @@ public class RescueTaskService {
             } else if (p.equalsIgnoreCase("Minor") || p.equalsIgnoreCase("Low")) {
                 task.setPriority("Low");
             } else {
-                task.setPriority("Medium");
+                throw new IllegalArgumentException("Invalid priority: " + priority + ". Must be High, Medium, or Low");
             }
         }
         task.setCreatedAt(LocalDateTime.now());

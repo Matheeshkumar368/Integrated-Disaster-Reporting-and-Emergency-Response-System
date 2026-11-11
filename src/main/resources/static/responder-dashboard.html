@@ -40,6 +40,8 @@
     <script src="responder-tracking.js?v=2"></script>
     <link rel="stylesheet" href="incident-room.css?v=1" />
     <script src="incident-room.js?v=2"></script>
+    <link rel="stylesheet" href="direct-messaging.css?v=1" />
+    <script src="direct-messaging.js?v=1"></script>
     
     <!-- Role Loading & Authentication Helper -->
     <link rel="stylesheet" href="role-loading.css?v=2" />
@@ -811,6 +813,9 @@
 
                     <!-- Tactical Operational Controls -->
                     <div class="cc-action-cluster">
+                        <button type="button" class="cc-btn cc-btn-secondary" style="font-size:0.8rem;padding:0.4rem 0.75rem;" onclick="window.DirectMessaging.open(null, null)">
+                            <i class="fas fa-paper-plane" style="color:#00e5ff;"></i> Direct Comms
+                        </button>
                         <button type="button" class="cc-btn cc-btn-secondary" style="font-size:0.8rem;padding:0.4rem 0.75rem;" onclick="window.IncidentRoom.open(${task.taskId}, 'TASK', '${escapeJs(task.locationName || '')}')">
                             <i class="fas fa-comments" style="color:#10b981;"></i> Room & Chat
                         </button>
