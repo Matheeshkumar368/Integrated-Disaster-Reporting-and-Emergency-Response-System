@@ -94,6 +94,12 @@ public class CitizenReport {
     @Column(name = "resolved_at")
     private LocalDateTime resolvedAt;
 
+    @Column(name = "cancellation_requested")
+    private Boolean cancellationRequested = false;
+
+    @Column(name = "cancellation_reason")
+    private String cancellationReason;
+
     public CitizenReport() {
         this.timestamp = LocalDateTime.now();
         this.status = "Pending";
@@ -101,6 +107,7 @@ public class CitizenReport {
         this.incidentType = "General";
         this.isArchived = false;
         this.isDeleted = false;
+        this.cancellationRequested = false;
     }
 
     // Getters and Setters
@@ -201,4 +208,10 @@ public class CitizenReport {
 
     public LocalDateTime getResolvedAt() { return resolvedAt; }
     public void setResolvedAt(LocalDateTime resolvedAt) { this.resolvedAt = resolvedAt; }
+
+    public Boolean getCancellationRequested() { return cancellationRequested; }
+    public void setCancellationRequested(Boolean cancellationRequested) { this.cancellationRequested = cancellationRequested; }
+
+    public String getCancellationReason() { return cancellationReason; }
+    public void setCancellationReason(String cancellationReason) { this.cancellationReason = cancellationReason; }
 }

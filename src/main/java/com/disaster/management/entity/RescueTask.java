@@ -73,6 +73,12 @@ public class RescueTask {
     @Column(name = "completion_summary", columnDefinition = "TEXT")
     private String completionSummary;
 
+    @Column(name = "cancellation_requested")
+    private Boolean cancellationRequested = false;
+
+    @Column(name = "cancellation_reason", columnDefinition = "TEXT")
+    private String cancellationReason;
+
     public RescueTask() {
         this.createdAt = LocalDateTime.now();
         this.status = "Pending";
@@ -144,4 +150,10 @@ public class RescueTask {
 
     public String getCompletionSummary() { return completionSummary; }
     public void setCompletionSummary(String completionSummary) { this.completionSummary = completionSummary; }
+
+    public Boolean getCancellationRequested() { return cancellationRequested; }
+    public void setCancellationRequested(Boolean cancellationRequested) { this.cancellationRequested = cancellationRequested; }
+
+    public String getCancellationReason() { return cancellationReason; }
+    public void setCancellationReason(String cancellationReason) { this.cancellationReason = cancellationReason; }
 }

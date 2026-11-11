@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,8 +26,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.disaster.management.entity.CitizenReport;
 import com.disaster.management.entity.IncidentMedia;
 import com.disaster.management.entity.User;
+import com.disaster.management.repository.CitizenReportRepository;
 import com.disaster.management.repository.UserRepository;
 import com.disaster.management.service.MediaStorageService;
 
@@ -42,6 +45,9 @@ public class MediaController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private CitizenReportRepository reportRepository;
 
     @PostMapping("/upload")
     public ResponseEntity<Map<String, Object>> uploadMedia(
@@ -190,6 +196,69 @@ public class MediaController {
     @GetMapping("/recent")
     public ResponseEntity<List<IncidentMedia>> getRecentMedia() {
         return ResponseEntity.ok(mediaService.getRecentMedia());
+    }
+
+    // Delete uploaded evidence (Uploader if report unverified, or Admin)
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, Object>> deleteMedia(@PathVariable Long id) {
+        Map<String, Object> response = new HashMap<>();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            response.put("status", "error");
+            response.put("message", "Authentication required");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+
+        Optional<IncidentMedia> mediaOpt = mediaService.getMediaById(id);
+        if (mediaOpt.isEmpty()) {
+            response.put("status", "error");
+            response.put("message", "Media not found with ID: " + id);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
+
+        IncidentMedia media = mediaOpt.get();
+        String callerEmail = auth.getName();
+        boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_Admin"));
+        boolean isUploader = callerEmail.equalsIgnoreCase(media.getUploaderEmail());
+
+        if (!isAdmin && !isUploader) {
+            response.put("status", "error");
+            response.put("message", "Forbidden: You are not authorized to delete evidence uploaded by " + media.getUploaderEmail());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        }
+
+        // Integrity check: if linked to CitizenReport, check if verified/assigned.
+        // Citizens can only delete media if the report is unverified/pending.
+        if (!isAdmin && "CITIZEN_REPORT".equalsIgnoreCase(media.getIncidentType()) && media.getIncidentId() != null) {
+            Optional<CitizenReport> reportOpt = reportRepository.findById(media.getIncidentId());
+            if (reportOpt.isPresent()) {
+                CitizenReport report = reportOpt.get();
+                if (!"Pending".equalsIgnoreCase(report.getStatus()) || report.getAssignedResponderEmail() != null) {
+                    response.put("status", "error");
+                    response.put("message", "Cannot delete evidence: Incident #" + report.getReportId() + " is already verified or under active rescue operation.");
+                    return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+                }
+            }
+        }
+
+        // Integrity check: if linked to RescueTask, non-admin cannot delete
+        if (!isAdmin && "RESCUE_TASK".equalsIgnoreCase(media.getIncidentType())) {
+            response.put("status", "error");
+            response.put("message", "Forbidden: Evidence attached to active rescue missions cannot be deleted by responders.");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        }
+
+        try {
+            mediaService.deleteMedia(id);
+            response.put("status", "success");
+            response.put("message", "Evidence/media deleted successfully.");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Failed to delete media #{}: {}", id, e.getMessage());
+            response.put("status", "error");
+            response.put("message", "Failed to delete media: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
     }
 }
 

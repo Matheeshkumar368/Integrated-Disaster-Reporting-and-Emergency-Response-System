@@ -417,11 +417,134 @@ public class CitizenReportService {
         return saved;
     }
 
-    // Delete report with database integrity verification
+    // Edit an unreviewed/unassigned report (Citizen or Admin)
     @Transactional
-    public Map<String, Object> deleteReport(Long reportId, String reason, String actorEmail, boolean forcePermanent) {
+    public CitizenReport updateReport(Long reportId, CitizenReport updatedData, String actorEmail, boolean isAdmin) {
         CitizenReport report = reportRepository.findById(reportId)
             .orElseThrow(() -> new IllegalArgumentException("Report not found with ID: " + reportId));
+
+        if (!isAdmin) {
+            if (report.getCitizenEmail() == null || !report.getCitizenEmail().equalsIgnoreCase(actorEmail)) {
+                throw new SecurityException("Unauthorized: You can only edit your own reports");
+            }
+            if (!"Pending".equalsIgnoreCase(report.getStatus()) || report.getAssignedResponderEmail() != null) {
+                throw new IllegalStateException("Cannot edit report: Response unit already assigned or report has been verified. You may request cancellation instead.");
+            }
+        }
+
+        if (updatedData.getTitle() != null && !updatedData.getTitle().trim().isEmpty()) {
+            report.setTitle(updatedData.getTitle().trim());
+        }
+        if (updatedData.getIncidentType() != null && !updatedData.getIncidentType().trim().isEmpty()) {
+            report.setIncidentType(updatedData.getIncidentType().trim());
+        }
+        if (updatedData.getSeverity() != null && !updatedData.getSeverity().trim().isEmpty()) {
+            report.setSeverity(updatedData.getSeverity().trim());
+        }
+        if (updatedData.getLocation() != null && !updatedData.getLocation().trim().isEmpty()) {
+            report.setLocation(updatedData.getLocation().trim());
+        }
+        if (updatedData.getMessage() != null && !updatedData.getMessage().trim().isEmpty()) {
+            report.setMessage(updatedData.getMessage().trim());
+        }
+        if (updatedData.getPhotoData() != null) {
+            report.setPhotoData(updatedData.getPhotoData());
+        }
+        if (updatedData.getLatitude() != null) {
+            report.setLatitude(updatedData.getLatitude());
+        }
+        if (updatedData.getLongitude() != null) {
+            report.setLongitude(updatedData.getLongitude());
+        }
+
+        CitizenReport saved = reportRepository.save(report);
+
+        timelineService.logEvent(
+            reportId,
+            "CITIZEN_REPORT",
+            "REPORT_UPDATED",
+            actorEmail,
+            isAdmin ? "Admin" : "Citizen",
+            actorEmail,
+            "Incident report details updated: " + (report.getTitle() != null ? report.getTitle() : "Report #" + reportId),
+            null,
+            null
+        );
+
+        return saved;
+    }
+
+    // Restore archived or soft-deleted report (Admin only)
+    @Transactional
+    public CitizenReport restoreReport(Long reportId, String actorEmail) {
+        CitizenReport report = reportRepository.findById(reportId)
+            .orElseThrow(() -> new IllegalArgumentException("Report not found with ID: " + reportId));
+
+        report.setIsDeleted(false);
+        report.setIsArchived(false);
+        report.setDeletionReason(null);
+        if ("Cancelled".equalsIgnoreCase(report.getStatus()) || "Cancellation Requested".equalsIgnoreCase(report.getStatus())) {
+            report.setStatus("Pending");
+            report.setProgressStage("Submitted");
+        }
+        report.setCancellationRequested(false);
+        report.setCancellationReason(null);
+
+        CitizenReport saved = reportRepository.save(report);
+
+        adminPinService.recordAudit(
+            actorEmail,
+            "RESTORE_CITIZEN_REPORT",
+            "CitizenReport",
+            String.valueOf(reportId),
+            "SUCCESS",
+            "Restored Report #" + reportId + " to active status",
+            null
+        );
+
+        return saved;
+    }
+
+    // Delete report with database integrity verification
+    @Transactional
+    public Map<String, Object> deleteReport(Long reportId, String reason, String actorEmail, boolean forcePermanent, boolean isAdmin) {
+        CitizenReport report = reportRepository.findById(reportId)
+            .orElseThrow(() -> new IllegalArgumentException("Report not found with ID: " + reportId));
+
+        Map<String, Object> result = new HashMap<>();
+
+        if (!isAdmin) {
+            if (report.getCitizenEmail() == null || !report.getCitizenEmail().equalsIgnoreCase(actorEmail)) {
+                throw new SecurityException("Unauthorized: You can only delete your own reports");
+            }
+
+            // If already verified or assigned to a responder, cannot delete permanently; request cancellation
+            if (!"Pending".equalsIgnoreCase(report.getStatus()) || report.getAssignedResponderEmail() != null) {
+                report.setCancellationRequested(true);
+                report.setCancellationReason(reason != null ? reason : "Citizen requested cancellation after dispatch");
+                report.setStatus("Cancellation Requested");
+                reportRepository.save(report);
+
+                result.put("status", "cancellation_requested");
+                result.put("reportId", reportId);
+                result.put("message", "Report has already been verified or assigned. A cancellation request has been submitted for Administrator approval.");
+                return result;
+            }
+
+            // Unreviewed / pending report: Citizen can safely withdraw / soft-delete
+            report.setIsDeleted(true);
+            report.setDeletionReason(reason != null ? reason : "Withdrawn by citizen prior to verification");
+            report.setDeletedAt(LocalDateTime.now());
+            report.setDeletedBy(actorEmail);
+            report.setStatus("Cancelled");
+            reportRepository.save(report);
+
+            result.put("status", "success");
+            result.put("reportId", reportId);
+            result.put("mode", "CITIZEN_WITHDRAWAL");
+            result.put("message", "Your incident report #" + reportId + " was withdrawn successfully.");
+            return result;
+        }
 
         // 1. Data Integrity Check: Are there active tasks linked to this report?
         long activeTaskCount = taskRepository.countByCitizenReportIdAndStatusNotIn(
@@ -436,8 +559,6 @@ public class CitizenReportService {
                 "Complete or cancel active tasks before deleting, or use soft-archival."
             );
         }
-
-        Map<String, Object> result = new HashMap<>();
 
         if (forcePermanent) {
             // Permanent deletion (audited)

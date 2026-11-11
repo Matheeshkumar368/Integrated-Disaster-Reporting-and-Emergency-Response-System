@@ -212,5 +212,30 @@ public class MediaStorageService {
         }
         return "DOCUMENT";
     }
+
+    @Transactional
+    public void deleteMedia(Long id) {
+        if (id == null) {
+            throw new IllegalArgumentException("Media ID cannot be null");
+        }
+        Optional<IncidentMedia> mediaOpt = mediaRepository.findById(id);
+        if (mediaOpt.isPresent()) {
+            IncidentMedia media = mediaOpt.get();
+            try {
+                if (media.getStoredFilename() != null && this.rootLocation != null) {
+                    Path file = this.rootLocation.resolve(media.getStoredFilename()).normalize().toAbsolutePath();
+                    if (file.startsWith(this.rootLocation)) {
+                        Files.deleteIfExists(file);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Failed to delete physical media file: {}", e.getMessage());
+            }
+            mediaRepository.deleteById(id);
+            log.info("Media record #{} deleted successfully.", id);
+        } else {
+            throw new IllegalArgumentException("Media not found with ID: " + id);
+        }
+    }
 }
 

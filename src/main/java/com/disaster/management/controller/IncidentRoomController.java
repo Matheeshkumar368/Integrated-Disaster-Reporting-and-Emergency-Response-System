@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -115,6 +116,43 @@ public class IncidentRoomController {
             log.error("Failed to post message on incident room: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("status", "error", "message", e.getMessage()));
+        }
+    }
+
+    // Delete own chat message (Author or Admin)
+    @DeleteMapping("/timeline/message/{eventId}")
+    public ResponseEntity<?> deleteTimelineMessage(@PathVariable Long eventId) {
+        return executeDeleteTimelineMessage(eventId);
+    }
+
+    @DeleteMapping("/{id}/timeline/message/{eventId}")
+    public ResponseEntity<?> deleteTimelineMessageWithId(@PathVariable Long id, @PathVariable Long eventId) {
+        return executeDeleteTimelineMessage(eventId);
+    }
+
+    private ResponseEntity<?> executeDeleteTimelineMessage(Long eventId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("status", "error", "message", "Authentication required"));
+        }
+
+        String callerEmail = auth.getName();
+        boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_Admin"));
+
+        try {
+            timelineService.deleteMessage(eventId, callerEmail, isAdmin);
+            return ResponseEntity.ok(Map.of("status", "success", "message", "Chat message deleted successfully"));
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("status", "error", "message", e.getMessage()));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("status", "error", "message", e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("status", "error", "message", e.getMessage()));
+        } catch (Exception e) {
+            log.error("Failed to delete timeline message #{}: {}", eventId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("status", "error", "message", "Failed to delete message: " + e.getMessage()));
         }
     }
 

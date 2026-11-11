@@ -81,6 +81,12 @@ public class User {
     @JsonIgnore
     private LocalDateTime pinLockedUntil;
 
+    @Column(name = "active")
+    private Boolean active = true;
+
+    @Column(name = "deactivation_reason")
+    private String deactivationReason;
+
     private LocalDateTime createdAt = LocalDateTime.now();
     private LocalDateTime lastLoginAt;
 
@@ -191,4 +197,10 @@ public class User {
             this.backupCodeLockedUntil = LocalDateTime.now().plusMinutes(15);
         }
     }
+
+    public Boolean getActive() { return active != null ? active : true; }
+    public void setActive(Boolean active) { this.active = active; }
+
+    public String getDeactivationReason() { return deactivationReason; }
+    public void setDeactivationReason(String deactivationReason) { this.deactivationReason = deactivationReason; }
 }

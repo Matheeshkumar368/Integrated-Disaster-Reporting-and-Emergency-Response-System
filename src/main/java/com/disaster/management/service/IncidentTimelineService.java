@@ -82,5 +82,28 @@ public class IncidentTimelineService {
             null
         );
     }
+
+    @Transactional
+    public void deleteMessage(Long eventId, String callerEmail, boolean isAdmin) {
+        if (eventId == null) {
+            throw new IllegalArgumentException("Event ID cannot be null");
+        }
+        IncidentTimelineEvent event = timelineRepository.findById(eventId)
+            .orElseThrow(() -> new IllegalArgumentException("Timeline message not found with ID: " + eventId));
+
+        if (!"MESSAGE".equalsIgnoreCase(event.getEventType()) && !"CHAT_MESSAGE".equalsIgnoreCase(event.getEventType())) {
+            throw new IllegalStateException("Only user chat messages can be deleted. Operational audit events cannot be removed.");
+        }
+
+        if (!isAdmin) {
+            String author = event.getActorEmail();
+            if (author == null || !author.trim().equalsIgnoreCase(callerEmail.trim())) {
+                throw new SecurityException("Forbidden: You can only delete your own chat messages.");
+            }
+        }
+
+        timelineRepository.deleteById(eventId);
+        log.info("Deleted timeline message #{} by {}", eventId, callerEmail);
+    }
 }
 

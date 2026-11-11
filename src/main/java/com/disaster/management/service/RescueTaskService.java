@@ -40,13 +40,21 @@ public class RescueTaskService {
         if (task.getZone() == null || task.getZone().trim().isEmpty()) {
             throw new IllegalArgumentException("Task zone is required");
         }
-        if (task.getPriority() == null || task.getPriority().trim().isEmpty()) {
-            throw new IllegalArgumentException("Task priority is required");
-        }
-        // Validate priority values
+        // Normalize priority values
         String priority = task.getPriority();
-        if (!priority.equalsIgnoreCase("High") && !priority.equalsIgnoreCase("Medium") && !priority.equalsIgnoreCase("Low")) {
-            throw new IllegalArgumentException("Invalid priority value. Must be High, Medium, or Low");
+        if (priority == null || priority.trim().isEmpty()) {
+            task.setPriority("Medium");
+        } else {
+            String p = priority.trim();
+            if (p.equalsIgnoreCase("Critical") || p.equalsIgnoreCase("Severe") || p.equalsIgnoreCase("Extreme") || p.equalsIgnoreCase("High")) {
+                task.setPriority("High");
+            } else if (p.equalsIgnoreCase("Moderate") || p.equalsIgnoreCase("Medium")) {
+                task.setPriority("Medium");
+            } else if (p.equalsIgnoreCase("Minor") || p.equalsIgnoreCase("Low")) {
+                task.setPriority("Low");
+            } else {
+                task.setPriority("Medium");
+            }
         }
         task.setCreatedAt(LocalDateTime.now());
         if (task.getStatus() == null || task.getStatus().trim().isEmpty()) {
@@ -451,5 +459,80 @@ public class RescueTaskService {
             throw new IllegalArgumentException("Status cannot be empty");
         }
         return rescueTaskRepository.findByZoneAndStatus(zone, status);
+    }
+
+    // Responder updates SitRep notes on their assigned task
+    @Transactional
+    public RescueTask updateTaskNotes(Long taskId, String notes, String callerEmail, boolean isAdmin) {
+        if (taskId == null) {
+            throw new IllegalArgumentException("Task ID cannot be null");
+        }
+        RescueTask task = rescueTaskRepository.findById(taskId)
+            .orElseThrow(() -> new IllegalArgumentException("Task not found with ID: " + taskId));
+
+        if (!isAdmin) {
+            String assignedTo = task.getAssignedTo();
+            if (assignedTo == null || !assignedTo.trim().equalsIgnoreCase(callerEmail.trim())) {
+                throw new SecurityException("Forbidden: You are not authorized to edit notes for task #" + taskId + " assigned to another unit.");
+            }
+        }
+
+        if (notes != null && !notes.trim().isEmpty()) {
+            String timestamp = LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+            String noteEntry = "[" + timestamp + " - " + callerEmail + "] " + notes.trim();
+            String existingNotes = task.getNotes();
+            if (existingNotes == null || existingNotes.trim().isEmpty()) {
+                task.setNotes(noteEntry);
+            } else {
+                task.setNotes(existingNotes + "\n" + noteEntry);
+            }
+        }
+
+        return rescueTaskRepository.save(task);
+    }
+
+    // Responder or Admin requests cancellation / reassignment of task
+    @Transactional
+    public RescueTask requestCancellation(Long taskId, String reason, String callerEmail, boolean isAdmin) {
+        if (taskId == null) {
+            throw new IllegalArgumentException("Task ID cannot be null");
+        }
+        RescueTask task = rescueTaskRepository.findById(taskId)
+            .orElseThrow(() -> new IllegalArgumentException("Task not found with ID: " + taskId));
+
+        if (!isAdmin) {
+            String assignedTo = task.getAssignedTo();
+            if (assignedTo == null || !assignedTo.trim().equalsIgnoreCase(callerEmail.trim())) {
+                throw new SecurityException("Forbidden: You are not authorized to request cancellation for task #" + taskId + " assigned to another unit.");
+            }
+        }
+
+        task.setCancellationRequested(true);
+        task.setCancellationReason(reason != null ? reason.trim() : "Responder requested cancellation / reassignment.");
+        task.setStatus("Cancellation Requested");
+
+        String timestamp = LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+        String cancellationLog = "[" + timestamp + " CANCEL_REQUESTED by " + callerEmail + "] " + (reason != null ? reason : "No reason specified");
+        String existingNotes = task.getNotes();
+        task.setNotes(existingNotes == null ? cancellationLog : existingNotes + "\n" + cancellationLog);
+
+        RescueTask savedTask = rescueTaskRepository.save(task);
+
+        // Synchronize linked citizen report if applicable
+        if (task.getCitizenReportId() != null) {
+            try {
+                citizenReportRepository.findById(task.getCitizenReportId()).ifPresent(report -> {
+                    report.setCancellationRequested(true);
+                    report.setCancellationReason("Responder " + callerEmail + " requested reassignment: " + (reason != null ? reason : ""));
+                    report.setStatus("Cancellation Requested");
+                    citizenReportRepository.save(report);
+                    log.info("Synchronized CitizenReport #{} status to Cancellation Requested", report.getReportId());
+                });
+            } catch (Exception e) {
+                log.warn("Failed to synchronize citizen report cancellation: {}", e.getMessage());
+            }
+        }
+
+        return savedTask;
     }
 }

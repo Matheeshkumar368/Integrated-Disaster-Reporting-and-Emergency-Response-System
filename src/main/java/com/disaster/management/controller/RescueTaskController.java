@@ -541,16 +541,140 @@ public class RescueTaskController {
         }
     }
 
-    // Delete task (Admin only)
+    // Responder updates notes on their assigned task
+    @PutMapping("/{id}/notes")
+    public ResponseEntity<Map<String, Object>> updateTaskNotes(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> request) {
+
+        Map<String, Object> response = new HashMap<>();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            response.put("status", "error");
+            response.put("message", "Authentication required");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+
+        String callerEmail = auth.getName();
+        boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_Admin"));
+        String notes = request != null ? request.get("notes") : null;
+
+        if (notes == null || notes.trim().isEmpty()) {
+            response.put("status", "error");
+            response.put("message", "Notes cannot be empty");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        try {
+            RescueTask updated = rescueTaskService.updateTaskNotes(id, notes, callerEmail, isAdmin);
+            try {
+                incidentTimelineService.logEvent(
+                    id, "RESCUE_TASK", "NOTES_UPDATED", callerEmail,
+                    isAdmin ? "Admin" : "Responder",
+                    updated.getAssignedResponderName() != null ? updated.getAssignedResponderName() : callerEmail,
+                    "Field note added: " + notes.trim(),
+                    null, null
+                );
+            } catch (Exception e) {
+                log.warn("Timeline log warning: {}", e.getMessage());
+            }
+
+            response.put("status", "success");
+            response.put("message", "Task notes updated successfully");
+            response.put("task", updated);
+            return ResponseEntity.ok(response);
+        } catch (SecurityException e) {
+            response.put("status", "error");
+            response.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        } catch (IllegalArgumentException e) {
+            response.put("status", "error");
+            response.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        } catch (Exception e) {
+            log.error("Failed to update task notes: {}", e.getMessage());
+            response.put("status", "error");
+            response.put("message", "Failed to update notes: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    // Responder requests assignment cancellation / reassignment
+    @PutMapping("/{id}/request-cancel")
+    public ResponseEntity<Map<String, Object>> requestTaskCancellation(
+            @PathVariable Long id,
+            @RequestBody(required = false) Map<String, String> request) {
+
+        Map<String, Object> response = new HashMap<>();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            response.put("status", "error");
+            response.put("message", "Authentication required");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+
+        String callerEmail = auth.getName();
+        boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_Admin"));
+        String reason = request != null ? (request.get("reason") != null ? request.get("reason") : request.get("notes")) : "Responder requested cancellation / reassignment";
+
+        try {
+            RescueTask cancelled = rescueTaskService.requestCancellation(id, reason, callerEmail, isAdmin);
+            try {
+                incidentTimelineService.logEvent(
+                    id, "RESCUE_TASK", "CANCELLATION_REQUESTED", callerEmail,
+                    isAdmin ? "Admin" : "Responder",
+                    cancelled.getAssignedResponderName() != null ? cancelled.getAssignedResponderName() : callerEmail,
+                    "Cancellation/Reassignment requested: " + reason,
+                    null, null
+                );
+            } catch (Exception e) {
+                log.warn("Timeline log warning: {}", e.getMessage());
+            }
+
+            response.put("status", "success");
+            response.put("message", "Cancellation / reassignment request submitted to Central Command");
+            response.put("task", cancelled);
+            return ResponseEntity.ok(response);
+        } catch (SecurityException e) {
+            response.put("status", "error");
+            response.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        } catch (IllegalArgumentException e) {
+            response.put("status", "error");
+            response.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        } catch (Exception e) {
+            log.error("Failed to request task cancellation: {}", e.getMessage());
+            response.put("status", "error");
+            response.put("message", "Failed to submit cancellation request: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    // Delete task (Admin only - Responders strictly forbidden from erasing history)
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, Object>> deleteTask(@PathVariable Long id) {
         Map<String, Object> response = new HashMap<>();
 
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            response.put("status", "error");
+            response.put("message", "Authentication required");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+
+        boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_Admin"));
+        if (!isAdmin) {
+            response.put("status", "error");
+            response.put("message", "Forbidden: Responders cannot delete tasks or erase response history. Only Central Command Administrators can remove tasks.");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        }
+
+        String adminEmail = auth.getName();
+
         try {
             rescueTaskService.deleteTask(id);
 
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            String adminEmail = auth != null ? auth.getName() : "admin@disaster.gov.in";
             adminPinService.recordAudit(
                 adminEmail,
                 "DELETE_RESCUE_TASK",

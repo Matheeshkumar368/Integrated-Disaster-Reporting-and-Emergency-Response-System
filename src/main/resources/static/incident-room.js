@@ -105,6 +105,7 @@
 
             const user = JSON.parse(localStorage.getItem('user') || '{}');
             this.currentEmail = user.email || '';
+            this.currentUserRole = user.role || '';
 
             const backdrop = document.getElementById('incident-room-modal-backdrop');
             const idTag = document.getElementById('room-incident-id-tag');
@@ -231,8 +232,12 @@
                             <span class="role-badge ${roleClass}">${escapeHtml(event.actorRole || 'Citizen')}</span>
                             <span>${event.createdAt ? new Date(event.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
                         </div>
-                        <div class="chat-bubble">
-                            ${escapeHtml(event.message || '')}
+                        <div class="chat-bubble" style="display:inline-flex; align-items:center; gap:8px;">
+                            <span>${escapeHtml(event.message || '')}</span>
+                            ${(isSelf || (this.currentUserRole && this.currentUserRole.toLowerCase() === 'admin')) ? `
+                            <button type="button" onclick="window.IncidentRoom.deleteMessage(${event.id})" style="background:none; border:none; color:rgba(255,255,255,0.4); cursor:pointer; font-size:0.75rem; padding:0; line-height:1;" title="Delete this message">
+                                <i class="fas fa-trash-can"></i>
+                            </button>` : ''}
                         </div>
                     </div>
                     `;
@@ -279,23 +284,76 @@
 
                 mediaList.forEach(m => {
                     const downloadUrl = `/api/media/file/${m.storedFilename}`;
+                    const isMediaSelf = (this.currentEmail && m.uploaderEmail && this.currentEmail.toLowerCase() === m.uploaderEmail.toLowerCase()) || 
+                                        (this.currentUserRole && this.currentUserRole.toLowerCase() === 'admin');
+                    html += `<div style="position:relative; display:inline-block; margin:4px;">`;
                     if (m.mediaType === 'VIDEO') {
-                        html += `
-                            <video src="${downloadUrl}" controls class="timeline-video-player" preload="metadata"></video>
-                        `;
+                        html += `<video src="${downloadUrl}" controls class="timeline-video-player" preload="metadata"></video>`;
                     } else if (m.mediaType === 'PHOTO') {
-                        html += `
-                            <img src="${downloadUrl}" class="timeline-media-thumb" 
-                                 title="${escapeHtml(m.caption || m.originalFilename)}"
-                                 onclick="window.open('${downloadUrl}', '_blank')" alt="Incident media" />
-                        `;
+                        html += `<img src="${downloadUrl}" class="timeline-media-thumb" 
+                                      title="${escapeHtml(m.caption || m.originalFilename)}"
+                                      onclick="window.open('${downloadUrl}', '_blank')" alt="Incident media" />`;
                     }
+                    if (isMediaSelf) {
+                        html += `
+                        <button type="button" onclick="window.IncidentRoom.deleteMedia(${m.id})" style="position:absolute; top:4px; right:4px; background:rgba(239,68,68,0.85); color:#fff; border:none; border-radius:50%; width:22px; height:22px; font-size:11px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 4px rgba(0,0,0,0.5);" title="Delete evidence file">
+                            <i class="fas fa-trash-can"></i>
+                        </button>`;
+                    }
+                    html += `</div>`;
                 });
 
                 html += `</div></div>`;
             }
 
             container.innerHTML = html;
+        }
+
+        
+        async deleteMessage(eventId) {
+            let confirmed = confirm('Delete this message from the incident chronology?');
+            if (!confirmed) return;
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch(`/api/incidents/timeline/message/${eventId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    if (window.CommandCenter && window.CommandCenter.showToast) {
+                        window.CommandCenter.showToast('Message deleted', 'info');
+                    }
+                    this.fetchRoomData();
+                } else {
+                    const err = await res.json().catch(() => ({}));
+                    alert(err.message || 'Failed to delete message');
+                }
+            } catch (e) {
+                alert('Network error: ' + e.message);
+            }
+        }
+
+        async deleteMedia(mediaId) {
+            let confirmed = confirm('Delete this uploaded evidence file?');
+            if (!confirmed) return;
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch(`/api/media/${mediaId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    if (window.CommandCenter && window.CommandCenter.showToast) {
+                        window.CommandCenter.showToast('Evidence file deleted', 'info');
+                    }
+                    this.fetchRoomData();
+                } else {
+                    const err = await res.json().catch(() => ({}));
+                    alert(err.message || 'Failed to delete evidence');
+                }
+            } catch (e) {
+                alert('Network error: ' + e.message);
+            }
         }
 
         async sendMessage() {

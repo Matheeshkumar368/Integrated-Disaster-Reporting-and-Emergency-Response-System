@@ -18,7 +18,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.disaster.management.entity.AdminAuditLog;
 import com.disaster.management.entity.User;
+import com.disaster.management.repository.CitizenReportRepository;
 import com.disaster.management.repository.RescueTaskRepository;
 import com.disaster.management.repository.UserRepository;
 import com.disaster.management.security.JwtUtil;
@@ -51,6 +54,9 @@ public class AuthController {
 
     @Autowired
     private RescueTaskRepository rescueTaskRepository;
+
+    @Autowired
+    private CitizenReportRepository citizenReportRepository;
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -133,6 +139,13 @@ public class AuthController {
         if (userOptional.isPresent()) {
             User user = userOptional.get();
 
+            if (Boolean.FALSE.equals(user.getActive())) {
+                response.put("status", "error");
+                response.put("message", "This account has been deactivated. Reason: " + 
+                    (user.getDeactivationReason() != null ? user.getDeactivationReason() : "Administrative action"));
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+            }
+
             if (passwordEncoder.matches(password, user.getPassword())) {
                 // Reset failed attempts on success
                 loginAttempts.remove(normalizedEmail);
@@ -171,8 +184,17 @@ public class AuthController {
     // ────────────────────────────────────────────────
     //              GET USER PROFILE ENDPOINT
     // ────────────────────────────────────────────────
+    @GetMapping("/profile")
+    public ResponseEntity<Map<String, Object>> getProfileGet(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        return executeGetProfile(authHeader);
+    }
+
     @PostMapping("/profile")
-    public ResponseEntity<Map<String, Object>> getProfile(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+    public ResponseEntity<Map<String, Object>> getProfilePost(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        return executeGetProfile(authHeader);
+    }
+
+    private ResponseEntity<Map<String, Object>> executeGetProfile(String authHeader) {
         Map<String, Object> response = new HashMap<>();
 
         String token = extractBearerToken(authHeader);
@@ -188,6 +210,7 @@ public class AuthController {
         if (userOptional.isPresent()) {
             User user = userOptional.get();
             response.put("status", "success");
+            response.put("id", user.getId());
             response.put("name", user.getName());
             response.put("email", user.getEmail());
             response.put("phone", user.getPhone());
@@ -891,5 +914,139 @@ public class AuthController {
             return authHeader.substring(7).trim();
         }
         return null;
+    }
+
+    // ────────────────────────────────────────────────
+    //     ADMIN: USER DEACTIVATION & LIFECYCLE
+    // ────────────────────────────────────────────────
+
+    @PutMapping("/users/{userId}/deactivate")
+    public ResponseEntity<Map<String, Object>> deactivateUser(
+            @PathVariable Long userId,
+            @RequestBody(required = false) Map<String, String> body) {
+        Map<String, Object> response = new HashMap<>();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_Admin"))) {
+            response.put("status", "error");
+            response.put("message", "Forbidden: Admin privileges required to deactivate user accounts.");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        }
+
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            response.put("status", "error");
+            response.put("message", "User not found with ID: " + userId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
+
+        User targetUser = userOpt.get();
+        if ("Admin".equalsIgnoreCase(targetUser.getRole())) {
+            response.put("status", "error");
+            response.put("message", "Cannot deactivate primary Administrator accounts.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        String reason = body != null ? body.get("reason") : "Administrative deactivation";
+        targetUser.setActive(false);
+        targetUser.setDeactivationReason(reason != null ? reason : "Deactivated by Administrator");
+        userRepository.save(targetUser);
+
+        adminPinService.recordAudit(
+            auth.getName(),
+            "DEACTIVATE_USER",
+            "User",
+            String.valueOf(userId),
+            "SUCCESS",
+            "Deactivated user " + targetUser.getEmail() + ". Reason: " + reason,
+            null
+        );
+
+        response.put("status", "success");
+        response.put("message", "User " + targetUser.getEmail() + " successfully deactivated.");
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/users/{userId}/reactivate")
+    public ResponseEntity<Map<String, Object>> reactivateUser(@PathVariable Long userId) {
+        Map<String, Object> response = new HashMap<>();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_Admin"))) {
+            response.put("status", "error");
+            response.put("message", "Forbidden: Admin privileges required to reactivate user accounts.");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        }
+
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            response.put("status", "error");
+            response.put("message", "User not found with ID: " + userId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
+
+        User targetUser = userOpt.get();
+        targetUser.setActive(true);
+        targetUser.setDeactivationReason(null);
+        userRepository.save(targetUser);
+
+        adminPinService.recordAudit(
+            auth.getName(),
+            "REACTIVATE_USER",
+            "User",
+            String.valueOf(userId),
+            "SUCCESS",
+            "Reactivated user " + targetUser.getEmail(),
+            null
+        );
+
+        response.put("status", "success");
+        response.put("message", "User " + targetUser.getEmail() + " successfully reactivated.");
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/users/{userId}")
+    public ResponseEntity<Map<String, Object>> deleteUser(@PathVariable Long userId) {
+        Map<String, Object> response = new HashMap<>();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_Admin"))) {
+            response.put("status", "error");
+            response.put("message", "Forbidden: Admin privileges required to delete user accounts.");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        }
+
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            response.put("status", "error");
+            response.put("message", "User not found with ID: " + userId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
+
+        User targetUser = userOpt.get();
+        String email = targetUser.getEmail();
+
+        long reportCount = citizenReportRepository.findByCitizenEmailOrderByTimestampDesc(email).size();
+        long taskCount = rescueTaskRepository.findByAssignedTo(email).size();
+
+        if (reportCount > 0 || taskCount > 0) {
+            response.put("status", "error");
+            response.put("message", "Cannot permanently delete user " + email + ": User has " + reportCount + 
+                " associated incident report(s) and " + taskCount + " rescue mission assignment(s). " +
+                "Deactivate the user account instead to preserve database audit and operational integrity.");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+        }
+
+        userRepository.delete(targetUser);
+        adminPinService.recordAudit(
+            auth.getName(),
+            "DELETE_USER",
+            "User",
+            String.valueOf(userId),
+            "SUCCESS",
+            "Permanently deleted user " + email + " (no associated records)",
+            null
+        );
+
+        response.put("status", "success");
+        response.put("message", "User " + email + " permanently removed.");
+        return ResponseEntity.ok(response);
     }
 }

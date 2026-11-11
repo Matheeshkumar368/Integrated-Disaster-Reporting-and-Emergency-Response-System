@@ -198,9 +198,120 @@ public class AlertController {
         }
     }
 
+    // Admin edits an alert
+    @PutMapping("/{alertId}")
+    public ResponseEntity<?> updateAlert(
+            @PathVariable Long alertId,
+            @RequestBody Alert updatedData) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_Admin"))) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of("status", "error", "message", "Forbidden: Admin privileges required to edit alerts"));
+        }
+
+        try {
+            Alert alert = alertService.getAlertById(alertId);
+            if (alert == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("status", "error", "message", "Alert not found"));
+            }
+
+            if (updatedData.getTitle() != null && !updatedData.getTitle().trim().isEmpty()) {
+                alert.setTitle(updatedData.getTitle().trim());
+            }
+            if (updatedData.getDisasterType() != null && !updatedData.getDisasterType().trim().isEmpty()) {
+                alert.setDisasterType(updatedData.getDisasterType().trim());
+            }
+            if (updatedData.getSeverity() != null && !updatedData.getSeverity().trim().isEmpty()) {
+                alert.setSeverity(updatedData.getSeverity().trim());
+            }
+            if (updatedData.getRegion() != null && !updatedData.getRegion().trim().isEmpty()) {
+                alert.setRegion(updatedData.getRegion().trim());
+            }
+            if (updatedData.getMessage() != null && !updatedData.getMessage().trim().isEmpty()) {
+                alert.setMessage(updatedData.getMessage().trim());
+            }
+            if (updatedData.getMediaUrl() != null) {
+                alert.setMediaUrl(updatedData.getMediaUrl());
+            }
+            alert.setBroadcasted(updatedData.isBroadcasted());
+            if (updatedData.getStatus() != null && !updatedData.getStatus().trim().isEmpty()) {
+                alert.setStatus(updatedData.getStatus().trim());
+            }
+
+            Alert saved = alertService.updateAlert(alert);
+            adminPinService.recordAudit(
+                auth.getName(),
+                "UPDATE_ALERT",
+                "Alert",
+                String.valueOf(alertId),
+                "SUCCESS",
+                "Updated alert #" + alertId + " details (" + saved.getTitle() + ")",
+                null
+            );
+
+            return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "message", "Alert #" + alertId + " updated successfully",
+                "alert", saved
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Error updating alert: " + e.getMessage()));
+        }
+    }
+
+    // Admin withdraws an incorrect published alert
+    @PutMapping("/{alertId}/withdraw")
+    public ResponseEntity<?> withdrawAlert(
+            @PathVariable Long alertId,
+            @RequestBody(required = false) Map<String, String> body) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_Admin"))) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of("status", "error", "message", "Forbidden: Admin privileges required to withdraw alerts"));
+        }
+
+        try {
+            Alert alert = alertService.getAlertById(alertId);
+            if (alert == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("status", "error", "message", "Alert not found"));
+            }
+
+            String reason = body != null ? body.get("reason") : "Withdrawn by Central Command";
+            alert.setStatus("Withdrawn");
+            alert.setBroadcasted(false);
+            Alert saved = alertService.updateAlert(alert);
+
+            adminPinService.recordAudit(
+                auth.getName(),
+                "WITHDRAW_ALERT",
+                "Alert",
+                String.valueOf(alertId),
+                "SUCCESS",
+                "Withdrew alert #" + alertId + ". Reason: " + reason,
+                null
+            );
+
+            return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "message", "Emergency Alert #" + alertId + " has been withdrawn and marked inactive.",
+                "alert", saved
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Error withdrawing alert: " + e.getMessage()));
+        }
+    }
+
     // Admin deletes an alert
     @org.springframework.web.bind.annotation.DeleteMapping("/{alertId}")
     public ResponseEntity<?> deleteAlert(@PathVariable Long alertId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_Admin"))) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of("status", "error", "message", "Forbidden: Admin privileges required to delete alerts"));
+        }
+
         try {
             Alert alert = alertService.getAlertById(alertId);
             if (alert == null) {
@@ -208,7 +319,19 @@ public class AlertController {
                     .body(Map.of("status", "error", "message", "Alert not found"));
             }
             alert.setStatus("Archived");
+            alert.setBroadcasted(false);
             alertService.updateAlert(alert);
+
+            adminPinService.recordAudit(
+                auth.getName(),
+                "DELETE_ALERT",
+                "Alert",
+                String.valueOf(alertId),
+                "SUCCESS",
+                "Archived and deleted alert #" + alertId,
+                null
+            );
+
             return ResponseEntity.ok(Map.of("status", "success", "message", "Alert archived/removed"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Error removing alert"));

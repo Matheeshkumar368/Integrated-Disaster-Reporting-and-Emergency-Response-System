@@ -213,6 +213,41 @@ public class CitizenReportController {
         }
     }
 
+    // Edit report before verification (Citizen author or Admin)
+    @PutMapping("/{reportId}")
+    public ResponseEntity<?> updateReport(
+            @PathVariable Long reportId,
+            @RequestBody CitizenReport updatedData) {
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("status", "error", "message", "Authentication required"));
+        }
+
+        String callerEmail = auth.getName();
+        boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_Admin"));
+
+        try {
+            CitizenReport updated = reportService.updateReport(reportId, updatedData, callerEmail, isAdmin);
+            return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "message", "Report #" + reportId + " updated successfully",
+                "report", updated
+            ));
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("status", "error", "message", e.getMessage()));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("status", "error", "message", e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("status", "error", "message", e.getMessage()));
+        } catch (Exception e) {
+            log.error("Failed to update report {}: {}", reportId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("status", "error", "message", "Failed to update report: " + e.getMessage()));
+        }
+    }
+
     // Admin archives a report
     @PutMapping("/{reportId}/archive")
     public ResponseEntity<?> archiveReport(@PathVariable Long reportId) {
@@ -237,9 +272,31 @@ public class CitizenReportController {
         }
     }
 
+    // Admin restores archived or soft-deleted report
+    @PutMapping("/{reportId}/restore")
+    public ResponseEntity<?> restoreReport(@PathVariable Long reportId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_Admin"))) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of("status", "error", "message", "Forbidden: Admin privileges required to restore reports"));
+        }
+
+        try {
+            CitizenReport restored = reportService.restoreReport(reportId, auth.getName());
+            return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "message", "Report #" + reportId + " restored to active status",
+                "report", restored
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("status", "error", "message", e.getMessage()));
+        }
+    }
+
     // Delete or Cancel report
-    // If Admin calls with ?action=delete or ?permanent=true -> executes report deletion with integrity check
-    // If Citizen or ?action=cancel -> marks report as cancelled
+    // If Citizen calls on unreviewed report -> withdraws / soft-deletes
+    // If Citizen calls on verified/assigned report -> requests cancellation
+    // If Admin calls -> deletes or soft-deletes with active mission integrity checks
     @DeleteMapping("/{reportId}")
     public ResponseEntity<?> deleteOrCancelReport(
             @PathVariable Long reportId,
@@ -257,53 +314,22 @@ public class CitizenReportController {
         boolean isAdmin = auth.getAuthorities().stream()
             .anyMatch(a -> a.getAuthority().equals("ROLE_Admin"));
 
-        // If explicitly requested delete or permanent, or action is delete
-        boolean isDeleteAction = "delete".equalsIgnoreCase(action) || permanent;
-
-        if (isDeleteAction) {
-            if (!isAdmin) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("status", "error", "message", "Access denied: Only Administrators can delete incident records."));
-            }
-
-            try {
-                Map<String, Object> delResult = reportService.deleteReport(reportId, reason, callerEmail, permanent);
-                return ResponseEntity.ok(delResult);
-            } catch (IllegalStateException e) {
-                // Active task integrity constraint
-                return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(Map.of("status", "conflict", "message", e.getMessage()));
-            } catch (IllegalArgumentException e) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("status", "error", "message", e.getMessage()));
-            } catch (Exception e) {
-                log.error("Failed to delete report {}: {}", reportId, e.getMessage());
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("status", "error", "message", "Failed to delete report: " + e.getMessage()));
-            }
-        }
-
-        // Standard Cancellation
         try {
-            CitizenReport report = reportService.cancelReport(reportId, reason, callerEmail, isAdmin);
-            return ResponseEntity.ok(Map.of(
-                "status", "success",
-                "message", "Report #" + reportId + " has been successfully invalidated/cancelled.",
-                "report", report
-            ));
+            Map<String, Object> delResult = reportService.deleteReport(reportId, reason, callerEmail, permanent, isAdmin);
+            return ResponseEntity.ok(delResult);
         } catch (SecurityException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(Map.of("status", "error", "message", e.getMessage()));
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(Map.of("status", "error", "message", e.getMessage()));
+                .body(Map.of("status", "conflict", "message", e.getMessage()));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(Map.of("status", "error", "message", e.getMessage()));
         } catch (Exception e) {
-            log.error("Failed to cancel report {}: {}", reportId, e.getMessage());
+            log.error("Failed to delete/cancel report {}: {}", reportId, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("status", "error", "message", "Failed to cancel report: " + e.getMessage()));
+                .body(Map.of("status", "error", "message", "Operation failed: " + e.getMessage()));
         }
     }
 

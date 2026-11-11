@@ -842,6 +842,102 @@
         </div>
     </div>
 
+    
+    <!-- =========================================================================
+         CITIZEN EDIT REPORT MODAL
+         ========================================================================= -->
+    <div id="citizenEditReportModal" class="cc-pin-modal-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(5,8,17,0.92);backdrop-filter:blur(16px);align-items:center;justify-content:center;z-index:9999;">
+        <div class="cc-pin-modal-box" style="background:var(--cc-bg-surface-1);border:1px solid var(--cc-border-medium);border-radius:var(--cc-radius-lg);padding:1.8rem;max-width:540px;width:92%;text-align:left;box-shadow:0 12px 40px rgba(0,0,0,0.8);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;border-bottom:1px solid var(--cc-border-subtle);padding-bottom:0.8rem;">
+                <h3 style="color:#ffffff;font-size:1.15rem;font-weight:700;margin:0;display:flex;align-items:center;gap:0.5rem;">
+                    <i class="fas fa-pen-to-square" style="color:var(--cc-cyan);"></i> Edit Distress Report <span id="editModalReportId" style="font-family:var(--cc-font-mono);color:var(--cc-cyan);font-size:0.9rem;"></span>
+                </h3>
+                <button type="button" onclick="closeEditReportModal()" style="background:none;border:none;color:#94a3b8;font-size:1.5rem;cursor:pointer;">&times;</button>
+            </div>
+            
+            <p style="color:#94a3b8;font-size:0.82rem;margin-bottom:1rem;">
+                <i class="fas fa-info-circle" style="color:var(--cc-cyan);"></i> You can modify this report because Central Command has not yet dispatched a rescue unit.
+            </p>
+
+            <form id="editReportForm" onsubmit="event.preventDefault(); saveReportEdits();">
+                <input type="hidden" id="editReportTargetId" />
+                
+                <div class="cc-form-group" style="margin-bottom:0.9rem;">
+                    <label class="cc-label" style="font-size:0.8rem;color:#cbd5e1;">Disaster / Incident Category</label>
+                    <select id="editIncidentType" class="cc-input" style="width:100%;padding:0.5rem;background:#0f172a;border:1px solid #334155;color:#fff;border-radius:6px;">
+                        <option value="Flood">Flood / Water Inundation</option>
+                        <option value="Fire">Fire Outbreak</option>
+                        <option value="Earthquake">Earthquake Tremors</option>
+                        <option value="Landslide">Landslide / Debris Flow</option>
+                        <option value="Medical Emergency">Medical Emergency</option>
+                        <option value="Structural Collapse">Structural Collapse</option>
+                        <option value="Other">Other Distress Signal</option>
+                    </select>
+                </div>
+
+                <div class="cc-form-group" style="margin-bottom:0.9rem;">
+                    <label class="cc-label" style="font-size:0.8rem;color:#cbd5e1;">Location / Landmark</label>
+                    <input type="text" id="editLocation" class="cc-input" required style="width:100%;padding:0.5rem;background:#0f172a;border:1px solid #334155;color:#fff;border-radius:6px;" />
+                </div>
+
+                <div class="cc-form-group" style="margin-bottom:0.9rem;">
+                    <label class="cc-label" style="font-size:0.8rem;color:#cbd5e1;">Emergency Situation Description</label>
+                    <textarea id="editMessage" class="cc-textarea" rows="3" required style="width:100%;padding:0.5rem;background:#0f172a;border:1px solid #334155;color:#fff;border-radius:6px;resize:vertical;"></textarea>
+                </div>
+
+                <div class="cc-form-group" style="margin-bottom:1.2rem;">
+                    <label class="cc-label" style="font-size:0.8rem;color:#cbd5e1;">Priority / Urgency Level</label>
+                    <select id="editSeverity" class="cc-input" style="width:100%;padding:0.5rem;background:#0f172a;border:1px solid #334155;color:#fff;border-radius:6px;">
+                        <option value="Low">Low - Informational / Safe</option>
+                        <option value="Moderate">Moderate - Response Needed Soon</option>
+                        <option value="High">High - Urgent Assistance Required</option>
+                        <option value="Extreme">Extreme - Life Threatening Emergency</option>
+                    </select>
+                </div>
+
+                <div style="display:flex;justify-content:flex-end;gap:0.6rem;">
+                    <button type="button" class="cc-btn cc-btn-secondary" onclick="closeEditReportModal()" style="font-size:0.85rem;">Cancel</button>
+                    <button type="submit" class="cc-btn cc-btn-primary" style="font-size:0.85rem;">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         CITIZEN CANCELLATION REQUEST MODAL
+         ========================================================================= -->
+    <div id="citizenCancelReportModal" class="cc-pin-modal-overlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(5,8,17,0.92);backdrop-filter:blur(16px);align-items:center;justify-content:center;z-index:9999;">
+        <div class="cc-pin-modal-box" style="background:var(--cc-bg-surface-1);border:1px solid var(--cc-border-medium);border-radius:var(--cc-radius-lg);padding:1.8rem;max-width:500px;width:92%;text-align:left;box-shadow:0 12px 40px rgba(0,0,0,0.8);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;border-bottom:1px solid var(--cc-border-subtle);padding-bottom:0.8rem;">
+                <h3 style="color:#ffffff;font-size:1.15rem;font-weight:700;margin:0;display:flex;align-items:center;gap:0.5rem;">
+                    <i class="fas fa-hand" style="color:#f59e0b;"></i> Request Incident Cancellation
+                </h3>
+                <button type="button" onclick="closeCancelReportModal()" style="background:none;border:none;color:#94a3b8;font-size:1.5rem;cursor:pointer;">&times;</button>
+            </div>
+
+            <p style="color:#cbd5e1;font-size:0.85rem;line-height:1.45;margin-bottom:1rem;">
+                This incident is already assigned to active field responders. Direct deletion is locked to prevent miscommunication. You may submit an official cancellation request to Central Command:
+            </p>
+
+            <form id="cancelReportForm" onsubmit="event.preventDefault(); submitReportCancellation();">
+                <input type="hidden" id="cancelReportTargetId" />
+                <div class="cc-form-group" style="margin-bottom:1.2rem;">
+                    <label class="cc-label" style="font-size:0.8rem;color:#cbd5e1;">Reason for Cancellation</label>
+                    <textarea id="cancelReasonInput" class="cc-textarea" rows="3" required placeholder="E.g., Situation resolved by locals, accidental submission, false alarm..." style="width:100%;padding:0.5rem;background:#0f172a;border:1px solid #334155;color:#fff;border-radius:6px;resize:vertical;"></textarea>
+                </div>
+
+                <div style="display:flex;justify-content:flex-end;gap:0.6rem;">
+                    <button type="button" class="cc-btn cc-btn-secondary" onclick="closeCancelReportModal()" style="font-size:0.85rem;">Cancel</button>
+                    <button type="submit" class="cc-btn" style="background:#d97706;color:#ffffff;font-size:0.85rem;font-weight:600;">
+                        <i class="fas fa-paper-plane"></i> Submit Cancellation Request
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- =========================================================================
          SLIDE-IN NOTIFICATIONS DRAWER
          ========================================================================= -->
@@ -1479,14 +1575,170 @@
                         <button type="button" class="cc-btn" style="padding:0.45rem 0.9rem;font-size:0.82rem;background:linear-gradient(135deg, #00e5ff, #0077ff);color:#030a16;font-weight:700;" onclick="window.ResponderTracking.open(${report.reportId})">
                             <i class="fas fa-satellite-dish"></i> Track Responders Live (GPS Radar)
                         </button>` : ''}
-                        ${report.status === 'Pending' ? `
-                        <button type="button" class="cc-btn cc-btn-danger" style="padding:0.45rem 0.9rem;font-size:0.82rem;" onclick="cancelMyReport(${report.reportId})">
-                            <i class="fas fa-ban"></i> Cancel Distress Report
+                        ${((report.status === 'Pending' || !report.status) && !report.assignedResponderEmail && !report.cancellationRequested) ? `
+                        <button type="button" class="cc-btn cc-btn-secondary" style="padding:0.45rem 0.9rem;font-size:0.82rem;" onclick="openEditReportModal(${report.reportId})">
+                            <i class="fas fa-pen-to-square"></i> Edit Report
+                        </button>
+                        <button type="button" class="cc-btn cc-btn-danger" style="padding:0.45rem 0.9rem;font-size:0.82rem;" onclick="withdrawMyReport(${report.reportId})">
+                            <i class="fas fa-trash-can"></i> Withdraw Report
                         </button>` : ''}
+                        ${(!((report.status === 'Pending' || !report.status) && !report.assignedResponderEmail) && !isResolved && report.status !== 'Completed' && report.status !== 'Cancelled' && report.status !== 'Withdrawn' && !report.cancellationRequested) ? `
+                        <button type="button" class="cc-btn" style="padding:0.45rem 0.9rem;font-size:0.82rem;background:#d97706;color:#ffffff;font-weight:600;" onclick="openCancelReportModal(${report.reportId})">
+                            <i class="fas fa-hand"></i> Request Cancellation
+                        </button>` : ''}
+                        ${report.cancellationRequested ? `
+                        <span class="cc-badge" style="background:rgba(239,68,68,0.2);color:#fca5a5;border:1px solid #dc2626;padding:0.45rem 0.8rem;font-size:0.8rem;">
+                            <i class="fas fa-clock"></i> Cancellation Requested: ${escapeHtml(report.cancellationReason || 'Pending Review')}
+                        </span>` : ''}
                     </div>
                 `;
                 listEl.appendChild(card);
             });
+        }
+
+        
+        function openEditReportModal(reportId) {
+            const report = rawMyReports.find(r => r.reportId === reportId);
+            if (!report) return;
+            document.getElementById('editReportTargetId').value = reportId;
+            document.getElementById('editModalReportId').innerText = `#INC-2026-${reportId}`;
+            
+            let cat = report.incidentType || 'Other';
+            let sev = 'High';
+            let bodyMsg = report.message || '';
+            const match = report.message ? report.message.match(/^\[(.*?) \| Severity: (.*?)\] (.*?)\n\n([\s\S]*)/) : null;
+            if (match) {
+                cat = match[1];
+                sev = match[2];
+                bodyMsg = match[4];
+            }
+            document.getElementById('editIncidentType').value = cat;
+            document.getElementById('editLocation').value = report.location || '';
+            document.getElementById('editMessage').value = bodyMsg;
+            document.getElementById('editSeverity').value = sev;
+            document.getElementById('citizenEditReportModal').style.display = 'flex';
+        }
+
+        function closeEditReportModal() {
+            document.getElementById('citizenEditReportModal').style.display = 'none';
+        }
+
+        async function saveReportEdits() {
+            const reportId = document.getElementById('editReportTargetId').value;
+            const incidentType = document.getElementById('editIncidentType').value;
+            const location = document.getElementById('editLocation').value;
+            const message = document.getElementById('editMessage').value;
+            const severity = document.getElementById('editSeverity').value;
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            const fullMessage = `[${incidentType} | Severity: ${severity}] Incident Report\n\n${message}`;
+
+            try {
+                const res = await fetch(`/api/citizen-reports/${reportId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({
+                        incidentType: incidentType,
+                        location: location,
+                        message: fullMessage
+                    })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    CommandCenter.showToast('Report updated successfully', 'success');
+                    closeEditReportModal();
+                    loadMyReports();
+                } else {
+                    CommandCenter.showToast(data.message || 'Failed to update report', 'error');
+                }
+            } catch (err) {
+                CommandCenter.showToast('Network error: ' + err.message, 'error');
+            }
+        }
+
+        async function withdrawMyReport(reportId) {
+            let confirmed = false;
+            if (window.showConfirm) {
+                confirmed = await window.showConfirm({
+                    title: 'Withdraw Distress Report',
+                    message: `Are you sure you want to withdraw Emergency Report #${reportId}? Since responders have not been dispatched yet, this report will be safely removed.`,
+                    confirmText: 'Withdraw Report',
+                    type: 'danger'
+                });
+            } else {
+                confirmed = confirm('Are you sure you want to withdraw this report?');
+            }
+            if (!confirmed) return;
+
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch(`/api/citizen-reports/${reportId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    CommandCenter.showToast('Distress report withdrawn successfully', 'info');
+                    loadMyReports();
+                } else {
+                    CommandCenter.showToast(data.message || 'Failed to withdraw report', 'error');
+                }
+            } catch (e) {
+                CommandCenter.showToast('Network error: ' + e.message, 'error');
+            }
+        }
+
+        function openCancelReportModal(reportId) {
+            document.getElementById('cancelReportTargetId').value = reportId;
+            document.getElementById('cancelReasonInput').value = '';
+            document.getElementById('citizenCancelReportModal').style.display = 'flex';
+        }
+
+        function closeCancelReportModal() {
+            document.getElementById('citizenCancelReportModal').style.display = 'none';
+        }
+
+        async function submitReportCancellation() {
+            const reportId = document.getElementById('cancelReportTargetId').value;
+            const reason = document.getElementById('cancelReasonInput').value;
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            try {
+                const res = await fetch(`/api/citizen-reports/${reportId}/cancel`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ reason: reason })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    CommandCenter.showToast('Cancellation request submitted to Central Command', 'info');
+                    closeCancelReportModal();
+                    loadMyReports();
+                } else {
+                    CommandCenter.showToast(data.message || 'Failed to submit cancellation request', 'error');
+                }
+            } catch (e) {
+                CommandCenter.showToast('Network error: ' + e.message, 'error');
+            }
+        }
+
+        function dismissNotification(idx) {
+            const key = getNotificationStore();
+            let notifs = JSON.parse(localStorage.getItem(key) || '[]');
+            if (idx >= 0 && idx < notifs.length) {
+                notifs.splice(idx, 1);
+                localStorage.setItem(key, JSON.stringify(notifs));
+                loadNotifications();
+                CommandCenter.showToast('Notification dismissed', 'info');
+            }
         }
 
         async function cancelMyReport(reportId) {
@@ -1669,13 +1921,16 @@
             }
 
             listEl.innerHTML = '';
-            notifs.forEach(n => {
+            notifs.forEach((n, idx) => {
                 const item = document.createElement('div');
                 item.className = 'cc-notif-item';
                 item.innerHTML = `
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem;">
                         <strong style="color:#ffffff;font-size:0.88rem;">${n.title}</strong>
-                        <span style="font-size:0.72rem;color:#94a3b8;font-family:var(--cc-font-mono);">${n.time}</span>
+                        <div style="display:flex;align-items:center;gap:0.4rem;">
+                            <span style="font-size:0.72rem;color:#94a3b8;font-family:var(--cc-font-mono);">${n.time}</span>
+                            <button type="button" onclick="dismissNotification(${idx})" style="background:none;border:none;color:#94a3b8;cursor:pointer;padding:2px 5px;font-size:0.85rem;" title="Dismiss notification">&times;</button>
+                        </div>
                     </div>
                     <div style="color:#cbd5e1;line-height:1.4;">${n.body}</div>
                 `;

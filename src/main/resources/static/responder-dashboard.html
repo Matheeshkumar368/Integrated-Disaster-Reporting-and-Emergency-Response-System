@@ -825,12 +825,20 @@
                         </button>
                     </div>
 
-                    <div style="display:flex;gap:0.6rem;margin-top:0.8rem;align-items:center;">
+                    <div style="display:flex;gap:0.6rem;margin-top:0.8rem;align-items:center;flex-wrap:wrap;">
                         ${nextActionHtml}
-                        <button class="cc-btn cc-btn-secondary" style="font-size:0.8rem;padding:0.45rem 0.65rem;" onclick="promptCustomNotes(${task.taskId}, '${task.status}')" title="Add SITREP notes">
-                            <i class="fas fa-pencil"></i> Note
+                        <button class="cc-btn cc-btn-secondary" style="font-size:0.8rem;padding:0.45rem 0.65rem;" onclick="promptCustomNotes(${task.taskId}, '${task.status}')" title="Add field SITREP notes">
+                            <i class="fas fa-pencil"></i> Add Note
                         </button>
+                        ${(stageIndex < 4 && !task.cancellationRequested) ? `
+                        <button class="cc-btn" style="background:#d97706;color:#ffffff;font-size:0.8rem;padding:0.45rem 0.65rem;font-weight:600;" onclick="promptTaskCancellation(${task.taskId})" title="Request mission reassignment">
+                            <i class="fas fa-hand"></i> Reassign
+                        </button>` : ''}
                     </div>
+                    ${task.cancellationRequested ? `
+                    <div style="margin-top:0.6rem;padding:6px 10px;background:rgba(245,158,11,0.15);border:1px solid #f59e0b;border-radius:4px;color:#fcd34d;font-size:0.78rem;">
+                        <i class="fas fa-clock"></i> <strong>Reassignment Requested:</strong> ${escapeHtml(task.cancellationReason || 'Pending review by Central Command')}
+                    </div>` : ''}
                 `;
 
                 grid.appendChild(card);
@@ -907,21 +915,80 @@
             updateTaskStatus(taskId, targetStage, notes);
         }
 
-        // Add SitRep note prompt
+        // Add SitRep note via dedicated PUT /api/tasks/{taskId}/notes
         async function promptCustomNotes(taskId, currentStatus) {
             let notes = '';
             if (window.showPrompt) {
                 notes = await window.showPrompt({
                     title: `Add Field SitRep Note`,
                     message: `Incident Task #${taskId} (Status: ${currentStatus}):`,
-                    placeholder: 'Enter situation update...',
+                    placeholder: 'Enter situation update / field observations...',
                     confirmText: 'Submit Note'
                 });
             } else {
-                notes = null;
+                notes = prompt(`Add Field SitRep Note for Task #${taskId}:`);
             }
             if (!notes) return;
-            updateTaskStatus(taskId, currentStatus, notes);
+            
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            try {
+                const res = await fetch(`/api/tasks/${taskId}/notes`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ notes: notes })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    CommandCenter.showToast('SitRep note appended successfully', 'success');
+                    loadResponderQueue();
+                } else {
+                    CommandCenter.showToast(data.message || 'Failed to add note', 'error');
+                }
+            } catch (err) {
+                CommandCenter.showToast('Network error: ' + err.message, 'error');
+            }
+        }
+
+        // Request Task Reassignment via PUT /api/tasks/{taskId}/request-cancel
+        async function promptTaskCancellation(taskId) {
+            let reason = '';
+            if (window.showPrompt) {
+                reason = await window.showPrompt({
+                    title: `Request Reassignment / Cancellation`,
+                    message: `Please specify why you cannot complete Task #${taskId} (e.g. equipment failure, inaccessible terrain, urgent casualty handover):`,
+                    placeholder: 'Enter reason for Central Command...',
+                    confirmText: 'Submit Request'
+                });
+            } else {
+                reason = prompt(`Enter reason for reassignment of Task #${taskId}:`);
+            }
+            if (!reason) return;
+
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            try {
+                const res = await fetch(`/api/tasks/${taskId}/request-cancel`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ reason: reason })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    CommandCenter.showToast('Reassignment request transmitted to Central Command', 'info');
+                    loadResponderQueue();
+                } else {
+                    CommandCenter.showToast(data.message || 'Failed to submit request', 'error');
+                }
+            } catch (err) {
+                CommandCenter.showToast('Network error: ' + err.message, 'error');
+            }
         }
 
         // Filter assigned tasks

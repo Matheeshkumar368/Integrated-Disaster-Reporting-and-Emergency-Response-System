@@ -83,7 +83,18 @@ public class AlertService {
         task.setTitle("Alert Response: " + alert.getTitle());
         task.setDescription("Respond to alert in " + alert.getRegion() + ". " + alert.getMessage());
         task.setZone(alert.getRegion());
-        task.setPriority(alert.getSeverity() != null ? alert.getSeverity() : "Medium");
+        String alertPrio = "Medium";
+        if (alert.getSeverity() != null) {
+            String s = alert.getSeverity().trim();
+            if (s.equalsIgnoreCase("Critical") || s.equalsIgnoreCase("Severe") || s.equalsIgnoreCase("High") || s.equalsIgnoreCase("Extreme")) {
+                alertPrio = "High";
+            } else if (s.equalsIgnoreCase("Moderate") || s.equalsIgnoreCase("Medium")) {
+                alertPrio = "Medium";
+            } else if (s.equalsIgnoreCase("Minor") || s.equalsIgnoreCase("Low")) {
+                alertPrio = "Low";
+            }
+        }
+        task.setPriority(alertPrio);
         task.setCreatedBy(createdBy);
         task.setAssignedTo(responder.getEmail());
         task.setAssignedResponderName(responder.getName());
