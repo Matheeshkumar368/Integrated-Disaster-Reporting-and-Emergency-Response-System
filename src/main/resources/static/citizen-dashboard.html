@@ -842,7 +842,6 @@
         </div>
     </div>
 
-    
     <!-- =========================================================================
          CITIZEN EDIT REPORT MODAL
          ========================================================================= -->
@@ -1451,7 +1450,6 @@
 
                 const status = report.status || 'Pending';
                 const isResolved = status === 'Resolved';
-                const isAck = status === 'Acknowledged' || isResolved;
                 const refNum = `#INC-2026-${report.reportId}`;
 
                 // Parse structured category/severity from message if present
