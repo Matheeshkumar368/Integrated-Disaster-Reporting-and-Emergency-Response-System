@@ -161,7 +161,7 @@
                 const countRes = await fetch('/api/notifications/unread-count', { headers });
                 if (countRes.ok) {
                     const countData = await countRes.json();
-                    this.unreadCount = countData.unreadCount || 0;
+                    this.unreadCount = countData.unreadCount !== undefined ? countData.unreadCount : (countData.unread !== undefined ? countData.unread : 0);
                 } else {
                     this.unreadCount = this.notifications.filter(n => !n.isRead).length;
                 }
@@ -182,6 +182,41 @@
             this.pollTimer = setInterval(() => {
                 this.loadNotifications(false);
             }, this.pollIntervalMs);
+        }
+
+        normalizeCategory(rawCategory, item) {
+            const cat = (rawCategory || '').trim().toUpperCase();
+            const relType = ((item && item.relatedIncidentType) || '').toUpperCase();
+            const title = ((item && item.title) || '').toLowerCase();
+
+            if (this.role === 'Admin') {
+                if (cat === 'DISASTERS' || cat === 'DISASTER' || relType === 'CITIZEN_REPORT' || relType === 'REPORT' || title.includes('disaster') || title.includes('distress')) {
+                    return 'DISASTERS';
+                }
+                if (cat === 'USERS' || cat === 'USER' || title.includes('user') || title.includes('registered')) {
+                    return 'USERS';
+                }
+                return 'SYSTEM';
+            }
+
+            if (this.role === 'Responder') {
+                if (cat === 'ASSIGNMENTS' || cat === 'ASSIGNMENT' || cat === 'TASKS' || cat === 'TASK' || relType === 'TASK' || relType === 'RESCUE_TASK' || title.includes('assignment') || title.includes('mission') || title.includes('rescue')) {
+                    return 'ASSIGNMENTS';
+                }
+                if (cat === 'ALERTS' || cat === 'ALERT' || relType === 'ALERT' || title.includes('alert') || title.includes('warning')) {
+                    return 'ALERTS';
+                }
+                return 'UPDATES';
+            }
+
+            // Citizen
+            if (cat === 'ALERTS' || cat === 'ALERT' || cat === 'DISASTERS' || cat === 'DISASTER' || title.includes('alert') || title.includes('warning')) {
+                return 'ALERTS';
+            }
+            if (cat === 'RESPONSE' || cat === 'RESPONSES' || title.includes('rescue team') || title.includes('deployed') || title.includes('resolved')) {
+                return 'RESPONSE';
+            }
+            return 'UPDATES';
         }
 
         updateBadgeCounters() {
@@ -205,10 +240,10 @@
 
             setPillCount('ALL', allCount);
 
-            // Group counters
+            // Group counters using normalized categories
             const counts = {};
             this.notifications.forEach(n => {
-                const cat = (n.category || 'UPDATES').toUpperCase();
+                const cat = this.normalizeCategory(n.category, n);
                 counts[cat] = (counts[cat] || 0) + 1;
             });
 
@@ -221,7 +256,7 @@
                 return this.notifications;
             }
             return this.notifications.filter(n => {
-                const cat = (n.category || 'UPDATES').toUpperCase();
+                const cat = this.normalizeCategory(n.category, n);
                 return cat === this.activeCategory;
             });
         }
@@ -404,6 +439,125 @@
                 return '/citizen-dashboard.html';
             }
 
+            if (this.role === 'Admin') {
+                const cat = (item.category || '').toUpperCase();
+                const relType = (item.relatedIncidentType || '').toUpperCase();
+                const title = (item.title || '').toLowerCase();
+
+                // Citizen distress reports and disaster verification
+                if (
+                    relType === 'CITIZEN_REPORT' ||
+                    relType === 'REPORT' ||
+                    cat === 'DISASTERS' ||
+                    cat === 'DISASTER' ||
+                    title.includes('disaster') ||
+                    title.includes('distress') ||
+                    title.includes('pending')
+                ) {
+                    if (item.relatedIncidentId) {
+                        return `/admin-dashboard.html?disasters&reportId=${item.relatedIncidentId}`;
+                    }
+                    return '/admin-dashboard.html?disasters';
+                }
+
+                // Rescue tasks and missions
+                if (
+                    relType === 'TASK' ||
+                    relType === 'RESCUE_TASK' ||
+                    cat === 'TASKS' ||
+                    cat === 'TASK' ||
+                    title.includes('task') ||
+                    title.includes('mission') ||
+                    title.includes('assignment')
+                ) {
+                    if (item.relatedIncidentId) {
+                        return `/admin-dashboard.html?tasks&taskId=${item.relatedIncidentId}`;
+                    }
+                    return '/admin-dashboard.html?tasks';
+                }
+
+                // Broadcast alerts
+                if (
+                    relType === 'ALERT' ||
+                    relType === 'ALERT_BROADCAST' ||
+                    cat === 'ALERTS' ||
+                    cat === 'ALERT' ||
+                    title.includes('alert') ||
+                    title.includes('broadcast') ||
+                    title.includes('warning')
+                ) {
+                    if (item.relatedIncidentId) {
+                        return `/admin-dashboard.html?alerts&alertId=${item.relatedIncidentId}`;
+                    }
+                    return '/admin-dashboard.html?alerts';
+                }
+
+                // User management
+                if (cat === 'USERS' || cat === 'USER' || title.includes('user') || title.includes('registered')) {
+                    return '/admin-users.html';
+                }
+
+                return '/admin-dashboard.html';
+            }
+
+            if (this.role === 'Responder') {
+                const cat = (item.category || '').toUpperCase();
+                const relType = (item.relatedIncidentType || '').toUpperCase();
+                const title = (item.title || '').toLowerCase();
+
+                // Rescue task assignments
+                if (
+                    cat === 'ASSIGNMENTS' ||
+                    cat === 'ASSIGNMENT' ||
+                    cat === 'TASKS' ||
+                    cat === 'TASK' ||
+                    relType === 'TASK' ||
+                    relType === 'RESCUE_TASK' ||
+                    title.includes('assignment') ||
+                    title.includes('rescue') ||
+                    title.includes('mission') ||
+                    title.includes('task')
+                ) {
+                    if (item.relatedIncidentId) {
+                        return `/responder-dashboard.html?tasks&taskId=${item.relatedIncidentId}`;
+                    }
+                    return '/responder-dashboard.html?tasks';
+                }
+
+                // Citizen distress / SOS
+                if (
+                    relType === 'CITIZEN_REPORT' ||
+                    relType === 'REPORT' ||
+                    title.includes('distress') ||
+                    title.includes('sos')
+                ) {
+                    if (item.relatedIncidentId) {
+                        return `/responder-dashboard.html?distress&reportId=${item.relatedIncidentId}`;
+                    }
+                    return '/responder-dashboard.html?distress';
+                }
+
+                // Official alerts & warnings
+                if (
+                    cat === 'ALERTS' ||
+                    cat === 'ALERT' ||
+                    relType === 'ALERT' ||
+                    title.includes('alert') ||
+                    title.includes('warning')
+                ) {
+                    if (item.relatedIncidentId) {
+                        return `/responder-dashboard.html?warnings&alertId=${item.relatedIncidentId}`;
+                    }
+                    return '/responder-dashboard.html?warnings';
+                }
+
+                if (title.includes('tracking') || title.includes('gps')) {
+                    return '/responder-dashboard.html?tracking';
+                }
+
+                return '/responder-dashboard.html';
+            }
+
             return item.actionUrl || (this.role === 'Admin' ? '/admin-dashboard.html' : '/responder-dashboard.html');
         }
 
@@ -453,9 +607,29 @@
                         btnLabel = '<i class="fa-solid fa-gauge-high"></i> Citizen Safety Hub';
                     }
                 } else if (this.role === 'Responder') {
-                    btnLabel = '<i class="fa-solid fa-list-check"></i> Operations Hub';
+                    if (targetUrl.includes('tasks')) {
+                        btnLabel = '<i class="fa-solid fa-list-check"></i> Open Assigned Mission';
+                    } else if (targetUrl.includes('distress')) {
+                        btnLabel = '<i class="fa-solid fa-hand-holding-hand"></i> View Distress Call';
+                    } else if (targetUrl.includes('warnings')) {
+                        btnLabel = '<i class="fa-solid fa-tower-broadcast"></i> View Official Warning';
+                    } else if (targetUrl.includes('tracking')) {
+                        btnLabel = '<i class="fa-solid fa-location-crosshairs"></i> Open Live Tracking';
+                    } else {
+                        btnLabel = '<i class="fa-solid fa-gauge-high"></i> Open Operations Hub';
+                    }
                 } else if (this.role === 'Admin') {
-                    btnLabel = '<i class="fa-solid fa-gauge-high"></i> Command Center';
+                    if (targetUrl.includes('disasters')) {
+                        btnLabel = '<i class="fa-solid fa-triangle-exclamation"></i> Open Disaster Management';
+                    } else if (targetUrl.includes('tasks')) {
+                        btnLabel = '<i class="fa-solid fa-truck-medical"></i> View Field Mission';
+                    } else if (targetUrl.includes('alerts')) {
+                        btnLabel = '<i class="fa-solid fa-tower-broadcast"></i> View Emergency Broadcast';
+                    } else if (targetUrl.includes('admin-users')) {
+                        btnLabel = '<i class="fa-solid fa-users"></i> Manage Users';
+                    } else {
+                        btnLabel = '<i class="fa-solid fa-gauge-high"></i> Open Command Center';
+                    }
                 }
                 actionBtn.innerHTML = btnLabel;
                 actionBtn.onclick = () => {

@@ -929,16 +929,9 @@
                 const data = await response.json();
 
                 if (response.ok && data.status === 'success' && data.token) {
+                    // Determine role strictly from authenticated backend identity
                     const actualRole = data.role || 'Citizen';
-
-                    // Verify role match
-                    if (currentRole !== actualRole) {
-                        loginBtn.disabled = false;
-                        loginBtnText.innerText = EVALUATOR_PRESETS[currentRole].btnText;
-                        if (window.CommandCenterSound) CommandCenterSound.playAlert();
-                        showAlert(`Access Denied! Account "${email}" holds the role [${actualRole}], but you selected [${currentRole}] tab. Please switch tabs.`);
-                        return;
-                    }
+                    currentRole = actualRole;
 
                     // Success: store session
                     localStorage.setItem('token', data.token);

@@ -145,6 +145,7 @@ public class NotificationService {
         Map<String, Object> summary = new LinkedHashMap<>();
         summary.put("total", total);
         summary.put("unread", unread);
+        summary.put("unreadCount", unread);
         return summary;
     }
 

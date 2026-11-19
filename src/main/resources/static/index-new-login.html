@@ -896,7 +896,7 @@ function login() {
     loginBtn.classList.add('loading');
     loginBtn.innerText = "";
 
-    fetch("http://localhost:8080/api/auth/login", {
+    fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data)
@@ -908,19 +908,11 @@ function login() {
         loginBtn.innerText = "Login";
         
         if (data.status === "success" && data.token) {
-            // Get role from server response (more reliable than decoding JWT)
+            // Determine role strictly from authenticated backend identity
             const actualRole = data.role || 'Citizen';
+            selectedRole = actualRole;
             
-            // Debug: log the role for troubleshooting
-            console.log('Login response role:', actualRole);
-            
-            // Check if selected role matches actual role
-            if (selectedRole !== actualRole) {
-                window.showToast(`Access Denied: You selected ${selectedRole}, but your account is ${actualRole}.`, 'error');
-                return;
-            }
-            
-            // Role matches, proceed with login
+            // Proceed with login
             localStorage.setItem("token", data.token);
             localStorage.setItem("userRole", actualRole); // Store role for easy access
             if (typeof data.sosShortcutEnabled === 'boolean') {

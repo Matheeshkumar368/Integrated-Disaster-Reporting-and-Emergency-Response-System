@@ -64,7 +64,7 @@ public class NotificationController {
     }
 
     // Get unread and total count for badge rendering
-    @GetMapping("/unread-count")
+    @GetMapping({"/unread-count", "/summary"})
     public ResponseEntity<?> getUnreadCount() {
         Authentication auth = getAuthenticatedUser();
         if (auth == null) {

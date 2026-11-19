@@ -272,6 +272,15 @@
                 flex: 1 1 100%;
             }
         }
+        @keyframes targetCardGlowPulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.85); border-color: #00e5ff; transform: scale(1); }
+            50% { box-shadow: 0 0 24px 6px rgba(0, 229, 255, 0.75); border-color: #38bdf8; transform: scale(1.02); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0); border-color: rgba(56, 189, 248, 0.4); transform: scale(1); }
+        }
+        .highlight-target-pulse {
+            animation: targetCardGlowPulse 1.8s ease-in-out 2 !important;
+            border-color: #00e5ff !important;
+        }
     </style>
 </head>
 <body>
@@ -534,7 +543,7 @@
         </section>
 
         <!-- LIVE ALERTS BROADCAST STREAM & AUTO-DISPATCH -->
-        <section class="cc-card" style="margin-top:1.5rem;">
+        <section class="cc-card" style="margin-top:1.5rem;" id="feedSection">
             <div class="cc-card-header">
                 <div class="cc-card-title">
                     <i class="fas fa-bullhorn" style="color:var(--cc-critical-red);"></i>
@@ -945,12 +954,15 @@
             }
 
             if (userRole !== 'Admin') {
-                if (data.stepUpToken) { sessionStorage.setItem('adminStepUpToken', data.stepUpToken); }
-                        if (window.showToast) {
+                if (window.showToast) {
                     window.showToast('Access Denied: Only Admin can access Mission Control', 'error');
                 }
                 setTimeout(() => {
-                    window.location.href = '/citizen-dashboard.html';
+                    if (userRole === 'Responder') {
+                        window.location.href = '/responder-notifications.html';
+                    } else {
+                        window.location.href = '/citizen-notifications.html';
+                    }
                 }, 1000);
                 return;
             }
@@ -1357,11 +1369,54 @@
         }
 
         // Tactical Feed Mode & Cache
-        let currentFeedMode = 'alerts'; // 'alerts' | 'tasks'
+        let currentFeedMode = 'alerts'; // 'alerts' | 'tasks' | 'citizen'
         let currentAlertStatusFilter = 'Active';
         let cachedAlerts = [];
         let cachedTasks = [];
         let cachedAdminCitizenReports = [];
+
+        function scrollToFeedSection() {
+            setTimeout(() => {
+                const sec = document.getElementById('feedSection') || document.getElementById('feedSectionTitle');
+                if (sec) {
+                    sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 120);
+        }
+
+        function applyAdminUrlRouting() {
+            const params = new URLSearchParams(window.location.search);
+            const hash = (window.location.hash || '').toLowerCase();
+
+            const hasParam = (k) => params.has(k) || params.get(k) !== null;
+            const reportId = params.get('reportId') || params.get('report') || (hash.startsWith('#report-') ? hash.replace('#report-', '') : null);
+            const taskId = params.get('taskId') || params.get('task') || (hash.startsWith('#task-') ? hash.replace('#task-', '') : null);
+            const alertId = params.get('alertId') || params.get('alert') || (hash.startsWith('#alert-') ? hash.replace('#alert-', '') : null);
+
+            if (hasParam('disasters') || hasParam('reports') || hasParam('citizen') || hash.includes('disaster') || hash.includes('report') || reportId) {
+                window.__targetReportId = reportId;
+                switchFeedView('citizen', 'ALL');
+                scrollToFeedSection();
+            } else if (hasParam('tasks') || hasParam('missions') || hash.includes('task') || hash.includes('mission') || taskId) {
+                window.__targetTaskId = taskId;
+                switchFeedView('tasks', 'ALL');
+                scrollToFeedSection();
+            } else if (hasParam('alerts') || hasParam('broadcasts') || hash.includes('alert') || alertId) {
+                window.__targetAlertId = alertId;
+                switchFeedView('alerts', 'Active');
+                scrollToFeedSection();
+            } else if (hasParam('analytics') || hash.includes('analytics')) {
+                setTimeout(() => {
+                    const el = document.getElementById('incidentMetricsSummary');
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 200);
+            } else if (hasParam('roster') || hash.includes('roster') || hasParam('responders')) {
+                setTimeout(() => {
+                    const el = document.getElementById('responderRosterList');
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 200);
+            }
+        }
 
         function switchFeedView(mode, filter) {
             currentFeedMode = mode;
@@ -1439,6 +1494,8 @@
             cachedAdminCitizenReports.forEach(r => {
                 const card = document.createElement('div');
                 card.className = 'cc-card cc-mission-card';
+                card.id = 'REPORT-' + r.reportId;
+                card.setAttribute('data-report-id', r.reportId);
 
                 const status = r.status || 'Pending';
                 const isPending = status.toLowerCase() === 'pending';
@@ -1509,6 +1566,18 @@
 
                 grid.appendChild(card);
             });
+
+            if (window.__targetReportId) {
+                const targetCard = document.getElementById('REPORT-' + window.__targetReportId) ||
+                                   document.querySelector(`[data-report-id="${window.__targetReportId}"]`);
+                if (targetCard) {
+                    setTimeout(() => {
+                        targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        targetCard.classList.add('highlight-target-pulse');
+                        setTimeout(() => targetCard.classList.remove('highlight-target-pulse'), 5000);
+                    }, 150);
+                }
+            }
         }
 
         async function resolveCitizenReportDirect(reportId) {
@@ -1609,6 +1678,8 @@
                 const sev = (alert.severity || 'Medium').toLowerCase();
                 const st = (alert.status || 'Active').toLowerCase();
                 item.className = `cc-alert-feed-item ${sev}`;
+                item.id = 'ALERT-' + alert.alertId;
+                item.setAttribute('data-alert-id', alert.alertId);
 
                 const formattedTime = (window.formatIndianDateTime ? window.formatIndianDateTime(alert.createdAt) : (window.formatIndianTime ? window.formatIndianTime(alert.createdAt) : new Date(alert.createdAt).toLocaleString('en-IN')));
 
@@ -1665,6 +1736,18 @@
                 `;
                 grid.appendChild(item);
             });
+
+            if (window.__targetAlertId) {
+                const targetCard = document.getElementById('ALERT-' + window.__targetAlertId) ||
+                                   document.querySelector(`[data-alert-id="${window.__targetAlertId}"]`);
+                if (targetCard) {
+                    setTimeout(() => {
+                        targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        targetCard.classList.add('highlight-target-pulse');
+                        setTimeout(() => targetCard.classList.remove('highlight-target-pulse'), 5000);
+                    }, 150);
+                }
+            }
         }
 
         async function loadActiveMissions() {
@@ -1709,6 +1792,8 @@
                 const prio = (task.priority || 'Medium').toLowerCase();
                 const st = (task.status || 'Pending').toLowerCase();
                 item.className = `cc-alert-feed-item ${prio}`;
+                item.id = 'TASK-' + task.taskId;
+                item.setAttribute('data-task-id', task.taskId);
 
                 const formattedTime = (window.formatIndianDateTime ? window.formatIndianDateTime(task.createdAt) : (window.formatIndianTime ? window.formatIndianTime(task.createdAt) : new Date(task.createdAt || Date.now()).toLocaleString('en-IN')));
 
@@ -1761,6 +1846,18 @@
                 `;
                 grid.appendChild(item);
             });
+
+            if (window.__targetTaskId) {
+                const targetCard = document.getElementById('TASK-' + window.__targetTaskId) ||
+                                   document.querySelector(`[data-task-id="${window.__targetTaskId}"]`);
+                if (targetCard) {
+                    setTimeout(() => {
+                        targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        targetCard.classList.add('highlight-target-pulse');
+                        setTimeout(() => targetCard.classList.remove('highlight-target-pulse'), 5000);
+                    }, 150);
+                }
+            }
         }
 
         async function acknowledgeAlert(alertId) {
@@ -2655,17 +2752,26 @@
             }
         }, 300);
 
-        // Initialize Page
+        // Initialize Page & Deep Linking
         window.addEventListener('DOMContentLoaded', () => {
             initMap();
             loadLiveAlerts();
             loadNdmaFeedStatus();
             loadResponderRosterAndAnalytics();
+            applyAdminUrlRouting();
             setInterval(loadLiveAlerts, 25000);
             setInterval(loadNdmaFeedStatus, 30000);
             setInterval(loadDisastersOnMap, 60000);
             setInterval(loadResponderRosterAndAnalytics, 30000);
         });
+
+        window.addEventListener('hashchange', applyAdminUrlRouting);
+        window.addEventListener('popstate', applyAdminUrlRouting);
+
+        // Immediate check in case DOM already loaded
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            applyAdminUrlRouting();
+        }
     </script>
 </body>
 </html>

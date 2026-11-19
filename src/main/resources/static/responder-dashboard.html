@@ -226,6 +226,16 @@
             color: #030a16;
             font-weight: 700;
         }
+
+        @keyframes targetCardGlowPulse {
+            0% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.85); border-color: #f97316; transform: scale(1); }
+            50% { box-shadow: 0 0 24px 6px rgba(249, 115, 22, 0.75); border-color: #fb923c; transform: scale(1.02); }
+            100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); border-color: rgba(249, 115, 22, 0.4); transform: scale(1); }
+        }
+        .highlight-target-pulse {
+            animation: targetCardGlowPulse 1.8s ease-in-out 2 !important;
+            border-color: #f97316 !important;
+        }
     </style>
 </head>
 <body>
@@ -577,7 +587,7 @@
                     window.showToast('Access Denied: Only Responders can access Field Operations', 'error');
                 }
                 setTimeout(() => {
-                    window.location.href = '/citizen-dashboard.html';
+                    window.location.href = '/citizen-notifications.html';
                 }, 1000);
                 return;
             }
@@ -589,7 +599,47 @@
 
             loadResponderQueue();
             loadResponderAvailability();
+            applyResponderUrlRouting();
         })();
+
+        // Tactical URL Router & Deep Linking
+        function applyResponderUrlRouting() {
+            const params = new URLSearchParams(window.location.search);
+            const hash = (window.location.hash || '').toLowerCase();
+
+            const hasParam = (k) => params.has(k) || params.get(k) !== null;
+            const taskId = params.get('taskId') || params.get('task') || (hash.startsWith('#task-') ? hash.replace('#task-', '') : null);
+            const reportId = params.get('reportId') || params.get('report') || (hash.startsWith('#report-') ? hash.replace('#report-', '') : null);
+            const alertId = params.get('alertId') || params.get('alert') || (hash.startsWith('#alert-') ? hash.replace('#alert-', '') : null);
+
+            if (hasParam('tasks') || hasParam('assigned') || hash.includes('task') || hash.includes('assigned') || taskId) {
+                window.__targetTaskId = taskId;
+                switchQueueSubTab('assigned');
+                setTimeout(() => {
+                    const el = document.getElementById('panelAssignedTasks');
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 120);
+            } else if (hasParam('distress') || hasParam('sos') || hash.includes('distress') || hash.includes('sos') || reportId) {
+                window.__targetReportId = reportId;
+                switchQueueSubTab('distress');
+                setTimeout(() => {
+                    const el = document.getElementById('panelCitizenSos');
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 120);
+            } else if (hasParam('warnings') || hasParam('alerts') || hash.includes('warning') || hash.includes('alert') || alertId) {
+                window.__targetAlertId = alertId;
+                switchQueueSubTab('warnings');
+                setTimeout(() => {
+                    const el = document.getElementById('panelWarnings');
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 120);
+            } else if (hasParam('tracking') || hasParam('gps') || hash.includes('tracking') || hash.includes('gps')) {
+                setTimeout(() => {
+                    const el = document.getElementById('responderLiveMapContainer') || document.querySelector('.cc-gps-console');
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 150);
+            }
+        }
 
         // Sub Tab Switching
         function switchQueueSubTab(tab) {
@@ -708,6 +758,8 @@
 
                 const card = document.createElement('div');
                 card.className = 'cc-card';
+                card.id = 'TASK-' + task.taskId;
+                card.setAttribute('data-task-id', task.taskId);
                 card.style.borderLeft = `4px solid ${
                     isCompleted ? 'var(--cc-safe-green)' :
                     stageIndex >= 2 ? 'var(--cc-cyan)' : 'var(--cc-warning-amber)'
@@ -849,6 +901,18 @@
 
                 grid.appendChild(card);
             });
+
+            if (window.__targetTaskId) {
+                const targetCard = document.getElementById('TASK-' + window.__targetTaskId) ||
+                                   document.querySelector(`[data-task-id="${window.__targetTaskId}"]`);
+                if (targetCard) {
+                    setTimeout(() => {
+                        targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        targetCard.classList.add('highlight-target-pulse');
+                        setTimeout(() => targetCard.classList.remove('highlight-target-pulse'), 5000);
+                    }, 150);
+                }
+            }
         }
 
         // Update Task Status via PUT /api/tasks/{id}/status
@@ -1691,6 +1755,8 @@
             reports.forEach(cr => {
                 const card = document.createElement('div');
                 card.className = 'cc-card';
+                card.id = 'REPORT-' + cr.reportId;
+                card.setAttribute('data-report-id', cr.reportId);
                 card.style.borderLeft = `4px solid var(--cc-critical-red)`;
 
                 card.innerHTML = `
@@ -1743,6 +1809,18 @@
 
                 grid.appendChild(card);
             });
+
+            if (window.__targetReportId) {
+                const targetCard = document.getElementById('REPORT-' + window.__targetReportId) ||
+                                   document.querySelector(`[data-report-id="${window.__targetReportId}"]`);
+                if (targetCard) {
+                    setTimeout(() => {
+                        targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        targetCard.classList.add('highlight-target-pulse');
+                        setTimeout(() => targetCard.classList.remove('highlight-target-pulse'), 5000);
+                    }, 150);
+                }
+            }
         }
 
         async function acknowledgeCitizenReport(reportId) {
@@ -1785,6 +1863,8 @@
                 const sev = (al.severity || 'Moderate').toLowerCase();
                 const card = document.createElement('div');
                 card.className = 'cc-card';
+                card.id = 'ALERT-' + al.alertId;
+                card.setAttribute('data-alert-id', al.alertId);
                 card.style.borderLeft = `4px solid ${sev === 'critical' ? 'var(--cc-critical-red)' : 'var(--cc-warning-amber)'}`;
 
                 card.innerHTML = `
@@ -1823,6 +1903,18 @@
 
                 grid.appendChild(card);
             });
+
+            if (window.__targetAlertId) {
+                const targetCard = document.getElementById('ALERT-' + window.__targetAlertId) ||
+                                   document.querySelector(`[data-alert-id="${window.__targetAlertId}"]`);
+                if (targetCard) {
+                    setTimeout(() => {
+                        targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        targetCard.classList.add('highlight-target-pulse');
+                        setTimeout(() => targetCard.classList.remove('highlight-target-pulse'), 5000);
+                    }, 150);
+                }
+            }
         }
 
         function escapeJs(str) {
@@ -1883,6 +1975,15 @@
 
         // Auto-refresh queue every 30 seconds
         setInterval(loadResponderQueue, 30000);
+
+        // Deep linking event listeners
+        window.addEventListener('DOMContentLoaded', applyResponderUrlRouting);
+        window.addEventListener('hashchange', applyResponderUrlRouting);
+        window.addEventListener('popstate', applyResponderUrlRouting);
+
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            applyResponderUrlRouting();
+        }
     </script>
 </body>
 </html>
