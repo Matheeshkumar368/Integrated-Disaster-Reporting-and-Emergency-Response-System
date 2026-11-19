@@ -48,6 +48,7 @@ disaster.db
 *.db
 
 # IDE & Editor Temporary Configuration Files
+.sf/
 .idea/
 *.iws
 *.iml

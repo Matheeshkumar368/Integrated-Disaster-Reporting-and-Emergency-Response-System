@@ -31,6 +31,9 @@ public class AlertService {
     @Autowired
     private RescueTaskService rescueTaskService;
 
+    @Autowired(required = false)
+    private NotificationService notificationService;
+
     @Transactional
     public Alert createAlertAndDispatchTasks(Alert alert, String adminEmail) {
         if (alert.getTitle() == null || alert.getTitle().trim().isEmpty()) {
@@ -73,6 +76,22 @@ public class AlertService {
             }
         } catch (Exception e) {
             log.warn("Task auto-generation for alert encountered warning: {}", e.getMessage());
+        }
+
+        if (notificationService != null) {
+            try {
+                notificationService.notifyAllCitizens(
+                    "Severe Disaster Alert: " + alert.getRegion(),
+                    alert.getMessage(),
+                    "ALERT",
+                    alert.getSeverity() != null ? alert.getSeverity() : "High",
+                    savedAlert.getAlertId(),
+                    "ALERT",
+                    "citizen-dashboard.html"
+                );
+            } catch (Exception e) {
+                log.warn("Notification dispatch warning on createAlert: {}", e.getMessage());
+            }
         }
 
         return savedAlert;

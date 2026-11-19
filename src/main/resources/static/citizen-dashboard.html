@@ -956,7 +956,10 @@
         <div class="cc-notif-list" id="notificationsList">
             <!-- Dynamically populated -->
         </div>
-        <div style="padding:1rem 1.4rem;border-top:1px solid var(--cc-border-subtle);text-align:center;">
+        <div style="padding:1rem 1.4rem;border-top:1px solid var(--cc-border-subtle);text-align:center;display:flex;flex-direction:column;gap:0.5rem;">
+            <a href="citizen-notifications.html" class="cc-btn cc-btn-primary" style="width:100%;font-size:0.82rem;display:inline-flex;align-items:center;justify-content:center;gap:0.4rem;text-decoration:none;">
+                <i class="fas fa-expand"></i> Open Full Notification Center
+            </a>
             <button type="button" class="cc-btn cc-btn-secondary" style="width:100%;font-size:0.82rem;" onclick="clearAllNotifications()">
                 <i class="fas fa-check-double"></i> Mark All as Read
             </button>
@@ -1905,7 +1908,43 @@
             return key;
         }
 
-        function loadNotifications() {
+        async function loadNotifications() {
+            const listEl = document.getElementById('notificationsList');
+            const badgeEl = document.getElementById('notifBadgeCount');
+
+            try {
+                const headers = window.AuthHelper ? window.AuthHelper.getHeaders() : {};
+                const res = await fetch('/api/notifications', { headers });
+                if (res.ok) {
+                    const dbNotifs = await res.json();
+                    if (Array.isArray(dbNotifs) && dbNotifs.length > 0) {
+                        const unreadCount = dbNotifs.filter(n => !n.isRead).length;
+                        if (badgeEl) badgeEl.innerText = unreadCount;
+                        if (listEl) {
+                            listEl.innerHTML = '';
+                            dbNotifs.slice(0, 15).forEach(n => {
+                                const item = document.createElement('div');
+                                item.className = 'cc-notif-item';
+                                if (!n.isRead) item.style.borderLeft = '3px solid var(--cc-cyan)';
+                                item.innerHTML = `
+                                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem;">
+                                        <strong style="color:#ffffff;font-size:0.88rem;">${n.title}</strong>
+                                        <div style="display:flex;align-items:center;gap:0.4rem;">
+                                            <span style="font-size:0.72rem;color:#94a3b8;font-family:var(--cc-font-mono);">${new Date(n.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                                        </div>
+                                    </div>
+                                    <div style="color:#cbd5e1;line-height:1.4;">${n.message}</div>
+                                `;
+                                listEl.appendChild(item);
+                            });
+                        }
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.warn('[CitizenNotifications] Backend sync error, falling back to local store:', e);
+            }
+
             const key = getNotificationStore();
             let notifs = JSON.parse(localStorage.getItem(key) || 'null');
 
@@ -1919,9 +1958,9 @@
                 localStorage.setItem(key, JSON.stringify(notifs));
             }
 
-            const listEl = document.getElementById('notificationsList');
-            document.getElementById('notifBadgeCount').innerText = notifs.length;
+            if (badgeEl) badgeEl.innerText = notifs.length;
 
+            if (!listEl) return;
             if (notifs.length === 0) {
                 listEl.innerHTML = '<div style="text-align:center;color:#64748b;padding:2rem;">No new notifications.</div>';
                 return;
@@ -1945,16 +1984,11 @@
             });
         }
 
-        function addNotification(notif) {
-            const key = getNotificationStore();
-            let notifs = JSON.parse(localStorage.getItem(key) || '[]');
-            notifs.unshift(notif);
-            if (notifs.length > 25) notifs.pop();
-            localStorage.setItem(key, JSON.stringify(notifs));
-            loadNotifications();
-        }
-
-        function clearAllNotifications() {
+        async function clearAllNotifications() {
+            try {
+                const headers = window.AuthHelper ? window.AuthHelper.getHeaders() : {};
+                await fetch('/api/notifications/read-all', { method: 'PUT', headers });
+            } catch(e) {}
             const key = getNotificationStore();
             localStorage.setItem(key, '[]');
             loadNotifications();

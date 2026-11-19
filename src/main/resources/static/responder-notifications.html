@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover"/>
+    <meta name="theme-color" content="#070b14"/>
+    <link rel="icon" type="image/png" href="/icons/icon-192.png"/>
+    <title>Notifications — Responder Operations Portal | FIREBOY</title>
+    
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    
+    <!-- Design System & Scripts -->
+    <link rel="stylesheet" href="toast-manager.css?v=2" />
+    <script src="toast-manager.js?v=2"></script>
+    <script src="auth-helper.js?v=2"></script>
+    
+    <!-- Dedicated Notification Stylesheet -->
+    <link rel="stylesheet" href="notifications.css?v=1" />
+</head>
+<body class="theme-responder">
+    <div class="app-container">
+        <!-- TACTICAL SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-top">
+                <div class="brand-section">
+                    <div class="brand-icon-shield" style="background: linear-gradient(135deg, #ea580c, #f97316);">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div class="brand-meta">
+                        <h2>FIREBOY</h2>
+                        <span>Disaster Management</span>
+                    </div>
+                </div>
+
+                <!-- Responder Profile Badge -->
+                <div class="user-profile-badge">
+                    <div class="user-profile-left">
+                        <div class="avatar-circle" id="userAvatarDisplay" style="border-color: rgba(234, 88, 12, 0.4);">R</div>
+                        <div>
+                            <div class="user-meta-name" id="userNameDisplay">Responder</div>
+                            <div class="user-meta-role" id="userRoleDisplay">Responder <i class="fa-solid fa-chevron-down"></i></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation Links -->
+                <nav class="sidebar-nav">
+                    <a href="responder-notifications.html" class="nav-link active">
+                        <i class="fa-solid fa-bell"></i>
+                        <span>Notifications</span>
+                        <span class="badge-count" id="sidebarUnreadBadge" style="display:none; background:#ea580c;">0</span>
+                    </a>
+                    <a href="responder-dashboard.html#tasks" class="nav-link">
+                        <i class="fa-solid fa-list-check"></i>
+                        <span>My Assignments</span>
+                    </a>
+                    <a href="responder-dashboard.html#tracking" class="nav-link">
+                        <i class="fa-solid fa-location-crosshairs"></i>
+                        <span>Live Tracking</span>
+                    </a>
+                    <a href="responder-dashboard.html" class="nav-link">
+                        <i class="fa-solid fa-gauge-high"></i>
+                        <span>Operations Hub</span>
+                    </a>
+                    <a href="responder-profile.html" class="nav-link">
+                        <i class="fa-solid fa-user"></i>
+                        <span>Profile</span>
+                    </a>
+                    <a href="#" class="nav-link action-logout">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                        <span>Logout</span>
+                    </a>
+                </nav>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="motto-banner">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <span>Serve. Protect. Respond.</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN NOTIFICATION CENTER -->
+        <main class="main-content">
+            <!-- HERO BANNER -->
+            <section class="hero-banner responder-hero">
+                <div class="hero-left">
+                    <div class="hero-icon-bubble orange">
+                        <i class="fa-solid fa-helmet-safety"></i>
+                    </div>
+                    <div class="hero-text">
+                        <h1>Notifications</h1>
+                        <p>Your assigned tasks and updates</p>
+                    </div>
+                </div>
+
+                <div class="hero-right">
+                    <div class="time-pill">
+                        <i class="fa-regular fa-clock"></i>
+                        <span id="liveClockDisplay">Loading clock...</span>
+                    </div>
+                    <div class="hero-actions">
+                        <button class="btn-hero btn-hero-glass" id="btnRefreshNotifs" title="Refresh">
+                            <i class="fa-solid fa-rotate"></i> Refresh
+                        </button>
+                        <button class="btn-hero btn-hero-glass" id="btnMarkAllRead" title="Mark All as Read">
+                            <i class="fa-solid fa-check-double"></i> Mark All Read
+                        </button>
+                        <a href="responder-dashboard.html" class="btn-hero btn-hero-primary" id="btnGoDashboard" style="background:#ea580c;">
+                            <i class="fa-solid fa-arrow-right"></i> Operations Hub
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FILTERS & CONTROLS -->
+            <div class="filters-bar">
+                <div class="filters-group">
+                    <button class="filter-pill active" data-category="ALL">
+                        <i class="fa-solid fa-table-cells-large"></i> All
+                        <span class="filter-count" id="countPill_ALL">0</span>
+                    </button>
+                    <button class="filter-pill" data-category="ASSIGNMENTS">
+                        <i class="fa-solid fa-briefcase"></i> Assignments
+                        <span class="filter-count" id="countPill_ASSIGNMENTS">0</span>
+                    </button>
+                    <button class="filter-pill" data-category="ALERTS">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Alerts
+                        <span class="filter-count" id="countPill_ALERTS">0</span>
+                    </button>
+                    <button class="filter-pill" data-category="UPDATES">
+                        <i class="fa-solid fa-circle-info"></i> Updates
+                        <span class="filter-count" id="countPill_UPDATES">0</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- NOTIFICATIONS FEED -->
+            <div class="notifications-list" id="notificationsContainer">
+                <div class="notif-empty-state">
+                    <i class="fa-solid fa-circle-notch fa-spin"></i>
+                    <h3>Connecting to Response Dispatch...</h3>
+                    <p>Fetching active deployment dispatches and mission assignments.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- DETAIL MODAL -->
+    <div class="notif-modal-backdrop" id="notifModalBackdrop">
+        <div class="notif-modal">
+            <div class="notif-modal-header">
+                <h3 id="modalNotifTitle">Mission Details</h3>
+                <button class="btn-close-modal" id="btnCloseModal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="notif-modal-body" id="modalNotifBody"></div>
+            <div class="notif-modal-footer">
+                <button class="btn-hero btn-hero-glass" onclick="document.getElementById('notifModalBackdrop').classList.remove('open')">Close</button>
+                <button class="btn-hero btn-hero-primary" id="btnModalAction" style="background:#ea580c;">Go to Operations Hub</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOTIFICATION SCRIPT -->
+    <script src="notifications.js?v=1"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            window.__notifCenter = new NotificationCenter({
+                role: 'Responder',
+                defaultCategory: 'ALL'
+            });
+        });
+    </script>
+</body>
+</html>

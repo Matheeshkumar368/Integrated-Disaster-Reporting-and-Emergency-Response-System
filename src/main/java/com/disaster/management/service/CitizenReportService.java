@@ -42,6 +42,9 @@ public class CitizenReportService {
     @Autowired
     private IncidentTimelineService timelineService;
 
+    @Autowired(required = false)
+    private NotificationService notificationService;
+
     @Transactional
     public CitizenReport createReport(CitizenReport report) {
         if (report.getMessage() == null || report.getMessage().trim().isEmpty()) {
@@ -100,6 +103,32 @@ public class CitizenReportService {
             );
         } catch (Exception e) {
             log.warn("Timeline event logging warning: {}", e.getMessage());
+        }
+
+        if (notificationService != null) {
+            try {
+                notificationService.notifyAdmins(
+                    "New Disaster Reported",
+                    "Incident #" + saved.getReportId() + " (" + saved.getIncidentType() + ") reported in " + saved.getLocation(),
+                    "DISASTER",
+                    saved.getSeverity() != null ? saved.getSeverity() : "High",
+                    saved.getReportId(),
+                    "CITIZEN_REPORT",
+                    "admin-dashboard.html"
+                );
+                notificationService.notifyCitizen(
+                    saved.getCitizenEmail(),
+                    "Report Received",
+                    "Your incident report #" + saved.getReportId() + " has been received and is being verified.",
+                    "UPDATE",
+                    "Medium",
+                    saved.getReportId(),
+                    "CITIZEN_REPORT",
+                    "citizen-dashboard.html"
+                );
+            } catch (Exception e) {
+                log.warn("Notification dispatch warning: {}", e.getMessage());
+            }
         }
 
         return saved;
@@ -236,6 +265,33 @@ public class CitizenReportService {
             log.warn("Audit record warning: {}", e.getMessage());
         }
 
+        if (notificationService != null) {
+            try {
+                notificationService.notifyResponder(
+                    responder.getEmail(),
+                    "New Rescue Assignment",
+                    "You have been assigned to Incident #" + reportId + " (" + report.getIncidentType() + ") in " + report.getLocation(),
+                    "ASSIGNMENT",
+                    report.getSeverity() != null ? report.getSeverity() : "High",
+                    reportId,
+                    "CITIZEN_REPORT",
+                    "responder-dashboard.html"
+                );
+                notificationService.notifyCitizen(
+                    report.getCitizenEmail(),
+                    "Rescue Team Assigned",
+                    "Rescue unit " + responderName + " has been assigned to your report.",
+                    "RESPONSE",
+                    "High",
+                    reportId,
+                    "CITIZEN_REPORT",
+                    "citizen-dashboard.html"
+                );
+            } catch (Exception e) {
+                log.warn("Notification dispatch warning on assignResponder: {}", e.getMessage());
+            }
+        }
+
         return saved;
     }
 
@@ -312,6 +368,32 @@ public class CitizenReportService {
                 log.warn("Task sync warning on acknowledge: {}", e.getMessage());
             }
 
+            if (notificationService != null) {
+                try {
+                    notificationService.notifyCitizen(
+                        saved.getCitizenEmail(),
+                        "Rescue Team Deployed",
+                        "A rescue team has acknowledged your emergency report and is en route.",
+                        "RESPONSE",
+                        "High",
+                        saved.getReportId(),
+                        "CITIZEN_REPORT",
+                        "citizen-dashboard.html"
+                    );
+                    notificationService.notifyAdmins(
+                        "Incident Acknowledged",
+                        "Incident #" + reportId + " acknowledged by responder " + saved.getAssignedResponderEmail(),
+                        "UPDATE",
+                        "Medium",
+                        reportId,
+                        "CITIZEN_REPORT",
+                        "admin-dashboard.html"
+                    );
+                } catch (Exception e) {
+                    log.warn("Notification dispatch warning on acknowledgeReport: {}", e.getMessage());
+                }
+            }
+
             return saved;
         }
         return null;
@@ -338,6 +420,32 @@ public class CitizenReportService {
                 }
             } catch (Exception e) {
                 log.warn("Task sync warning on resolve: {}", e.getMessage());
+            }
+
+            if (notificationService != null) {
+                try {
+                    notificationService.notifyCitizen(
+                        saved.getCitizenEmail(),
+                        "Mission Completed",
+                        "Your reported incident #" + reportId + " has been safely resolved.",
+                        "RESPONSE",
+                        "Low",
+                        saved.getReportId(),
+                        "CITIZEN_REPORT",
+                        "citizen-dashboard.html"
+                    );
+                    notificationService.notifyAdmins(
+                        "Incident Resolved",
+                        "Incident #" + reportId + " has been marked as resolved.",
+                        "UPDATE",
+                        "Medium",
+                        reportId,
+                        "CITIZEN_REPORT",
+                        "admin-dashboard.html"
+                    );
+                } catch (Exception e) {
+                    log.warn("Notification dispatch warning on resolveReport: {}", e.getMessage());
+                }
             }
 
             return saved;

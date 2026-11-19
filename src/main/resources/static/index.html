@@ -958,12 +958,12 @@
                     if (window.CommandCenterSound) CommandCenterSound.playSuccess();
                     showAlert('Authentication verified. Transitioning to Command Center...', 'success');
 
-                    // Route to target dashboard
+                    // Route to target dedicated notification center
                     setTimeout(() => {
                         let targetUrl;
-                        if (actualRole === 'Admin') targetUrl = 'admin-dashboard.html';
-                        else if (actualRole === 'Responder') targetUrl = 'responder-dashboard.html';
-                        else targetUrl = 'citizen-dashboard.html';
+                        if (actualRole === 'Admin') targetUrl = 'admin-notifications.html';
+                        else if (actualRole === 'Responder') targetUrl = 'responder-notifications.html';
+                        else targetUrl = 'citizen-notifications.html';
 
                         if (window.RoleLoadingScreen) {
                             RoleLoadingScreen.showAndNavigate(actualRole, targetUrl);

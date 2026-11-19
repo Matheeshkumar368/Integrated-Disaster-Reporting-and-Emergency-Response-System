@@ -44,6 +44,9 @@ public class MessageService {
     @Autowired
     private RescueTaskRepository rescueTaskRepository;
 
+    @Autowired(required = false)
+    private NotificationService notificationService;
+
     /**
      * Normalize role strings: strips ROLE_ prefix, trims, and normalizes capitalization.
      */
@@ -185,6 +188,30 @@ public class MessageService {
 
         Message saved = messageRepository.save(msg);
         log.info("Message #{} dispatched successfully from [{}] to [{}]", saved.getMessageId(), senderEmail, receiverEmail);
+
+        if (notificationService != null) {
+            try {
+                String senderDisplayName = msg.getSenderName() != null ? msg.getSenderName() : senderEmail;
+                String targetPage = "admin-dashboard.html";
+                if ("Citizen".equalsIgnoreCase(receiverRole)) targetPage = "citizen-dashboard.html";
+                else if ("Responder".equalsIgnoreCase(receiverRole)) targetPage = "responder-dashboard.html";
+
+                notificationService.createNotification(
+                    receiverEmail,
+                    receiverRole,
+                    "New Message from " + senderDisplayName,
+                    msg.getMessage(),
+                    "UPDATE",
+                    "Medium",
+                    saved.getMessageId(),
+                    "MESSAGE",
+                    targetPage
+                );
+            } catch (Exception e) {
+                log.warn("Notification dispatch warning on message send: {}", e.getMessage());
+            }
+        }
+
         return saved;
     }
 

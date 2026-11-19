@@ -935,14 +935,14 @@ function login() {
             
             // Small delay to ensure localStorage is persisted before navigation
             setTimeout(function() {
-                // Show loading screen and redirect to appropriate dashboard
+                // Show loading screen and redirect to appropriate dedicated notification center
                 let targetUrl;
                 if (actualRole === 'Admin') {
-                    targetUrl = "admin-dashboard.html";
+                    targetUrl = "admin-notifications.html";
                 } else if (actualRole === 'Responder') {
-                    targetUrl = "responder-dashboard.html";
+                    targetUrl = "responder-notifications.html";
                 } else {
-                    targetUrl = "citizen-dashboard.html";
+                    targetUrl = "citizen-notifications.html";
                 }
                 
                 // Use loading screen with fade transition and resource verification
