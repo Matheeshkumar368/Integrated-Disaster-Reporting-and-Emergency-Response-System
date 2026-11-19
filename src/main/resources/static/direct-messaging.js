@@ -396,3 +396,4 @@
 
     window.DirectMessaging = new DirectMessagingController();
 })();
+
