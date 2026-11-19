@@ -1029,20 +1029,140 @@
                 }
             } catch (e) {}
 
-            // Check URL parameters for tab selection
-            const urlParams = new URLSearchParams(window.location.search);
-            const tabParam = urlParams.get('tab');
-            if (tabParam === 'alerts' || tabParam === 'alertsTab') switchTab('alertsTab');
-            else if (tabParam === 'report' || tabParam === 'reportTab') switchTab('reportTab');
-            else if (tabParam === 'my-reports' || tabParam === 'myReportsTab') switchTab('myReportsTab');
-            else if (tabParam === 'map' || tabParam === 'mapTab') switchTab('mapTab');
-            else if (tabParam === 'safety' || tabParam === 'safetyTab') switchTab('safetyTab');
-            else if (tabParam && document.getElementById(tabParam)) switchTab(tabParam);
+            // Apply URL query and hash tab selection
+            activateTabFromUrl();
 
             loadUnifiedAlerts();
             loadMyReports();
             loadNotifications();
         })();
+
+        // Resolve Active Tab ID from URL query parameters and hash
+        function resolveActiveTabFromUrl() {
+            try {
+                const searchStr = (window.location.search || '').toLowerCase();
+                const hashStr = (window.location.hash || '').toLowerCase().replace(/^#/, '');
+                const urlParams = new URLSearchParams(window.location.search);
+                const tabParam = (urlParams.get('tab') || '').toLowerCase();
+
+                // 1. Report Emergency Incident section (?report, #report, ?tab=report, ?incident)
+                if (
+                    urlParams.has('report') ||
+                    urlParams.has('reportTab') ||
+                    urlParams.has('reporttab') ||
+                    urlParams.has('incident') ||
+                    tabParam === 'report' ||
+                    tabParam === 'reporttab' ||
+                    tabParam === 'incident' ||
+                    hashStr === 'report' ||
+                    hashStr === 'reporttab' ||
+                    hashStr === 'incident' ||
+                    searchStr === '?report' ||
+                    searchStr.startsWith('?report&') ||
+                    searchStr.includes('&report')
+                ) {
+                    return 'reportTab';
+                }
+
+                // 2. My Reports & Live Status section (?my-reports, ?myreports, #my-reports, ?tab=my-reports)
+                if (
+                    urlParams.has('my-reports') ||
+                    urlParams.has('myreports') ||
+                    urlParams.has('myreportstab') ||
+                    urlParams.has('myReports') ||
+                    urlParams.has('myReportsTab') ||
+                    tabParam === 'my-reports' ||
+                    tabParam === 'myreports' ||
+                    tabParam === 'myreportstab' ||
+                    hashStr === 'my-reports' ||
+                    hashStr === 'myreports' ||
+                    hashStr === 'myreportstab' ||
+                    searchStr.includes('my-reports') ||
+                    searchStr.includes('myreports')
+                ) {
+                    return 'myReportsTab';
+                }
+
+                // 3. Interactive Safety & Shelter Map (?map, #map, ?tab=map, ?radar, ?shelters)
+                if (
+                    urlParams.has('map') ||
+                    urlParams.has('maptab') ||
+                    urlParams.has('shelter') ||
+                    urlParams.has('shelters') ||
+                    tabParam === 'map' ||
+                    tabParam === 'maptab' ||
+                    tabParam === 'radar' ||
+                    hashStr === 'map' ||
+                    hashStr === 'maptab' ||
+                    hashStr === 'radar' ||
+                    hashStr === 'shelter' ||
+                    searchStr === '?map' ||
+                    searchStr.startsWith('?map&') ||
+                    searchStr.includes('&map')
+                ) {
+                    return 'mapTab';
+                }
+
+                // 4. Live Warnings & Advisories section (?alerts, #alerts, ?tab=alerts, ?warnings)
+                if (
+                    urlParams.has('alerts') ||
+                    urlParams.has('alertstab') ||
+                    urlParams.has('warnings') ||
+                    tabParam === 'alerts' ||
+                    tabParam === 'alertstab' ||
+                    tabParam === 'warnings' ||
+                    hashStr === 'alerts' ||
+                    hashStr === 'alertstab' ||
+                    hashStr === 'warnings' ||
+                    searchStr === '?alerts' ||
+                    searchStr.startsWith('?alerts&') ||
+                    searchStr.includes('&alerts')
+                ) {
+                    return 'alertsTab';
+                }
+
+                // 5. Disaster Safety Guidelines (?safety, #safety, ?tab=safety)
+                if (
+                    urlParams.has('safety') ||
+                    urlParams.has('safetytab') ||
+                    urlParams.has('guidelines') ||
+                    tabParam === 'safety' ||
+                    tabParam === 'safetytab' ||
+                    hashStr === 'safety' ||
+                    hashStr === 'safetytab' ||
+                    hashStr === 'guidelines' ||
+                    searchStr === '?safety' ||
+                    searchStr.startsWith('?safety&') ||
+                    searchStr.includes('&safety')
+                ) {
+                    return 'safetyTab';
+                }
+
+                // 6. Direct DOM ID fallback
+                if (tabParam && document.getElementById(tabParam)) return tabParam;
+                if (hashStr && document.getElementById(hashStr)) return hashStr;
+
+            } catch (err) {
+                console.warn('[CitizenDashboard] URL Tab resolver warning:', err);
+            }
+            return null;
+        }
+
+        // Activate Tab based on URL parameters
+        function activateTabFromUrl() {
+            const targetTabId = resolveActiveTabFromUrl();
+            if (targetTabId) {
+                switchTab(targetTabId);
+                if (targetTabId !== 'alertsTab') {
+                    const el = document.getElementById(targetTabId);
+                    if (el) {
+                        setTimeout(() => {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }, 120);
+                    }
+                }
+            }
+        }
 
         // Tab Switching
         function switchTab(tabId, btn) {
@@ -1055,7 +1175,17 @@
             if (btn) {
                 btn.classList.add('active');
             } else {
-                const matchedBtn = Array.from(document.querySelectorAll('.cc-tab-btn')).find(b => b.getAttribute('onclick')?.includes(tabId));
+                let matchedBtn = null;
+                if (tabId === 'alertsTab') matchedBtn = document.getElementById('tabBtnAlerts');
+                else if (tabId === 'mapTab') matchedBtn = document.getElementById('tabBtnMap');
+                else if (tabId === 'reportTab') matchedBtn = document.getElementById('tabBtnReport');
+                else if (tabId === 'myReportsTab') matchedBtn = document.getElementById('tabBtnMyReports');
+                else if (tabId === 'safetyTab') matchedBtn = document.getElementById('tabBtnSafety');
+
+                if (!matchedBtn) {
+                    matchedBtn = Array.from(document.querySelectorAll('.cc-tab-btn')).find(b => b.getAttribute('onclick')?.includes(tabId));
+                }
+
                 if (matchedBtn) matchedBtn.classList.add('active');
             }
 
@@ -1066,6 +1196,15 @@
                 }, 200);
             }
         }
+
+        // Expose to window and listen to URL events
+        window.switchTab = switchTab;
+        window.activateTabFromUrl = activateTabFromUrl;
+        window.resolveActiveTabFromUrl = resolveActiveTabFromUrl;
+        window.addEventListener('hashchange', activateTabFromUrl);
+        window.addEventListener('popstate', activateTabFromUrl);
+        // Execute immediately to eliminate any UI flicker
+        activateTabFromUrl();
 
         // Change Operational Sector
         function changeOperationalSector(sector) {
@@ -1455,6 +1594,16 @@
                 const card = document.createElement('div');
                 card.className = 'cc-card';
                 card.style.marginBottom = '1.2rem';
+
+                // Highlight targeted report if reportId parameter matches
+                const targetReportId = new URLSearchParams(window.location.search).get('reportId');
+                if (targetReportId && String(report.reportId) === String(targetReportId)) {
+                    card.style.border = '2px solid var(--cc-cyan)';
+                    card.style.boxShadow = '0 0 25px rgba(56, 189, 248, 0.45)';
+                    setTimeout(() => {
+                        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 200);
+                }
 
                 const status = report.status || 'Pending';
                 const isResolved = status === 'Resolved';

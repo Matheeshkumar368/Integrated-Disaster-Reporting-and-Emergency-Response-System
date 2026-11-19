@@ -76,39 +76,9 @@ public class RescueTaskService {
                         report.setStatus("Acknowledged");
                         citizenReportRepository.save(report);
                     }
-                    if (notificationService != null && report.getCitizenEmail() != null) {
-                        notificationService.notifyCitizen(
-                            report.getCitizenEmail(),
-                            "Rescue Team Deployed",
-                            "A rescue mission has been mobilized for your report #" + report.getReportId(),
-                            "RESPONSE",
-                            "High",
-                            report.getReportId(),
-                            "CITIZEN_REPORT",
-                            "citizen-dashboard.html"
-                        );
-                    }
                 }
             } catch (Exception e) {
                 log.warn("Failed to sync citizen report on task creation: {}", e.getMessage());
-            }
-        }
-
-        // Notify assigned responder if task is created with direct assignment
-        if (notificationService != null && saved.getAssignedTo() != null && !saved.getAssignedTo().trim().isEmpty()) {
-            try {
-                notificationService.notifyResponder(
-                    saved.getAssignedTo().trim(),
-                    "New Rescue Assignment",
-                    "Task #" + saved.getTaskId() + " (" + saved.getTitle() + ") assigned in " + (saved.getZone() != null ? saved.getZone() : "Operational Area"),
-                    "ASSIGNMENTS",
-                    saved.getPriority() != null ? saved.getPriority() : "High",
-                    saved.getTaskId(),
-                    "TASK",
-                    "responder-dashboard.html"
-                );
-            } catch (Exception e) {
-                log.warn("Failed to dispatch responder notification on task creation: {}", e.getMessage());
             }
         }
 
@@ -530,7 +500,7 @@ public class RescueTaskService {
                     responderEmail,
                     "New Rescue Assignment",
                     "Task #" + taskId + " (" + task.getTitle() + ") assigned in " + task.getZone(),
-                    "ASSIGNMENTS",
+                    "ASSIGNMENT",
                     task.getPriority() != null ? task.getPriority() : "High",
                     taskId,
                     "TASK",

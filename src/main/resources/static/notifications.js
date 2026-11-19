@@ -268,7 +268,7 @@
                             <button class="btn-card-action btn-delete" title="Delete from notifications" onclick="event.stopPropagation(); window.__notifCenter.deleteNotification(${item.id})">
                                 <i class="fa-solid fa-trash-can"></i>
                             </button>
-                            <i class="fa-solid fa-chevron-right chevron-icon" onclick="window.__notifCenter.handleCardClick(${item.id})"></i>
+                            <i class="fa-solid fa-chevron-right chevron-icon" title="Go to section" onclick="event.stopPropagation(); window.location.href=window.__notifCenter.resolveTargetUrl(window.__notifCenter.notifications.find(n=>n.id===${item.id}))"></i>
                         </div>
                     </div>
                 `;
@@ -343,6 +343,70 @@
             }
         }
 
+        resolveTargetUrl(item) {
+            if (!item) {
+                return this.role === 'Admin' ? '/admin-dashboard.html' :
+                       this.role === 'Responder' ? '/responder-dashboard.html' :
+                       '/citizen-dashboard.html';
+            }
+
+            // If actionUrl already contains specific query parameters or hash, use it
+            if (item.actionUrl && (item.actionUrl.includes('?') || item.actionUrl.includes('#'))) {
+                return item.actionUrl;
+            }
+
+            if (this.role === 'Citizen') {
+                const cat = (item.category || '').toUpperCase();
+                const relType = (item.relatedIncidentType || '').toUpperCase();
+                const title = (item.title || '').toLowerCase();
+                const msg = (item.message || '').toLowerCase();
+
+                // Incident/Disaster Report status updates & deployments -> My Reports
+                if (
+                    relType === 'CITIZEN_REPORT' ||
+                    relType === 'REPORT' ||
+                    relType === 'TASK' ||
+                    cat === 'RESPONSE' ||
+                    cat === 'UPDATES' ||
+                    title.includes('report') ||
+                    title.includes('incident') ||
+                    title.includes('rescue team') ||
+                    title.includes('mission') ||
+                    title.includes('deployed') ||
+                    title.includes('acknowledged') ||
+                    title.includes('resolved')
+                ) {
+                    if (item.relatedIncidentId) {
+                        return `/citizen-dashboard.html?my-reports&reportId=${item.relatedIncidentId}`;
+                    }
+                    return '/citizen-dashboard.html?my-reports';
+                }
+
+                // Official alerts & disaster warnings -> Alerts tab
+                if (
+                    relType === 'ALERT' ||
+                    cat === 'ALERTS' ||
+                    cat === 'ALERT' ||
+                    cat === 'DISASTERS' ||
+                    title.includes('alert') ||
+                    title.includes('warning') ||
+                    title.includes('cyclone') ||
+                    title.includes('flood')
+                ) {
+                    return '/citizen-dashboard.html?alerts';
+                }
+
+                // Prompt to file report
+                if (title.includes('submit report') || msg.includes('file a report')) {
+                    return '/citizen-dashboard.html?report';
+                }
+
+                return '/citizen-dashboard.html';
+            }
+
+            return item.actionUrl || (this.role === 'Admin' ? '/admin-dashboard.html' : '/responder-dashboard.html');
+        }
+
         async handleCardClick(id) {
             const item = this.notifications.find(n => n.id === id);
             if (!item) return;
@@ -353,13 +417,7 @@
                 this.markAsRead(id);
             }
 
-            // If actionUrl exists, offer navigation or navigate directly
-            if (item.actionUrl) {
-                window.location.href = item.actionUrl;
-                return;
-            }
-
-            // Otherwise open modal with details
+            // Open detail modal with details and direct action button
             this.openDetailModal(item);
         }
 
@@ -382,12 +440,27 @@
             `;
 
             if (actionBtn) {
+                const targetUrl = this.resolveTargetUrl(item);
+                let btnLabel = 'Go to Dashboard';
+                if (this.role === 'Citizen') {
+                    if (targetUrl.includes('my-reports')) {
+                        btnLabel = '<i class="fa-solid fa-list-check"></i> Track in My Reports';
+                    } else if (targetUrl.includes('alerts')) {
+                        btnLabel = '<i class="fa-solid fa-triangle-exclamation"></i> View Live Warnings';
+                    } else if (targetUrl.includes('report')) {
+                        btnLabel = '<i class="fa-solid fa-pen-to-square"></i> Open Incident Form';
+                    } else {
+                        btnLabel = '<i class="fa-solid fa-gauge-high"></i> Citizen Safety Hub';
+                    }
+                } else if (this.role === 'Responder') {
+                    btnLabel = '<i class="fa-solid fa-list-check"></i> Operations Hub';
+                } else if (this.role === 'Admin') {
+                    btnLabel = '<i class="fa-solid fa-gauge-high"></i> Command Center';
+                }
+                actionBtn.innerHTML = btnLabel;
                 actionBtn.onclick = () => {
                     modalBackdrop.classList.remove('open');
-                    // Route to role's dashboard
-                    if (this.role === 'Admin') window.location.href = '/admin-dashboard.html';
-                    else if (this.role === 'Responder') window.location.href = '/responder-dashboard.html';
-                    else window.location.href = '/citizen-dashboard.html';
+                    window.location.href = targetUrl;
                 };
             }
 
