@@ -217,6 +217,7 @@ public class AuthController {
             response.put("location", user.getLocation());
             response.put("role", user.getRole());
             response.put("assignedZone", user.getAssignedZone());
+            response.put("availabilityStatus", user.getAvailabilityStatus() != null ? user.getAvailabilityStatus() : "Available");
             response.put("adminPinEnrolled", user.getAdminPinEnrolled());
             response.put("sosShortcutEnabled", user.getSosShortcutEnabled());
             response.put("sosShortcutKey", user.getSosShortcutKey());

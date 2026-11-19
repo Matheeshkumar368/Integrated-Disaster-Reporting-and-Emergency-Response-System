@@ -33,6 +33,9 @@ public class RescueTaskService {
     @Autowired(required = false)
     private NotificationService notificationService;
 
+    @Autowired(required = false)
+    private IncidentTimelineService timelineService;
+
     // Create a new rescue task with validation
     @Transactional
     public RescueTask createTask(RescueTask task) {
@@ -164,7 +167,7 @@ public class RescueTaskService {
                                 "High",
                                 r.getReportId(),
                                 "CITIZEN_REPORT",
-                                "citizen-dashboard.html"
+                                "citizen-notifications.html"
                             );
                         } catch (Exception ex) {
                             log.warn("Notification warning: {}", ex.getMessage());
@@ -185,7 +188,7 @@ public class RescueTaskService {
                     "Medium",
                     taskId,
                     "TASK",
-                    "admin-dashboard.html"
+                    "admin-notifications.html"
                 );
             } catch (Exception e) {
                 log.warn("Admin notification warning: {}", e.getMessage());
@@ -231,7 +234,7 @@ public class RescueTaskService {
                                 "Low",
                                 report.getReportId(),
                                 "CITIZEN_REPORT",
-                                "citizen-dashboard.html"
+                                "citizen-notifications.html"
                             );
                         } catch (Exception ex) {
                             log.warn("Citizen notification warning: {}", ex.getMessage());
@@ -252,7 +255,7 @@ public class RescueTaskService {
                     "Medium",
                     taskId,
                     "TASK",
-                    "admin-dashboard.html"
+                    "admin-notifications.html"
                 );
             } catch (Exception ex) {
                 log.warn("Admin notification warning: {}", ex.getMessage());
@@ -346,9 +349,36 @@ public class RescueTaskService {
                             r.setAcknowledgedAt(LocalDateTime.now());
                         }
                         citizenReportRepository.save(r);
+                        if (notificationService != null && r.getCitizenEmail() != null) {
+                            notificationService.notifyCitizen(
+                                r.getCitizenEmail(),
+                                "Rescue Team Deployed",
+                                "Responder " + (task.getAssignedResponderName() != null ? task.getAssignedResponderName() : "Rescue Unit") + " has accepted task #" + taskId + " and is responding.",
+                                "RESPONSE",
+                                "High",
+                                r.getReportId(),
+                                "CITIZEN_REPORT",
+                                "citizen-notifications.html"
+                            );
+                        }
                     });
                 } catch (Exception e) {
                     log.warn("Could not sync citizen report on Acknowledged/Accepted: {}", e.getMessage());
+                }
+            }
+            if (notificationService != null) {
+                try {
+                    notificationService.notifyAdmins(
+                        "Task Acknowledged",
+                        "Responder " + (task.getAssignedResponderName() != null ? task.getAssignedResponderName() : task.getAssignedTo()) + " acknowledged Task #" + taskId,
+                        "UPDATE",
+                        "Medium",
+                        taskId,
+                        "TASK",
+                        "admin-notifications.html"
+                    );
+                } catch (Exception e) {
+                    log.warn("Admin notification warning: {}", e.getMessage());
                 }
             }
         }
@@ -361,9 +391,36 @@ public class RescueTaskService {
                         r.setStatus("In Progress");
                         r.setProgressStage(status);
                         citizenReportRepository.save(r);
+                        if (notificationService != null && r.getCitizenEmail() != null) {
+                            notificationService.notifyCitizen(
+                                r.getCitizenEmail(),
+                                "Rescue Unit En Route",
+                                "Rescue unit " + (task.getAssignedResponderName() != null ? task.getAssignedResponderName() : "Rescue Team") + " is on the way to your location for Report #" + r.getReportId() + ".",
+                                "RESPONSE",
+                                "High",
+                                r.getReportId(),
+                                "CITIZEN_REPORT",
+                                "citizen-notifications.html"
+                            );
+                        }
                     });
                 } catch (Exception e) {
                     log.warn("Could not sync citizen report on En Route: {}", e.getMessage());
+                }
+            }
+            if (notificationService != null) {
+                try {
+                    notificationService.notifyAdmins(
+                        "Unit En Route",
+                        "Responder " + (task.getAssignedResponderName() != null ? task.getAssignedResponderName() : task.getAssignedTo()) + " is en route to Task #" + taskId,
+                        "UPDATE",
+                        "Medium",
+                        taskId,
+                        "TASK",
+                        "admin-notifications.html"
+                    );
+                } catch (Exception e) {
+                    log.warn("Admin notification warning: {}", e.getMessage());
                 }
             }
         }
@@ -376,9 +433,36 @@ public class RescueTaskService {
                         r.setStatus("In Progress");
                         r.setProgressStage(status);
                         citizenReportRepository.save(r);
+                        if (notificationService != null && r.getCitizenEmail() != null) {
+                            notificationService.notifyCitizen(
+                                r.getCitizenEmail(),
+                                "Rescue Unit Arrived",
+                                "Rescue unit " + (task.getAssignedResponderName() != null ? task.getAssignedResponderName() : "Rescue Team") + " has arrived at your location for Report #" + r.getReportId() + ".",
+                                "RESPONSE",
+                                "High",
+                                r.getReportId(),
+                                "CITIZEN_REPORT",
+                                "citizen-notifications.html"
+                            );
+                        }
                     });
                 } catch (Exception e) {
                     log.warn("Could not sync citizen report on Arrived: {}", e.getMessage());
+                }
+            }
+            if (notificationService != null) {
+                try {
+                    notificationService.notifyAdmins(
+                        "Unit Arrived On Scene",
+                        "Responder " + (task.getAssignedResponderName() != null ? task.getAssignedResponderName() : task.getAssignedTo()) + " has arrived on scene for Task #" + taskId,
+                        "UPDATE",
+                        "Medium",
+                        taskId,
+                        "TASK",
+                        "admin-notifications.html"
+                    );
+                } catch (Exception e) {
+                    log.warn("Admin notification warning: {}", e.getMessage());
                 }
             }
         }
@@ -390,9 +474,36 @@ public class RescueTaskService {
                         r.setStatus("In Progress");
                         r.setProgressStage(status);
                         citizenReportRepository.save(r);
+                        if (notificationService != null && r.getCitizenEmail() != null) {
+                            notificationService.notifyCitizen(
+                                r.getCitizenEmail(),
+                                "Operation Update",
+                                "Rescue operation is in progress at your reported location for Report #" + r.getReportId() + ".",
+                                "RESPONSE",
+                                "Medium",
+                                r.getReportId(),
+                                "CITIZEN_REPORT",
+                                "citizen-notifications.html"
+                            );
+                        }
                     });
                 } catch (Exception e) {
                     log.warn("Could not sync citizen report on In Progress: {}", e.getMessage());
+                }
+            }
+            if (notificationService != null) {
+                try {
+                    notificationService.notifyAdmins(
+                        "Task in Progress",
+                        "Rescue operation is actively in progress for Task #" + taskId,
+                        "UPDATE",
+                        "Medium",
+                        taskId,
+                        "TASK",
+                        "admin-notifications.html"
+                    );
+                } catch (Exception e) {
+                    log.warn("Admin notification warning: {}", e.getMessage());
                 }
             }
         }
@@ -414,9 +525,48 @@ public class RescueTaskService {
                         citizenReportRepository.save(r);
                         log.info("Cross-role synchronization: Citizen Report #{} marked as Resolved following completion of Rescue Task #{}",
                             r.getReportId(), taskId);
+                        if (notificationService != null && r.getCitizenEmail() != null) {
+                            notificationService.notifyCitizen(
+                                r.getCitizenEmail(),
+                                "Mission Completed",
+                                "Rescue operation for your report #" + r.getReportId() + " has completed successfully.",
+                                "RESPONSE",
+                                "Low",
+                                r.getReportId(),
+                                "CITIZEN_REPORT",
+                                "citizen-notifications.html"
+                            );
+                        }
                     });
                 } catch (Exception e) {
                     log.warn("Could not sync citizen report on task completion: {}", e.getMessage());
+                }
+            }
+            if (notificationService != null) {
+                try {
+                    notificationService.notifyAdmins(
+                        "Mission Completed",
+                        "Rescue Mission #" + taskId + " marked completed by " + (task.getAssignedResponderName() != null ? task.getAssignedResponderName() : task.getAssignedTo()),
+                        "UPDATE",
+                        "Medium",
+                        taskId,
+                        "TASK",
+                        "admin-notifications.html"
+                    );
+                } catch (Exception ex) {
+                    log.warn("Admin notification warning: {}", ex.getMessage());
+                }
+            }
+            // Reset responder availability back to Available
+            if (task.getAssignedTo() != null) {
+                try {
+                    userRepository.findByEmail(task.getAssignedTo().trim().toLowerCase()).ifPresent(u -> {
+                        u.setAvailabilityStatus("Available");
+                        userRepository.save(u);
+                        log.info("Responder {} availability status reset to Available upon mission completion", u.getEmail());
+                    });
+                } catch (Exception ex) {
+                    log.warn("Could not reset responder availability: {}", ex.getMessage());
                 }
             }
         }
@@ -482,7 +632,7 @@ public class RescueTaskService {
                                 "High",
                                 r.getReportId(),
                                 "CITIZEN_REPORT",
-                                "citizen-dashboard.html"
+                                "citizen-notifications.html"
                             );
                         } catch (Exception ex) {
                             log.warn("Citizen notification warning: {}", ex.getMessage());
@@ -491,6 +641,24 @@ public class RescueTaskService {
                 });
             } catch (Exception e) {
                 log.warn("Could not sync citizen report on task assignment: {}", e.getMessage());
+            }
+        }
+
+        if (timelineService != null) {
+            try {
+                timelineService.logEvent(
+                    taskId,
+                    "RESCUE_TASK",
+                    "TASK_ASSIGNED",
+                    task.getCreatedBy() != null ? task.getCreatedBy() : "admin@disaster.gov.in",
+                    "Admin",
+                    responderName,
+                    "Task assigned to " + responderName + " (" + responderEmail + ")",
+                    null,
+                    null
+                );
+            } catch (Exception e) {
+                log.warn("Timeline log warning on assignTask: {}", e.getMessage());
             }
         }
 
@@ -504,7 +672,7 @@ public class RescueTaskService {
                     task.getPriority() != null ? task.getPriority() : "High",
                     taskId,
                     "TASK",
-                    "responder-dashboard.html"
+                    "responder-notifications.html"
                 );
             } catch (Exception e) {
                 log.warn("Responder notification warning: {}", e.getMessage());

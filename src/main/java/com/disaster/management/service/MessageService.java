@@ -192,9 +192,9 @@ public class MessageService {
         if (notificationService != null) {
             try {
                 String senderDisplayName = msg.getSenderName() != null ? msg.getSenderName() : senderEmail;
-                String targetPage = "admin-dashboard.html";
-                if ("Citizen".equalsIgnoreCase(receiverRole)) targetPage = "citizen-dashboard.html";
-                else if ("Responder".equalsIgnoreCase(receiverRole)) targetPage = "responder-dashboard.html";
+                String targetPage = "admin-notifications.html";
+                if ("Citizen".equalsIgnoreCase(receiverRole)) targetPage = "citizen-notifications.html";
+                else if ("Responder".equalsIgnoreCase(receiverRole)) targetPage = "responder-notifications.html";
 
                 notificationService.createNotification(
                     receiverEmail,

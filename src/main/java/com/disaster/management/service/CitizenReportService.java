@@ -114,7 +114,7 @@ public class CitizenReportService {
                     saved.getSeverity() != null ? saved.getSeverity() : "High",
                     saved.getReportId(),
                     "CITIZEN_REPORT",
-                    "admin-dashboard.html"
+                    "admin-notifications.html"
                 );
                 notificationService.notifyCitizen(
                     saved.getCitizenEmail(),
@@ -124,7 +124,7 @@ public class CitizenReportService {
                     "Medium",
                     saved.getReportId(),
                     "CITIZEN_REPORT",
-                    "citizen-dashboard.html"
+                    "citizen-notifications.html"
                 );
             } catch (Exception e) {
                 log.warn("Notification dispatch warning: {}", e.getMessage());
@@ -275,7 +275,7 @@ public class CitizenReportService {
                     report.getSeverity() != null ? report.getSeverity() : "High",
                     reportId,
                     "CITIZEN_REPORT",
-                    "responder-dashboard.html"
+                    "responder-notifications.html"
                 );
                 notificationService.notifyCitizen(
                     report.getCitizenEmail(),
@@ -285,7 +285,7 @@ public class CitizenReportService {
                     "High",
                     reportId,
                     "CITIZEN_REPORT",
-                    "citizen-dashboard.html"
+                    "citizen-notifications.html"
                 );
             } catch (Exception e) {
                 log.warn("Notification dispatch warning on assignResponder: {}", e.getMessage());
@@ -378,7 +378,7 @@ public class CitizenReportService {
                         "High",
                         saved.getReportId(),
                         "CITIZEN_REPORT",
-                        "citizen-dashboard.html"
+                        "citizen-notifications.html"
                     );
                     notificationService.notifyAdmins(
                         "Incident Acknowledged",
@@ -387,7 +387,7 @@ public class CitizenReportService {
                         "Medium",
                         reportId,
                         "CITIZEN_REPORT",
-                        "admin-dashboard.html"
+                        "admin-notifications.html"
                     );
                 } catch (Exception e) {
                     log.warn("Notification dispatch warning on acknowledgeReport: {}", e.getMessage());
@@ -432,7 +432,7 @@ public class CitizenReportService {
                         "Low",
                         saved.getReportId(),
                         "CITIZEN_REPORT",
-                        "citizen-dashboard.html"
+                        "citizen-notifications.html"
                     );
                     notificationService.notifyAdmins(
                         "Incident Resolved",
@@ -441,7 +441,7 @@ public class CitizenReportService {
                         "Medium",
                         reportId,
                         "CITIZEN_REPORT",
-                        "admin-dashboard.html"
+                        "admin-notifications.html"
                     );
                 } catch (Exception e) {
                     log.warn("Notification dispatch warning on resolveReport: {}", e.getMessage());

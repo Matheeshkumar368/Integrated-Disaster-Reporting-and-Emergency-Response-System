@@ -46,6 +46,15 @@ public class AlertService {
             throw new IllegalArgumentException("Alert region/zone is required");
         }
 
+        // Duplicate active alert check: prevent duplicate active alerts for the same region and title
+        List<Alert> duplicates = alertRepository.findByTitleIgnoreCaseAndRegionIgnoreCaseAndStatus(
+            alert.getTitle().trim(), alert.getRegion().trim(), "Active"
+        );
+        if (!duplicates.isEmpty()) {
+            log.warn("Duplicate active alert rejected for region [{}] with title [{}]", alert.getRegion(), alert.getTitle());
+            throw new IllegalArgumentException("An active alert with title '" + alert.getTitle().trim() + "' already exists for region " + alert.getRegion().trim() + ". Please resolve or modify the existing active alert.");
+        }
+
         alert.setCreatedBy(adminEmail);
         alert.setCreatedAt(LocalDateTime.now());
         if (alert.getStatus() == null || alert.getStatus().trim().isEmpty()) {
@@ -87,7 +96,7 @@ public class AlertService {
                     alert.getSeverity() != null ? alert.getSeverity() : "High",
                     savedAlert.getAlertId(),
                     "ALERT",
-                    "citizen-dashboard.html"
+                    "citizen-notifications.html"
                 );
             } catch (Exception e) {
                 log.warn("Notification dispatch warning on createAlert: {}", e.getMessage());

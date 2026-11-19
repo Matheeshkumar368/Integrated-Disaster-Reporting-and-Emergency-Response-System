@@ -16,6 +16,8 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
     
     List<Alert> findByRegionAndStatus(String region, String status);
     
+    List<Alert> findByTitleIgnoreCaseAndRegionIgnoreCaseAndStatus(String title, String region, String status);
+    
     List<Alert> findByBroadcastedTrueOrderByCreatedAtDesc();
     
     List<Alert> findByStatusAndBroadcastedTrueOrderByCreatedAtDesc(String status);
