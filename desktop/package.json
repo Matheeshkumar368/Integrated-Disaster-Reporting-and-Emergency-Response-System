@@ -22,6 +22,12 @@
       "output": "dist",
       "buildResources": "assets"
     },
+    "extraResources": [
+      {
+        "from": "server/demo.jar",
+        "to": "server/demo.jar"
+      }
+    ],
     "win": {
       "target": [
         "nsis",

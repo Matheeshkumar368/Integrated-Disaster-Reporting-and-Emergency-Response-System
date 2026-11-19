@@ -47,6 +47,9 @@ services:
       NDMA_SYNC_MAX_ITEMS: ${NDMA_SYNC_MAX_ITEMS:-30}
       IMD_API_KEY: ${IMD_API_KEY:-}
       IMD_JWT_TOKEN: ${IMD_JWT_TOKEN:-}
+      MEDIA_UPLOAD_DIR: /app/uploads
+    volumes:
+      - media_uploads:/app/uploads
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
       interval: 30s
@@ -58,6 +61,8 @@ services:
 
 volumes:
   mysql_data:
+    driver: local
+  media_uploads:
     driver: local
 
 networks:

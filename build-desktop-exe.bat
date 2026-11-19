@@ -4,10 +4,26 @@ echo ===========================================================================
 echo   INTEGRATED DISASTER REPORTING AND EMERGENCY RESPONSE COORDINATION SYSTEM
 echo   Windows Desktop Application (EXE) Packaging Pipeline
 echo ===============================================================================
-cd /d "%~dp0desktop"
+cd /d "%~dp0"
 
 echo.
-echo [1/3] Verifying Electron runtime dependencies in .\desktop ...
+echo [1/4] Compiling Spring Boot Executable JAR...
+call .\mvnw.cmd package -DskipTests
+if %ERRORLEVEL% NEQ 0 (
+    echo [ERROR] Spring Boot JAR packaging failed.
+    pause
+    exit /b %ERRORLEVEL%
+)
+
+echo.
+echo [2/4] Syncing Backend Artifact to Desktop Server Directory...
+if not exist "desktop\server" mkdir "desktop\server"
+copy /Y "target\demo-0.0.1-SNAPSHOT.jar" "desktop\server\demo.jar"
+
+cd desktop
+
+echo.
+echo [3/4] Verifying Electron Runtime Dependencies in .\desktop ...
 call npm install --no-audit --prefer-offline
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Failed to install Node.js dependencies. Ensure Node and npm are installed.
@@ -16,7 +32,7 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 echo.
-echo [2/3] Building Windows Executables (NSIS Setup & Portable EXE)...
+echo [4/4] Packaging Windows Desktop Executables (NSIS Setup & Portable EXE)...
 call npm run build:win
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Electron build failed.
