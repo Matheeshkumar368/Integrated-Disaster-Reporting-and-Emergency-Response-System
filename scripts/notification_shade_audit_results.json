@@ -1,0 +1,122 @@
+[
+  {
+    "testName": "Admin Notifications: Dashboard sidebar is completely ABSENT",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "testName": "Admin Notifications: Dashboard top navbar is completely ABSENT",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "testName": "Admin Notifications: Standalone Shade Header is present",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "testName": "Admin Notifications: Title correctly displays Notification Centre",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "testName": "Admin Notifications: Dashboard button targets admin-dashboard.html",
+    "passed": true,
+    "detail": "Href: /admin-dashboard.html"
+  },
+  {
+    "testName": "Admin Notifications: All 5 filter pills present (All, Alerts, Updates, Responder Updates, Messages)",
+    "passed": true,
+    "detail": "Found: [\"ALL\",\"ALERTS\",\"UPDATES\",\"RESPONDER\",\"MESSAGES\"]"
+  },
+  {
+    "testName": "Admin Notifications: Notification cards rendered in feed",
+    "passed": true,
+    "detail": "Cards: 272"
+  },
+  {
+    "testName": "Admin Notifications: Clicking Dashboard returns strictly to Admin Dashboard",
+    "passed": true,
+    "detail": "Landed on: http://localhost:8080/admin-dashboard.html"
+  },
+  {
+    "testName": "Citizen Notifications: Dashboard sidebar is completely ABSENT",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "testName": "Citizen Notifications: Dashboard top navbar is completely ABSENT",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "testName": "Citizen Notifications: Dashboard button targets citizen-dashboard.html",
+    "passed": true,
+    "detail": "Href: /citizen-dashboard.html"
+  },
+  {
+    "testName": "Citizen Notifications: Notification cards rendered in feed",
+    "passed": true,
+    "detail": "Cards: 226"
+  },
+  {
+    "testName": "Citizen Notifications: Clicking Dashboard returns strictly to Citizen Dashboard",
+    "passed": true,
+    "detail": "Landed on: http://localhost:8080/citizen-dashboard.html"
+  },
+  {
+    "testName": "Responder Notifications: Dashboard sidebar is completely ABSENT",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "testName": "Responder Notifications: Dashboard top navbar is completely ABSENT",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "testName": "Responder Notifications: Dashboard button targets responder-dashboard.html",
+    "passed": true,
+    "detail": "Href: /responder-dashboard.html"
+  },
+  {
+    "testName": "Responder Notifications: Notification cards rendered in feed",
+    "passed": true,
+    "detail": "Cards: 38"
+  },
+  {
+    "testName": "Responder Notifications: Clicking Dashboard returns strictly to Responder Dashboard",
+    "passed": true,
+    "detail": "Landed on: http://localhost:8080/responder-dashboard.html"
+  },
+  {
+    "testName": "Responder attempting direct access to citizen-notifications is redirected to responder-notifications",
+    "passed": true,
+    "detail": "Landed on: http://localhost:8080/responder-notifications.html"
+  },
+  {
+    "testName": "Responder attempting direct access to admin-notifications is redirected to responder-notifications",
+    "passed": true,
+    "detail": "Landed on: http://localhost:8080/responder-notifications.html"
+  },
+  {
+    "testName": "Filter pill click activates category view",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "testName": "Card click opens full detail modal sheet",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "testName": "Mark All as Read button present and interactive",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "testName": "Refresh button present and interactive",
+    "passed": true,
+    "detail": ""
+  }
+]

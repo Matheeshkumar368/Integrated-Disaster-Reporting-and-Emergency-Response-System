@@ -1,8 +1,11 @@
 /**
  * ==============================================================================
- * DEDICATED NOTIFICATION SYSTEM CLIENT ENGINE
+ * STANDALONE NOTIFICATION CENTRE CLIENT ENGINE
+ * Mobile Notification Panel & Shade Experience
  * Integrated Disaster Reporting and Emergency Response Coordination System
- * Real backend-to-frontend synchronization, real-time polling, and role isolation
+ * 
+ * Supports all 3 roles (Admin, Citizen, Responder) with strict authentication
+ * and role-based dashboard navigation.
  * ==============================================================================
  */
 
@@ -11,11 +14,15 @@
 
     class NotificationCenter {
         constructor(config) {
-            this.role = config.role; // 'Citizen', 'Responder', 'Admin'
+            this.role = config.role; // 'Admin', 'Citizen', or 'Responder'
             this.defaultCategory = config.defaultCategory || 'ALL';
             this.activeCategory = this.defaultCategory;
+            this.statusFilter = 'all'; // 'all' or 'unread'
+            this.searchQuery = '';
+            
             this.notifications = [];
             this.unreadCount = 0;
+            this.totalCount = 0;
             this.pollTimer = null;
             this.clockTimer = null;
             this.pollIntervalMs = 6000; // 6 seconds
@@ -24,47 +31,63 @@
         }
 
         init() {
-            // Guard role access and prevent cross-role contamination
+            // 1. Strict Role Guarding & Authentication Verification
             if (window.AuthHelper) {
                 const token = window.AuthHelper.getToken();
                 if (!token) {
-                    window.location.href = '/index.html';
+                    console.warn('[NotificationCenter] Unauthenticated access blocked. Redirecting to login.');
+                    window.location.replace('/index-new-login.html');
                     return;
                 }
-                const actualRole = window.AuthHelper.getRole();
-                if (actualRole && actualRole !== this.role) {
-                    console.warn(`[NotificationCenter] Cross-role access blocked: ${actualRole} attempted accessing ${this.role} notifications. Redirecting to appropriate center...`);
-                    const target = window.AuthHelper.getNotificationUrl(actualRole);
-                    window.location.replace(target);
+
+                const verifiedRole = window.AuthHelper.getRole();
+                if (verifiedRole && verifiedRole !== this.role) {
+                    console.warn(`[NotificationCenter] Cross-role violation: ${verifiedRole} tried accessing ${this.role} Notification Centre. Redirecting to proper portal...`);
+                    const correctUrl = window.AuthHelper.getNotificationUrl(verifiedRole);
+                    window.location.replace(correctUrl);
                     return;
                 }
-                const authenticated = window.AuthHelper.requireAuth(this.role);
-                if (!authenticated) return;
+
+                // Verify dashboard button destination strictly routes to user's dashboard
+                this.setupDashboardButton(verifiedRole || this.role);
             }
 
+            // 2. Setup UI elements
             this.setupUserUI();
             this.startLiveClock();
             this.bindEvents();
-            this.loadNotifications();
+            this.loadNotifications(false);
             this.startPolling();
         }
 
+        setupDashboardButton(userRole) {
+            const btn = document.getElementById('btnGoDashboard');
+            if (btn) {
+                const targetUrl = window.AuthHelper ? window.AuthHelper.getDashboardUrl(userRole) : 
+                    (userRole === 'Admin' ? '/admin-dashboard.html' : 
+                     userRole === 'Responder' ? '/responder-dashboard.html' : '/citizen-dashboard.html');
+                btn.href = targetUrl;
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    window.location.href = targetUrl;
+                });
+            }
+        }
+
         setupUserUI() {
-            const userName = localStorage.getItem('userName') || (this.role + ' User');
-            const userEmail = localStorage.getItem('userEmail') || (this.role.toLowerCase() + '@disaster.gov.in');
+            const userName = (window.AuthHelper && window.AuthHelper.getName) ? window.AuthHelper.getName() : (localStorage.getItem('userName') || `${this.role} User`);
+            const userEmail = (window.AuthHelper && window.AuthHelper.getEmail) ? window.AuthHelper.getEmail() : (localStorage.getItem('userEmail') || `${this.role.toLowerCase()}@disaster.gov.in`);
             
             const nameEl = document.getElementById('userNameDisplay');
             if (nameEl) nameEl.textContent = userName;
+
+            const roleEl = document.getElementById('userRoleDisplay');
+            if (roleEl) roleEl.textContent = this.role;
 
             const avatarEl = document.getElementById('userAvatarDisplay');
             if (avatarEl) {
                 const initials = userName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
                 avatarEl.textContent = initials || this.role[0];
-            }
-
-            const roleEl = document.getElementById('userRoleDisplay');
-            if (roleEl) {
-                roleEl.innerHTML = `${this.role} <i class="fa-solid fa-chevron-down" style="font-size:10px; margin-left:4px;"></i>`;
             }
         }
 
@@ -90,19 +113,52 @@
         }
 
         bindEvents() {
-            // Filter Pills
-            const pills = document.querySelectorAll('.filter-pill');
+            // Category Filter Pills
+            const pills = document.querySelectorAll('.shade-filter-pill');
             pills.forEach(pill => {
-                pill.addEventListener('click', (e) => {
-                    const targetCategory = pill.getAttribute('data-category') || 'ALL';
-                    this.setActiveCategory(targetCategory);
+                pill.addEventListener('click', () => {
+                    const category = pill.getAttribute('data-category') || 'ALL';
+                    this.setActiveCategory(category);
                 });
             });
 
-            // Mark All As Read
-            const markAllBtn = document.getElementById('btnMarkAllRead');
-            if (markAllBtn) {
-                markAllBtn.addEventListener('click', () => this.markAllAsRead());
+            // Status Filter Toggle Buttons (All vs Unread Only)
+            const btnStatusAll = document.getElementById('btnFilterStatusAll');
+            const btnStatusUnread = document.getElementById('btnFilterStatusUnread');
+            if (btnStatusAll && btnStatusUnread) {
+                btnStatusAll.addEventListener('click', () => {
+                    this.statusFilter = 'all';
+                    btnStatusAll.classList.add('active');
+                    btnStatusUnread.classList.remove('active');
+                    this.renderNotificationList();
+                });
+                btnStatusUnread.addEventListener('click', () => {
+                    this.statusFilter = 'unread';
+                    btnStatusUnread.classList.add('active');
+                    btnStatusAll.classList.remove('active');
+                    this.renderNotificationList();
+                });
+            }
+
+            // Real-time Search Input
+            const searchInput = document.getElementById('notifSearchInput');
+            const clearSearchBtn = document.getElementById('btnClearSearch');
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    this.searchQuery = (e.target.value || '').trim().toLowerCase();
+                    if (clearSearchBtn) {
+                        clearSearchBtn.style.display = this.searchQuery ? 'block' : 'none';
+                    }
+                    this.renderNotificationList();
+                });
+            }
+            if (clearSearchBtn && searchInput) {
+                clearSearchBtn.addEventListener('click', () => {
+                    searchInput.value = '';
+                    this.searchQuery = '';
+                    clearSearchBtn.style.display = 'none';
+                    this.renderNotificationList();
+                });
             }
 
             // Refresh Button
@@ -113,7 +169,15 @@
                 });
             }
 
-            // Close Modal
+            // Mark All as Read Button
+            const markAllBtn = document.getElementById('btnMarkAllRead');
+            if (markAllBtn) {
+                markAllBtn.addEventListener('click', () => {
+                    this.markAllAsRead();
+                });
+            }
+
+            // Close Modal Events
             const closeModalBtn = document.getElementById('btnCloseModal');
             const modalBackdrop = document.getElementById('notifModalBackdrop');
             if (closeModalBtn && modalBackdrop) {
@@ -127,20 +191,25 @@
                 });
             }
 
-            // Logout
+            // Sign out
             const logoutLinks = document.querySelectorAll('.action-logout');
             logoutLinks.forEach(link => {
                 link.addEventListener('click', (e) => {
                     e.preventDefault();
-                    if (window.AuthHelper) window.AuthHelper.logout();
-                    else window.location.href = '/index.html';
+                    if (window.AuthHelper) {
+                        window.AuthHelper.logout();
+                    } else {
+                        localStorage.clear();
+                        sessionStorage.clear();
+                        window.location.replace('/index-new-login.html');
+                    }
                 });
             });
         }
 
         setActiveCategory(category) {
             this.activeCategory = category;
-            document.querySelectorAll('.filter-pill').forEach(pill => {
+            document.querySelectorAll('.shade-filter-pill').forEach(pill => {
                 if (pill.getAttribute('data-category') === category) {
                     pill.classList.add('active');
                 } else {
@@ -153,12 +222,14 @@
         async loadNotifications(showFeedback = false) {
             try {
                 const headers = window.AuthHelper ? window.AuthHelper.getHeaders() : {};
-                const res = await fetch('/api/notifications', {
-                    headers: headers
-                });
+                const res = await fetch('/api/notifications', { headers });
 
                 if (res.status === 401 || res.status === 403) {
-                    if (window.AuthHelper) window.AuthHelper.handleAuthFailure(res);
+                    if (window.AuthHelper && window.AuthHelper.handleAuthFailure) {
+                        window.AuthHelper.handleAuthFailure(res);
+                    } else {
+                        window.location.replace('/index-new-login.html');
+                    }
                     return;
                 }
 
@@ -168,24 +239,29 @@
 
                 const data = await res.json();
                 this.notifications = Array.isArray(data) ? data : [];
+                this.totalCount = this.notifications.length;
 
-                // Fetch unread count
+                // Sync Unread count
                 const countRes = await fetch('/api/notifications/unread-count', { headers });
                 if (countRes.ok) {
                     const countData = await countRes.json();
-                    this.unreadCount = countData.unreadCount !== undefined ? countData.unreadCount : (countData.unread !== undefined ? countData.unread : 0);
+                    this.unreadCount = countData.unreadCount !== undefined ? countData.unreadCount : 
+                                      (countData.unread !== undefined ? countData.unread : 0);
                 } else {
                     this.unreadCount = this.notifications.filter(n => !n.isRead).length;
                 }
 
-                this.updateBadgeCounters();
+                this.updateCounters();
                 this.renderNotificationList();
 
                 if (showFeedback && window.showToast) {
-                    window.showToast('Notifications synchronized with command server.', 'info');
+                    window.showToast('Notifications refreshed and synchronized.', 'info');
                 }
             } catch (err) {
                 console.error('[NotificationCenter] Sync error:', err);
+                if (showFeedback && window.showToast) {
+                    window.showToast('Failed to refresh notifications: ' + err.message, 'error');
+                }
             }
         }
 
@@ -196,90 +272,90 @@
             }, this.pollIntervalMs);
         }
 
+        /**
+         * Normalizes raw categories into the 4 primary filter categories:
+         * - ALERTS (Official NDMA warnings, emergency broadcasts, disasters)
+         * - RESPONDER (Responder dispatches, assignments, rescue tracking)
+         * - MESSAGES (Direct messages, communication broadcasts)
+         * - UPDATES (Citizen report verification, mission completions, system updates)
+         */
         normalizeCategory(rawCategory, item) {
             const cat = (rawCategory || '').trim().toUpperCase();
             const relType = ((item && item.relatedIncidentType) || '').toUpperCase();
             const title = ((item && item.title) || '').toLowerCase();
             const msg = ((item && item.message) || '').toLowerCase();
 
-            if (this.role === 'Admin') {
-                if (cat === 'RESPONDERS' || cat === 'RESPONDER' || title.includes('responder') || title.includes('rescue team') || title.includes('assigned to') || title.includes('acknowledged by')) {
-                    return 'RESPONDERS';
-                }
-                if (cat === 'DISASTERS' || cat === 'DISASTER' || relType === 'CITIZEN_REPORT' || relType === 'REPORT' || title.includes('disaster') || title.includes('distress') || title.includes('incident')) {
-                    return 'DISASTERS';
-                }
-                if (cat === 'USERS' || cat === 'USER' || title.includes('user') || title.includes('registered')) {
-                    return 'USERS';
-                }
-                return 'SYSTEM';
-            }
-
-            if (this.role === 'Responder') {
-                if (cat === 'ASSIGNMENTS' || cat === 'ASSIGNMENT' || cat === 'TASKS' || cat === 'TASK' || relType === 'TASK' || relType === 'RESCUE_TASK' || title.includes('assignment') || title.includes('mission') || title.includes('rescue')) {
-                    return 'ASSIGNMENTS';
-                }
-                if (cat === 'ALERTS' || cat === 'ALERT' || relType === 'ALERT' || title.includes('alert') || title.includes('warning')) {
-                    return 'ALERTS';
-                }
-                if (cat === 'MESSAGES' || cat === 'MESSAGE' || title.includes('message') || title.includes('broadcast')) {
-                    return 'MESSAGES';
-                }
-                return 'UPDATES';
-            }
-
-            // Citizen
-            if (cat === 'ALERTS' || cat === 'ALERT' || cat === 'DISASTERS' || cat === 'DISASTER' || title.includes('alert') || title.includes('warning')) {
+            // 1. Emergency Alerts & Disaster Warnings
+            if (cat === 'ALERT' || cat === 'ALERTS' || cat === 'DISASTER' || cat === 'DISASTERS' || 
+                title.includes('alert') || title.includes('warning') || title.includes('emergency') || 
+                title.includes('flood') || title.includes('fire') || title.includes('cyclone') || 
+                title.includes('earthquake') || relType === 'ALERT') {
                 return 'ALERTS';
             }
-            if (cat === 'RESPONSE' || cat === 'RESPONSES' || title.includes('rescue team') || title.includes('deployed') || title.includes('en route') || title.includes('arrived') || title.includes('resolved') || title.includes('responder')) {
-                return 'RESPONSE';
+
+            // 2. Responder Updates & Rescue Operations
+            if (cat === 'RESPONDER' || cat === 'RESPONDERS' || cat === 'ASSIGNMENT' || cat === 'ASSIGNMENTS' || 
+                cat === 'RESPONSE' || cat === 'TASK' || cat === 'TASKS' || 
+                title.includes('responder') || title.includes('rescue') || title.includes('assigned') || 
+                title.includes('en route') || title.includes('arrived') || title.includes('dispatched') || 
+                title.includes('mission') || relType === 'TASK') {
+                return 'RESPONDER';
             }
-            if (cat === 'MESSAGES' || cat === 'MESSAGE' || title.includes('message')) {
+
+            // 3. Messages & Direct Communications
+            if (cat === 'MESSAGE' || cat === 'MESSAGES' || title.includes('message') || title.includes('broadcast') || relType === 'MESSAGE') {
                 return 'MESSAGES';
             }
+
+            // 4. Everything else defaults to General Updates
             return 'UPDATES';
         }
 
-        updateBadgeCounters() {
-            // Update sidebar badge
-            const sidebarBadge = document.getElementById('sidebarUnreadBadge');
-            if (sidebarBadge) {
-                if (this.unreadCount > 0) {
-                    sidebarBadge.style.display = 'inline-block';
-                    sidebarBadge.textContent = this.unreadCount > 99 ? '99+' : this.unreadCount;
-                } else {
-                    sidebarBadge.style.display = 'none';
-                }
+        updateCounters() {
+            const unreadDisplay = document.getElementById('unreadCountDisplay');
+            if (unreadDisplay) {
+                unreadDisplay.innerHTML = `<span class="unread-highlight">${this.unreadCount} unread</span>`;
             }
 
-            // Update category pills count
-            const allCount = this.notifications.length;
-            const setPillCount = (cat, count) => {
-                const el = document.getElementById(`countPill_${cat}`);
-                if (el) el.textContent = count;
-            };
+            const totalDisplay = document.getElementById('totalCountDisplay');
+            if (totalDisplay) {
+                totalDisplay.textContent = `${this.totalCount} total`;
+            }
 
-            setPillCount('ALL', allCount);
-
-            // Group counters using normalized categories
-            const counts = {};
+            // Category Counters
+            const counts = { ALL: this.notifications.length, ALERTS: 0, UPDATES: 0, RESPONDER: 0, MESSAGES: 0 };
             this.notifications.forEach(n => {
                 const cat = this.normalizeCategory(n.category, n);
                 counts[cat] = (counts[cat] || 0) + 1;
             });
 
-            // Set each known role category
-            Object.keys(counts).forEach(k => setPillCount(k, counts[k]));
+            ['ALL', 'ALERTS', 'UPDATES', 'RESPONDER', 'MESSAGES'].forEach(k => {
+                const badge = document.getElementById(`countPill_${k}`);
+                if (badge) badge.textContent = counts[k] || 0;
+            });
         }
 
         filterNotifications() {
-            if (this.activeCategory === 'ALL') {
-                return this.notifications;
-            }
-            return this.notifications.filter(n => {
-                const cat = this.normalizeCategory(n.category, n);
-                return cat === this.activeCategory;
+            return this.notifications.filter(item => {
+                // Category Filter
+                if (this.activeCategory !== 'ALL') {
+                    const itemCat = this.normalizeCategory(item.category, item);
+                    if (itemCat !== this.activeCategory) return false;
+                }
+
+                // Status Filter
+                if (this.statusFilter === 'unread' && item.isRead) {
+                    return false;
+                }
+
+                // Search Query Filter
+                if (this.searchQuery) {
+                    const titleMatch = (item.title || '').toLowerCase().includes(this.searchQuery);
+                    const msgMatch = (item.message || '').toLowerCase().includes(this.searchQuery);
+                    if (!titleMatch && !msgMatch) return false;
+                }
+
+                return true;
             });
         }
 
@@ -292,9 +368,11 @@
             if (list.length === 0) {
                 container.innerHTML = `
                     <div class="notif-empty-state">
-                        <i class="fa-solid fa-bell-slash"></i>
-                        <h3>No Notifications in this Category</h3>
-                        <p>All emergency events, alerts and updates for ${this.role} are currently up to date.</p>
+                        <div class="notif-empty-icon">
+                            <i class="fa-solid fa-bell-slash"></i>
+                        </div>
+                        <h3>All Caught Up!</h3>
+                        <p>No notifications found matching your current filter. Real-time emergency broadcasts and updates will appear here automatically.</p>
                     </div>
                 `;
                 return;
@@ -304,28 +382,40 @@
             list.forEach(item => {
                 const isUnread = !item.isRead;
                 const visual = this.resolveVisuals(item);
-                const timeFormatted = this.formatTime(item.createdAt);
+                const timeStr = this.formatTime(item.createdAt);
+                const categoryLabel = this.resolveCategoryLabel(item);
 
                 html += `
-                    <div class="notif-card card-tint-${visual.color} ${isUnread ? 'unread' : ''}" data-id="${item.id}">
-                        <div class="notif-left" onclick="window.__notifCenter.handleCardClick(${item.id})">
-                            <div class="notif-icon-circle ${visual.color}">
-                                <i class="${visual.icon}"></i>
-                            </div>
-                            <div class="notif-content">
-                                <div class="notif-title-row">
-                                    <span class="notif-title" style="color: ${visual.titleColor};">${this.escapeHtml(item.title)}</span>
-                                </div>
-                                <div class="notif-desc">${this.escapeHtml(item.message)}</div>
-                            </div>
+                    <div class="notif-card card-tint-${visual.color} ${isUnread ? 'unread' : ''}" data-id="${item.id}" onclick="window.__notifCenter.handleCardClick(${item.id})">
+                        <div class="notif-icon-circle ${visual.color}">
+                            <i class="${visual.icon}"></i>
                         </div>
-                        <div class="notif-right">
-                            ${visual.priorityBadge}
-                            <span class="notif-time">${timeFormatted}</span>
-                            <button class="btn-card-action btn-delete" title="Delete from notifications" onclick="event.stopPropagation(); window.__notifCenter.deleteNotification(${item.id})">
-                                <i class="fa-solid fa-trash-can"></i>
-                            </button>
-                            <i class="fa-solid fa-chevron-right chevron-icon" title="Go to section" onclick="event.stopPropagation(); window.location.href=window.__notifCenter.resolveTargetUrl(window.__notifCenter.notifications.find(n=>n.id===${item.id}))"></i>
+                        
+                        <div class="notif-content-block">
+                            <div class="notif-header-line">
+                                ${isUnread ? '<span class="notif-unread-dot" title="Unread notification"></span>' : ''}
+                                <span class="notif-title">${this.escapeHtml(item.title)}</span>
+                                ${visual.priorityBadge}
+                                <span class="notif-category-chip">${categoryLabel}</span>
+                            </div>
+                            
+                            <div class="notif-desc">${this.escapeHtml(item.message)}</div>
+                            
+                            <div class="notif-footer-line">
+                                <span class="notif-time"><i class="fa-regular fa-clock"></i> ${timeStr}</span>
+                                
+                                <div class="notif-actions-group" onclick="event.stopPropagation();">
+                                    <button class="btn-card-quick btn-read-toggle" title="${isUnread ? 'Mark as Read' : 'Already Read'}" onclick="window.__notifCenter.markAsRead(${item.id})">
+                                        <i class="fa-solid ${isUnread ? 'fa-check' : 'fa-check-double'}" style="${isUnread ? '' : 'color:#38bdf8;'}"></i>
+                                    </button>
+                                    <button class="btn-card-quick btn-delete" title="Delete notification" onclick="window.__notifCenter.deleteNotification(${item.id})">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                    <button class="btn-card-quick btn-open" title="View details" onclick="window.__notifCenter.openDetailModalById(${item.id})">
+                                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -334,60 +424,51 @@
             container.innerHTML = html;
         }
 
+        resolveCategoryLabel(item) {
+            const cat = this.normalizeCategory(item.category, item);
+            switch (cat) {
+                case 'ALERTS': return 'Alert';
+                case 'RESPONDER': return 'Responder Update';
+                case 'MESSAGES': return 'Message';
+                default: return 'Update';
+            }
+        }
+
         resolveVisuals(item) {
-            const cat = (item.category || '').toUpperCase();
+            const cat = this.normalizeCategory(item.category, item);
             const prio = (item.priority || '').toUpperCase();
             const title = (item.title || '').toLowerCase();
 
             let color = 'blue';
             let icon = 'fa-solid fa-circle-info';
-            let titleColor = '#ffffff';
 
-            if (cat === 'ALERTS' || cat === 'DISASTERS' || prio === 'CRITICAL' || prio === 'HIGH' || title.includes('alert') || title.includes('flood') || title.includes('fire')) {
+            if (cat === 'ALERTS' || prio === 'CRITICAL' || prio === 'HIGH' || title.includes('alert') || title.includes('flood') || title.includes('fire')) {
                 color = 'red';
                 icon = 'fa-solid fa-triangle-exclamation';
-                titleColor = '#f87171';
-            } else if (cat === 'ASSIGNMENTS' || cat === 'TASKS' || title.includes('assignment') || title.includes('rescue')) {
-                color = 'orange';
-                icon = 'fa-solid fa-clipboard-check';
-                titleColor = '#fb923c';
-            } else if (cat === 'RESPONSE' || title.includes('deployed') || title.includes('completed') || title.includes('resolved')) {
-                color = 'green';
-                icon = 'fa-solid fa-circle-check';
-                titleColor = '#4ade80';
-            } else if (cat === 'MESSAGES' || title.includes('message')) {
-                color = 'blue';
-                icon = 'fa-solid fa-comments';
-                titleColor = '#60a5fa';
-            } else if (cat === 'RESPONDERS' || title.includes('responder')) {
+            } else if (cat === 'RESPONDER') {
                 color = 'orange';
                 icon = 'fa-solid fa-truck-medical';
-                titleColor = '#fb923c';
-            } else if (cat === 'SYSTEM' || title.includes('system') || title.includes('maintenance')) {
-                color = 'purple';
-                icon = 'fa-solid fa-gear';
-                titleColor = '#c084fc';
-            } else if (cat === 'USERS' || title.includes('user') || title.includes('registered')) {
-                color = 'green';
-                icon = 'fa-solid fa-user-plus';
-                titleColor = '#4ade80';
+            } else if (cat === 'MESSAGES') {
+                color = 'cyan';
+                icon = 'fa-solid fa-comments';
             } else {
-                color = 'blue';
-                icon = 'fa-solid fa-circle-info';
-                titleColor = '#60a5fa';
+                color = 'green';
+                icon = 'fa-solid fa-circle-check';
             }
 
             // Priority Badge
             let priorityBadge = '';
-            if (prio === 'CRITICAL' || prio === 'HIGH') {
-                priorityBadge = `<span class="priority-pill high">High Priority</span>`;
-            } else if (prio === 'WARNING' || prio === 'MEDIUM') {
-                priorityBadge = `<span class="priority-pill warning">Medium</span>`;
-            } else if (cat === 'ASSIGNMENTS' || prio === 'NEW') {
-                priorityBadge = `<span class="priority-pill new">New</span>`;
+            if (prio === 'CRITICAL') {
+                priorityBadge = `<span class="priority-pill critical"><i class="fa-solid fa-bolt"></i> Critical</span>`;
+            } else if (prio === 'HIGH') {
+                priorityBadge = `<span class="priority-pill high">High</span>`;
+            } else if (prio === 'MEDIUM' || prio === 'WARNING') {
+                priorityBadge = `<span class="priority-pill medium">Medium</span>`;
+            } else {
+                priorityBadge = `<span class="priority-pill low">Info</span>`;
             }
 
-            return { color, icon, titleColor, priorityBadge };
+            return { color, icon, priorityBadge };
         }
 
         formatTime(dateStr) {
@@ -395,14 +476,18 @@
             try {
                 const date = new Date(dateStr);
                 if (isNaN(date.getTime())) return 'Recently';
-                
-                let hours = date.getHours();
-                const minutes = String(date.getMinutes()).padStart(2, '0');
-                const ampm = hours >= 12 ? 'PM' : 'AM';
-                hours = hours % 12;
-                hours = hours ? hours : 12;
-                const hoursStr = String(hours).padStart(2, '0');
-                return `${hoursStr}:${minutes} ${ampm}`;
+
+                // Format Indian DateTime: DD MMM YYYY, HH:MM AM/PM
+                const options = { 
+                    timeZone: 'Asia/Kolkata', 
+                    day: 'numeric', 
+                    month: 'short', 
+                    year: 'numeric',
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    hour12: true 
+                };
+                return date.toLocaleString('en-IN', options);
             } catch (e) {
                 return 'Recently';
             }
@@ -410,199 +495,37 @@
 
         resolveTargetUrl(item) {
             if (!item) {
-                return this.role === 'Admin' ? '/admin-dashboard.html' :
-                       this.role === 'Responder' ? '/responder-dashboard.html' :
-                       '/citizen-dashboard.html';
+                return window.AuthHelper ? window.AuthHelper.getDashboardUrl(this.role) : '/index-new-login.html';
             }
 
-            // If actionUrl already contains specific query parameters or hash, use it
             if (item.actionUrl && (item.actionUrl.includes('?') || item.actionUrl.includes('#'))) {
                 return item.actionUrl;
             }
 
-            if (this.role === 'Citizen') {
-                const cat = (item.category || '').toUpperCase();
-                const relType = (item.relatedIncidentType || '').toUpperCase();
-                const title = (item.title || '').toLowerCase();
-                const msg = (item.message || '').toLowerCase();
-
-                // Incident/Disaster Report status updates & deployments -> My Reports
-                if (
-                    relType === 'CITIZEN_REPORT' ||
-                    relType === 'REPORT' ||
-                    relType === 'TASK' ||
-                    cat === 'RESPONSE' ||
-                    cat === 'UPDATES' ||
-                    title.includes('report') ||
-                    title.includes('incident') ||
-                    title.includes('rescue team') ||
-                    title.includes('mission') ||
-                    title.includes('deployed') ||
-                    title.includes('acknowledged') ||
-                    title.includes('resolved')
-                ) {
-                    if (item.relatedIncidentId) {
-                        return `/citizen-dashboard.html?my-reports&reportId=${item.relatedIncidentId}`;
-                    }
-                    return '/citizen-dashboard.html?my-reports';
-                }
-
-                // Official alerts & disaster warnings -> Alerts tab
-                if (
-                    relType === 'ALERT' ||
-                    cat === 'ALERTS' ||
-                    cat === 'ALERT' ||
-                    cat === 'DISASTERS' ||
-                    title.includes('alert') ||
-                    title.includes('warning') ||
-                    title.includes('cyclone') ||
-                    title.includes('flood')
-                ) {
-                    return '/citizen-dashboard.html?alerts';
-                }
-
-                // Prompt to file report
-                if (title.includes('submit report') || msg.includes('file a report')) {
-                    return '/citizen-dashboard.html?report';
-                }
-
-                return '/citizen-dashboard.html';
-            }
-
             if (this.role === 'Admin') {
-                const cat = (item.category || '').toUpperCase();
-                const relType = (item.relatedIncidentType || '').toUpperCase();
-                const title = (item.title || '').toLowerCase();
-
-                // Citizen distress reports and disaster verification
-                if (
-                    relType === 'CITIZEN_REPORT' ||
-                    relType === 'REPORT' ||
-                    cat === 'DISASTERS' ||
-                    cat === 'DISASTER' ||
-                    title.includes('disaster') ||
-                    title.includes('distress') ||
-                    title.includes('pending')
-                ) {
-                    if (item.relatedIncidentId) {
-                        return `/admin-dashboard.html?disasters&reportId=${item.relatedIncidentId}`;
-                    }
-                    return '/admin-dashboard.html?disasters';
-                }
-
-                // Rescue tasks and missions
-                if (
-                    relType === 'TASK' ||
-                    relType === 'RESCUE_TASK' ||
-                    cat === 'TASKS' ||
-                    cat === 'TASK' ||
-                    title.includes('task') ||
-                    title.includes('mission') ||
-                    title.includes('assignment')
-                ) {
-                    if (item.relatedIncidentId) {
-                        return `/admin-dashboard.html?tasks&taskId=${item.relatedIncidentId}`;
-                    }
-                    return '/admin-dashboard.html?tasks';
-                }
-
-                // Broadcast alerts
-                if (
-                    relType === 'ALERT' ||
-                    relType === 'ALERT_BROADCAST' ||
-                    cat === 'ALERTS' ||
-                    cat === 'ALERT' ||
-                    title.includes('alert') ||
-                    title.includes('broadcast') ||
-                    title.includes('warning')
-                ) {
-                    if (item.relatedIncidentId) {
-                        return `/admin-dashboard.html?alerts&alertId=${item.relatedIncidentId}`;
-                    }
-                    return '/admin-dashboard.html?alerts';
-                }
-
-                // User management
-                if (cat === 'USERS' || cat === 'USER' || title.includes('user') || title.includes('registered')) {
-                    return '/admin-users.html';
-                }
-
                 return '/admin-dashboard.html';
             }
-
             if (this.role === 'Responder') {
-                const cat = (item.category || '').toUpperCase();
-                const relType = (item.relatedIncidentType || '').toUpperCase();
-                const title = (item.title || '').toLowerCase();
-
-                // Rescue task assignments
-                if (
-                    cat === 'ASSIGNMENTS' ||
-                    cat === 'ASSIGNMENT' ||
-                    cat === 'TASKS' ||
-                    cat === 'TASK' ||
-                    relType === 'TASK' ||
-                    relType === 'RESCUE_TASK' ||
-                    title.includes('assignment') ||
-                    title.includes('rescue') ||
-                    title.includes('mission') ||
-                    title.includes('task')
-                ) {
-                    if (item.relatedIncidentId) {
-                        return `/responder-dashboard.html?tasks&taskId=${item.relatedIncidentId}`;
-                    }
-                    return '/responder-dashboard.html?tasks';
-                }
-
-                // Citizen distress / SOS
-                if (
-                    relType === 'CITIZEN_REPORT' ||
-                    relType === 'REPORT' ||
-                    title.includes('distress') ||
-                    title.includes('sos')
-                ) {
-                    if (item.relatedIncidentId) {
-                        return `/responder-dashboard.html?distress&reportId=${item.relatedIncidentId}`;
-                    }
-                    return '/responder-dashboard.html?distress';
-                }
-
-                // Official alerts & warnings
-                if (
-                    cat === 'ALERTS' ||
-                    cat === 'ALERT' ||
-                    relType === 'ALERT' ||
-                    title.includes('alert') ||
-                    title.includes('warning')
-                ) {
-                    if (item.relatedIncidentId) {
-                        return `/responder-dashboard.html?warnings&alertId=${item.relatedIncidentId}`;
-                    }
-                    return '/responder-dashboard.html?warnings';
-                }
-
-                if (title.includes('tracking') || title.includes('gps')) {
-                    return '/responder-dashboard.html?tracking';
-                }
-
                 return '/responder-dashboard.html';
             }
-
-            return item.actionUrl || (this.role === 'Admin' ? '/admin-dashboard.html' : '/responder-dashboard.html');
+            return '/citizen-dashboard.html';
         }
 
         async handleCardClick(id) {
             const item = this.notifications.find(n => n.id === id);
             if (!item) return;
 
-            // Mark as read immediately on backend
             if (!item.isRead) {
                 item.isRead = true;
                 this.markAsRead(id);
             }
 
-            // Open detail modal with details and direct action button
             this.openDetailModal(item);
+        }
+
+        openDetailModalById(id) {
+            const item = this.notifications.find(n => n.id === id);
+            if (item) this.openDetailModal(item);
         }
 
         openDetailModal(item) {
@@ -614,54 +537,35 @@
             if (!modalBackdrop || !titleEl || !bodyEl) return;
 
             titleEl.textContent = item.title;
+            const categoryLabel = this.resolveCategoryLabel(item);
+            const timeFormatted = this.formatTime(item.createdAt);
+
             bodyEl.innerHTML = `
-                <div style="margin-bottom:12px; font-size:12px; color:#94a3b8;">
-                    <strong>Category:</strong> ${this.escapeHtml(item.category || 'General')} &nbsp;|&nbsp; 
-                    <strong>Priority:</strong> ${this.escapeHtml(item.priority || 'Normal')} &nbsp;|&nbsp; 
-                    <strong>Received:</strong> ${this.formatTime(item.createdAt)}
+                <div class="modal-metadata-grid">
+                    <div class="meta-chip">
+                        <span class="meta-chip-label">Category</span>
+                        <span class="meta-chip-value">${categoryLabel}</span>
+                    </div>
+                    <div class="meta-chip">
+                        <span class="meta-chip-label">Priority</span>
+                        <span class="meta-chip-value">${this.escapeHtml(item.priority || 'Normal')}</span>
+                    </div>
+                    <div class="meta-chip">
+                        <span class="meta-chip-label">Recipient</span>
+                        <span class="meta-chip-value">${this.escapeHtml(item.recipientEmail || this.role)}</span>
+                    </div>
+                    <div class="meta-chip">
+                        <span class="meta-chip-label">Timestamp</span>
+                        <span class="meta-chip-value">${timeFormatted}</span>
+                    </div>
                 </div>
-                <p style="font-size:15px; color:#e2e8f0; line-height:1.6;">${this.escapeHtml(item.message)}</p>
+                <div class="modal-message-text">
+                    ${this.escapeHtml(item.message)}
+                </div>
             `;
 
             if (actionBtn) {
                 const targetUrl = this.resolveTargetUrl(item);
-                let btnLabel = 'Go to Dashboard';
-                if (this.role === 'Citizen') {
-                    if (targetUrl.includes('my-reports')) {
-                        btnLabel = '<i class="fa-solid fa-list-check"></i> Track in My Reports';
-                    } else if (targetUrl.includes('alerts')) {
-                        btnLabel = '<i class="fa-solid fa-triangle-exclamation"></i> View Live Warnings';
-                    } else if (targetUrl.includes('report')) {
-                        btnLabel = '<i class="fa-solid fa-pen-to-square"></i> Open Incident Form';
-                    } else {
-                        btnLabel = '<i class="fa-solid fa-gauge-high"></i> Citizen Safety Hub';
-                    }
-                } else if (this.role === 'Responder') {
-                    if (targetUrl.includes('tasks')) {
-                        btnLabel = '<i class="fa-solid fa-list-check"></i> Open Assigned Mission';
-                    } else if (targetUrl.includes('distress')) {
-                        btnLabel = '<i class="fa-solid fa-hand-holding-hand"></i> View Distress Call';
-                    } else if (targetUrl.includes('warnings')) {
-                        btnLabel = '<i class="fa-solid fa-tower-broadcast"></i> View Official Warning';
-                    } else if (targetUrl.includes('tracking')) {
-                        btnLabel = '<i class="fa-solid fa-location-crosshairs"></i> Open Live Tracking';
-                    } else {
-                        btnLabel = '<i class="fa-solid fa-gauge-high"></i> Open Operations Hub';
-                    }
-                } else if (this.role === 'Admin') {
-                    if (targetUrl.includes('disasters')) {
-                        btnLabel = '<i class="fa-solid fa-triangle-exclamation"></i> Open Disaster Management';
-                    } else if (targetUrl.includes('tasks')) {
-                        btnLabel = '<i class="fa-solid fa-truck-medical"></i> View Field Mission';
-                    } else if (targetUrl.includes('alerts')) {
-                        btnLabel = '<i class="fa-solid fa-tower-broadcast"></i> View Emergency Broadcast';
-                    } else if (targetUrl.includes('admin-users')) {
-                        btnLabel = '<i class="fa-solid fa-users"></i> Manage Users';
-                    } else {
-                        btnLabel = '<i class="fa-solid fa-gauge-high"></i> Open Command Center';
-                    }
-                }
-                actionBtn.innerHTML = btnLabel;
                 actionBtn.onclick = () => {
                     modalBackdrop.classList.remove('open');
                     window.location.href = targetUrl;
@@ -678,7 +582,11 @@
                     method: 'PUT',
                     headers: headers
                 });
-                this.loadNotifications(false);
+                const notif = this.notifications.find(n => n.id === id);
+                if (notif) notif.isRead = true;
+                this.unreadCount = Math.max(0, this.unreadCount - 1);
+                this.updateCounters();
+                this.renderNotificationList();
             } catch (err) {
                 console.error('[NotificationCenter] Mark read failed:', err);
             }
@@ -694,7 +602,10 @@
 
                 if (res.ok) {
                     if (window.showToast) window.showToast('All notifications marked as read.', 'success');
-                    this.loadNotifications(false);
+                    this.notifications.forEach(n => n.isRead = true);
+                    this.unreadCount = 0;
+                    this.updateCounters();
+                    this.renderNotificationList();
                 }
             } catch (err) {
                 console.error('[NotificationCenter] Mark all read failed:', err);
@@ -710,15 +621,18 @@
                 });
 
                 if (res.ok) {
-                    if (window.showToast) window.showToast('Notification removed from your feed.', 'info');
+                    if (window.showToast) window.showToast('Notification deleted from your feed.', 'info');
+                    const wasUnread = this.notifications.some(n => n.id === id && !n.isRead);
                     this.notifications = this.notifications.filter(n => n.id !== id);
-                    this.updateBadgeCounters();
+                    if (wasUnread) this.unreadCount = Math.max(0, this.unreadCount - 1);
+                    this.totalCount = this.notifications.length;
+                    this.updateCounters();
                     this.renderNotificationList();
                 } else {
-                    throw new Error('Failed to delete notification');
+                    throw new Error('Deletion failed on server');
                 }
             } catch (err) {
-                console.error('[NotificationCenter] Delete notification failed:', err);
+                console.error('[NotificationCenter] Delete failed:', err);
                 if (window.showToast) window.showToast('Could not delete notification.', 'error');
             }
         }

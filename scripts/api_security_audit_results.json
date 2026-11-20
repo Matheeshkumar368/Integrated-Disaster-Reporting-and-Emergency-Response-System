@@ -77,7 +77,7 @@
   {
     "name": "Citizen A can retrieve their own report",
     "status": "PASS",
-    "details": "ID: 130"
+    "details": "ID: 134"
   },
   {
     "name": "Citizen B is FORBIDDEN from viewing Citizen A's report",
@@ -102,7 +102,7 @@
   {
     "name": "Citizen A receives notification of responder dispatch",
     "status": "PASS",
-    "details": "Total notifications: 206"
+    "details": "Total notifications: 228"
   },
   {
     "name": "Citizen B cannot mark Citizen A's notification as read (HTTP 403 Forbidden)",
