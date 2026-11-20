@@ -24,8 +24,20 @@
         }
 
         init() {
-            // Guard role access
+            // Guard role access and prevent cross-role contamination
             if (window.AuthHelper) {
+                const token = window.AuthHelper.getToken();
+                if (!token) {
+                    window.location.href = '/index.html';
+                    return;
+                }
+                const actualRole = window.AuthHelper.getRole();
+                if (actualRole && actualRole !== this.role) {
+                    console.warn(`[NotificationCenter] Cross-role access blocked: ${actualRole} attempted accessing ${this.role} notifications. Redirecting to appropriate center...`);
+                    const target = window.AuthHelper.getNotificationUrl(actualRole);
+                    window.location.replace(target);
+                    return;
+                }
                 const authenticated = window.AuthHelper.requireAuth(this.role);
                 if (!authenticated) return;
             }

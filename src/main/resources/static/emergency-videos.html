@@ -493,6 +493,11 @@
                 --:--:--
             </div>
 
+            <!-- Role Notifications Button -->
+            <button id="btnReturnNotifications" class="cc-btn cc-btn-secondary" onclick="returnToNotifications()" style="padding:0.45rem 0.85rem; font-size:0.82rem;">
+                <i class="fas fa-bell"></i> Notifications
+            </button>
+
             <!-- Role Dashboard Return Button -->
             <button id="btnReturnDashboard" class="cc-btn cc-btn-secondary" onclick="returnToDashboard()" style="padding:0.45rem 0.85rem; font-size:0.82rem;">
                 <i class="fas fa-house-chimney"></i> Return to Safety Hub
@@ -694,8 +699,8 @@
         let currentCategory = 'ALL';
         let currentLanguage = 'ALL';
         let currentSearch = '';
-        const userRole = localStorage.getItem('userRole') || '';
-        const token = localStorage.getItem('token') || '';
+        const userRole = (window.AuthHelper ? window.AuthHelper.getRole() : localStorage.getItem('userRole')) || '';
+        const token = (window.AuthHelper ? window.AuthHelper.getToken() : localStorage.getItem('token')) || '';
 
         document.addEventListener('DOMContentLoaded', () => {
             if (window.CommandCenter && CommandCenter.initHudClock) {
@@ -743,10 +748,18 @@
             }
         }
 
+        function returnToNotifications() {
+            const role = (window.AuthHelper ? window.AuthHelper.getRole() : localStorage.getItem('userRole')) || '';
+            if (role === 'Admin') window.location.href = '/admin-notifications.html';
+            else if (role === 'Responder') window.location.href = '/responder-notifications.html';
+            else window.location.href = '/citizen-notifications.html';
+        }
+
         function returnToDashboard() {
-            if (userRole === 'Admin') window.location.href = '/admin-dashboard.html';
-            else if (userRole === 'Responder') window.location.href = '/responder-dashboard.html';
-            else if (userRole === 'Citizen') window.location.href = '/citizen-dashboard.html';
+            const role = (window.AuthHelper ? window.AuthHelper.getRole() : localStorage.getItem('userRole')) || '';
+            if (role === 'Admin') window.location.href = '/admin-dashboard.html';
+            else if (role === 'Responder') window.location.href = '/responder-dashboard.html';
+            else if (role === 'Citizen') window.location.href = '/citizen-dashboard.html';
             else window.location.href = '/index.html';
         }
 

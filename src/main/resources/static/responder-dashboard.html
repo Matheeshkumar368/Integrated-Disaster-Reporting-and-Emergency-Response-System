@@ -550,10 +550,13 @@
 
         // Authentication & Role Check
         (async function() {
-            const token = localStorage.getItem('token');
-            const userRole = localStorage.getItem('userRole');
+            if (window.AuthHelper && window.AuthHelper.initUrlAuth) {
+                window.AuthHelper.initUrlAuth();
+            }
+            const token = window.AuthHelper ? window.AuthHelper.getToken() : localStorage.getItem('token');
+            const userRole = window.AuthHelper ? window.AuthHelper.getRole() : localStorage.getItem('userRole');
 
-            RoleLoadingScreen.hide();
+            if (window.RoleLoadingScreen) RoleLoadingScreen.hide();
 
             if (!token) {
                 window.location.href = '/index.html';
@@ -568,9 +571,12 @@
                 });
 
                 if (!response.ok) {
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('userRole');
-                    window.location.href = '/index.html';
+                    if (window.AuthHelper) window.AuthHelper.logout();
+                    else {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('userRole');
+                        window.location.href = '/index.html';
+                    }
                     return;
                 }
 
@@ -587,8 +593,8 @@
                     window.showToast('Access Denied: Only Responders can access Field Operations', 'error');
                 }
                 setTimeout(() => {
-                    window.location.href = '/citizen-notifications.html';
-                }, 1000);
+                    window.location.href = '/citizen-dashboard.html';
+                }, 800);
                 return;
             }
 

@@ -92,11 +92,29 @@ public class AlertService {
                 notificationService.notifyAllCitizens(
                     "Severe Disaster Alert: " + alert.getRegion(),
                     alert.getMessage(),
-                    "ALERT",
+                    "ALERTS",
                     alert.getSeverity() != null ? alert.getSeverity() : "High",
                     savedAlert.getAlertId(),
                     "ALERT",
                     "citizen-notifications.html"
+                );
+                notificationService.notifyAllResponders(
+                    "Emergency Alert Broadcast: " + alert.getRegion(),
+                    alert.getMessage(),
+                    "ALERTS",
+                    alert.getSeverity() != null ? alert.getSeverity() : "High",
+                    savedAlert.getAlertId(),
+                    "ALERT",
+                    "responder-notifications.html"
+                );
+                notificationService.notifyAdmins(
+                    "Emergency Alert Broadcasted: " + alert.getTitle(),
+                    "Disaster alert created for region " + alert.getRegion() + ": " + alert.getMessage(),
+                    "ALERTS",
+                    alert.getSeverity() != null ? alert.getSeverity() : "High",
+                    savedAlert.getAlertId(),
+                    "ALERT",
+                    "admin-notifications.html"
                 );
             } catch (Exception e) {
                 log.warn("Notification dispatch warning on createAlert: {}", e.getMessage());
@@ -170,6 +188,50 @@ public class AlertService {
         if (alert != null) {
             alert.setStatus("Resolved");
             return alertRepository.save(alert);
+        }
+        return null;
+    }
+
+    @Transactional
+    public Alert broadcastAlert(Long alertId) {
+        Alert alert = alertRepository.findById(alertId).orElse(null);
+        if (alert != null) {
+            alert.setBroadcasted(true);
+            Alert saved = alertRepository.save(alert);
+            if (notificationService != null) {
+                try {
+                    notificationService.notifyAllCitizens(
+                        "Broadcasted Alert: " + saved.getRegion(),
+                        saved.getMessage(),
+                        "ALERTS",
+                        saved.getSeverity() != null ? saved.getSeverity() : "High",
+                        saved.getAlertId(),
+                        "ALERT",
+                        "citizen-notifications.html"
+                    );
+                    notificationService.notifyAllResponders(
+                        "Emergency Alert Broadcast: " + saved.getRegion(),
+                        saved.getMessage(),
+                        "ALERTS",
+                        saved.getSeverity() != null ? saved.getSeverity() : "High",
+                        saved.getAlertId(),
+                        "ALERT",
+                        "responder-notifications.html"
+                    );
+                    notificationService.notifyAdmins(
+                        "Emergency Broadcast: " + saved.getTitle(),
+                        "Broadcast transmitted for " + saved.getRegion() + ": " + saved.getMessage(),
+                        "ALERTS",
+                        saved.getSeverity() != null ? saved.getSeverity() : "High",
+                        saved.getAlertId(),
+                        "ALERT",
+                        "admin-notifications.html"
+                    );
+                } catch (Exception e) {
+                    log.warn("Notification dispatch warning on broadcastAlert: {}", e.getMessage());
+                }
+            }
+            return saved;
         }
         return null;
     }

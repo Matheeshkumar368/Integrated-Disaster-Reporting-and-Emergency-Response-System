@@ -258,7 +258,7 @@
 <div class="alerts-grid" id="alertsGrid"></div>
 
 <nav class="bottom-nav">
-    <a href="/citizen-dashboard.html" id="dashboardLink">
+    <a href="javascript:void(0)" onclick="goToDashboard()" id="dashboardLink">
         <i class="fas fa-tachometer-alt"></i>
         <span>Dashboard</span>
     </a>
@@ -274,12 +274,13 @@
         <i class="fas fa-graduation-cap"></i>
         <span>Training</span>
     </a>
-    <a href="/profile.html">
+    <a href="javascript:void(0)" onclick="window.location.href=(window.AuthHelper?window.AuthHelper.getProfileUrl():'/profile.html')">
         <i class="fas fa-user"></i>
         <span>Profile</span>
     </a>
 </nav>
 
+<script src="auth-helper.js?v=2"></script>
 <script src="/js/emergency-alert.js?v=4.1"></script>
 <script>
     const token = localStorage.getItem('token');
@@ -304,6 +305,10 @@
 
     // Role-based dashboard redirect
     function goToDashboard() {
+        if (window.AuthHelper) {
+            window.location.href = window.AuthHelper.getDashboardUrl();
+            return;
+        }
         const token = localStorage.getItem('token');
         const storedRole = localStorage.getItem('userRole');
         if (!token) {
@@ -312,25 +317,12 @@
         }
         try {
             const payload = JSON.parse(atob(token.split('.')[1]));
-            const role = storedRole || payload.role || 'Citizen';
-            if (role === 'Admin') {
-                window.location.href = '/admin-dashboard.html';
-            } else if (role === 'Responder') {
-                window.location.href = '/responder-dashboard.html';
-            } else {
-                window.location.href = '/citizen-dashboard.html';
-            }
+            const role = payload.role || storedRole || 'Citizen';
+            if (role === 'Admin') window.location.href = '/admin-dashboard.html';
+            else if (role === 'Responder') window.location.href = '/responder-dashboard.html';
+            else window.location.href = '/citizen-dashboard.html';
         } catch (e) {
-            // Try stored role
-            if (storedRole === 'Admin') {
-                window.location.href = '/admin-dashboard.html';
-            } else if (storedRole === 'Responder') {
-                window.location.href = '/responder-dashboard.html';
-            } else {
-                localStorage.removeItem('token');
-                localStorage.removeItem('userRole');
-                window.location.href = '/index.html';
-            }
+            window.location.href = '/index.html';
         }
     }
 

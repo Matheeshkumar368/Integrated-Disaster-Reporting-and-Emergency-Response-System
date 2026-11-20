@@ -107,14 +107,12 @@ public class AlertController {
         return ResponseEntity.ok(alertService.getBroadcastedAlerts());
     }
 
-    // Admin broadcasts an existing alert to all citizens
+    // Admin broadcasts an existing alert to all citizens and responders
     @PutMapping("/{alertId}/broadcast")
     public ResponseEntity<?> broadcastAlert(@PathVariable Long alertId) {
         try {
-            Alert alert = alertService.getAlertById(alertId);
+            Alert alert = alertService.broadcastAlert(alertId);
             if (alert != null) {
-                alert.setBroadcasted(true);
-                alert = alertService.updateAlert(alert);
                 return ResponseEntity.ok(alert);
             }
             return ResponseEntity.status(HttpStatus.NOT_FOUND)

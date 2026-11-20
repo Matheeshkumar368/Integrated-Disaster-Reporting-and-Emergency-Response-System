@@ -342,6 +342,7 @@
             <li><a href="/admin-alerts.html" class="cc-nav-link"><i class="fas fa-bullhorn"></i> Emergency Broadcasts</a></li>
             <li><a href="/admin-tasks.html" class="cc-nav-link"><i class="fas fa-truck-medical"></i> Responder Tasks</a></li>
             <li><a href="/reports.html" class="cc-nav-link"><i class="fas fa-chart-line"></i> Incident Telemetry</a></li>
+            <li><a href="/admin-users.html" class="cc-nav-link"><i class="fas fa-users-gear"></i> Manage Users</a></li>
             <li><a href="/emergency-videos.html" class="cc-nav-link"><i class="fas fa-film"></i> Survival Videos</a></li>
             <li><a href="/admin-profile.html" class="cc-nav-link"><i class="fas fa-shield-halved"></i> Security & 2FA PIN</a></li>
         </ul>
@@ -970,10 +971,13 @@
 
         // Async Auth Check
         (async function() {
-            const token = localStorage.getItem('token');
-            const userRole = localStorage.getItem('userRole');
+            if (window.AuthHelper && window.AuthHelper.initUrlAuth) {
+                window.AuthHelper.initUrlAuth();
+            }
+            const token = window.AuthHelper ? window.AuthHelper.getToken() : localStorage.getItem('token');
+            const userRole = window.AuthHelper ? window.AuthHelper.getRole() : localStorage.getItem('userRole');
 
-            RoleLoadingScreen.hide();
+            if (window.RoleLoadingScreen) RoleLoadingScreen.hide();
 
             if (!token) {
                 window.location.href = '/index.html';
@@ -988,9 +992,12 @@
                 });
 
                 if (!response.ok) {
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('userRole');
-                    window.location.href = '/index.html';
+                    if (window.AuthHelper) window.AuthHelper.logout();
+                    else {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('userRole');
+                        window.location.href = '/index.html';
+                    }
                     return;
                 }
             } catch (e) {
@@ -1003,11 +1010,11 @@
                 }
                 setTimeout(() => {
                     if (userRole === 'Responder') {
-                        window.location.href = '/responder-notifications.html';
+                        window.location.href = '/responder-dashboard.html';
                     } else {
-                        window.location.href = '/citizen-notifications.html';
+                        window.location.href = '/citizen-dashboard.html';
                     }
-                }, 1000);
+                }, 800);
                 return;
             }
 

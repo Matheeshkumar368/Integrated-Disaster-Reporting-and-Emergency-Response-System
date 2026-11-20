@@ -14,7 +14,7 @@
         initialized: false,
 
         /**
-         * Initialize auth state from localStorage
+         * Initialize auth state from localStorage and verified JWT payload
          * @returns {Promise<{token: string|null, role: string|null}>}
          */
         async init() {
@@ -23,7 +23,18 @@
             }
 
             this.token = localStorage.getItem('token');
-            this.role = localStorage.getItem('userRole');
+            if (this.token && this.token.includes('.')) {
+                try {
+                    const payload = JSON.parse(atob(this.token.split('.')[1]));
+                    if (payload && payload.role) {
+                        this.role = payload.role;
+                        try { localStorage.setItem('userRole', payload.role); } catch(e) {}
+                    }
+                } catch(e) {}
+            }
+            if (!this.role) {
+                this.role = localStorage.getItem('userRole');
+            }
             this.initialized = true;
             this.isReady = true;
 
@@ -126,7 +137,7 @@
                 }
                 setTimeout(() => {
                     this.redirectToDashboard();
-                }, 1200);
+                }, 800);
                 return false;
             }
 
@@ -153,6 +164,9 @@
         logout() {
             localStorage.removeItem('token');
             localStorage.removeItem('userRole');
+            localStorage.removeItem('userName');
+            localStorage.removeItem('userEmail');
+            sessionStorage.removeItem('adminStepUpToken');
             this.token = null;
             this.role = null;
             this.initialized = false;

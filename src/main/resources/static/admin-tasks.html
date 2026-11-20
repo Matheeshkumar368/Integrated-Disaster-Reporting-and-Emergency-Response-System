@@ -302,10 +302,13 @@
          ========================================================================= -->
     <nav class="cc-nav-bar">
         <ul class="cc-nav-links">
+            <li><a href="/admin-notifications.html" class="cc-nav-link" style="color:var(--cc-cyan);"><i class="fas fa-bell"></i> Notification Center</a></li>
             <li><a href="/admin-dashboard.html" class="cc-nav-link"><i class="fas fa-map-location-dot"></i> Mission Control</a></li>
             <li><a href="/admin-alerts.html" class="cc-nav-link"><i class="fas fa-bullhorn"></i> Emergency Broadcasts</a></li>
             <li><a href="/admin-tasks.html" class="cc-nav-link active"><i class="fas fa-truck-medical"></i> Responder Tasks</a></li>
             <li><a href="/reports.html" class="cc-nav-link"><i class="fas fa-chart-line"></i> Incident Telemetry</a></li>
+            <li><a href="/admin-users.html" class="cc-nav-link"><i class="fas fa-users-gear"></i> Manage Users</a></li>
+            <li><a href="/emergency-videos.html" class="cc-nav-link"><i class="fas fa-film"></i> Survival Videos</a></li>
             <li><a href="/admin-profile.html" class="cc-nav-link"><i class="fas fa-shield-halved"></i> Security & 2FA PIN</a></li>
         </ul>
         <div class="cc-nav-user-actions">
@@ -553,8 +556,8 @@
         });
 
         function checkAuth() {
-            var token = localStorage.getItem('token');
-            var storedRole = localStorage.getItem('userRole');
+            var token = window.AuthHelper ? window.AuthHelper.getToken() : localStorage.getItem('token');
+            var role = window.AuthHelper ? window.AuthHelper.getRole() : localStorage.getItem('userRole');
             
             if (!token) {
                 console.log('No token found, redirecting to login');
@@ -563,18 +566,15 @@
             }
             
             try {
-                var payload = JSON.parse(atob(token.split('.')[1]));
-                var role = storedRole || payload.role;
-                
-                console.log('User role:', role);
-                
                 if (role !== 'Admin') {
                     if (window.showToast) {
                         window.showToast('Access denied. Admin only.', 'error');
                     }
                     setTimeout(() => {
-                        window.location.href = '/index.html';
-                    }, 1000);
+                        if (role === 'Responder') window.location.href = '/responder-dashboard.html';
+                        else if (role === 'Citizen') window.location.href = '/citizen-dashboard.html';
+                        else window.location.href = '/index.html';
+                    }, 800);
                     return;
                 }
 

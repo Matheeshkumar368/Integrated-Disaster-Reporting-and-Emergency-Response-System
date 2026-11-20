@@ -102,6 +102,22 @@ public class NotificationService {
     }
 
     @Transactional
+    public List<Notification> notifyAllResponders(String title, String message, String category, String priority, Long relatedId, String relatedType, String actionUrl) {
+        List<User> responders = userRepository.findByRole("Responder");
+        List<Notification> created = new ArrayList<>();
+
+        if (responders != null) {
+            for (User responder : responders) {
+                if (responder.getEmail() != null) {
+                    Notification n = createNotification(responder.getEmail(), "Responder", title, message, category, priority, relatedId, relatedType, actionUrl);
+                    if (n != null) created.add(n);
+                }
+            }
+        }
+        return created;
+    }
+
+    @Transactional
     public void ensureBaselineNotifications(String email) {
         if (email == null || email.isBlank()) return;
         String cleanEmail = email.toLowerCase().trim();

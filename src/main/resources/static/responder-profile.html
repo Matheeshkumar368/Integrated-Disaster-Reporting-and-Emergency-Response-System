@@ -276,9 +276,11 @@
          ========================================================================= -->
     <nav class="cc-nav-bar">
         <ul class="cc-nav-links">
+            <li><a href="/responder-notifications.html" class="cc-nav-link" style="color:#fb923c;"><i class="fas fa-bell"></i> Notification Center</a></li>
             <li><a href="/responder-dashboard.html" class="cc-nav-link"><i class="fas fa-list-check"></i> Tactical Incident Queue</a></li>
-            <li><a href="/responder-rescue.html" class="cc-nav-link"><i class="fas fa-map-location"></i> Live Rescue Operations</a></li>
+            <li><a href="/responder-rescue.html" class="cc-nav-link"><i class="fas fa-person-falling-burst"></i> Live Rescue Operations</a></li>
             <li><a href="/responder-tasks.html" class="cc-nav-link"><i class="fas fa-clipboard-check"></i> Assigned Field Tasks</a></li>
+            <li><a href="/emergency-videos.html" class="cc-nav-link"><i class="fas fa-film"></i> Survival Videos</a></li>
             <li><a href="/responder-profile.html" class="cc-nav-link active"><i class="fas fa-user-gear"></i> Unit Profile & Zone</a></li>
         </ul>
         <div class="cc-nav-user-actions">
@@ -435,7 +437,7 @@
     </main>
 
 <script>
-    const token = localStorage.getItem('token');
+    const token = window.AuthHelper ? window.AuthHelper.getToken() : localStorage.getItem('token');
     let currentUser = null;
 
     if (!token) {
@@ -445,20 +447,19 @@
     // Verify Responder role
     function checkResponderRole() {
         try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            const role = payload.role;
-            if (role !== 'Responder') {
-                // Redirect to appropriate dashboard
-                if (role === 'Admin') {
-                    window.location.href = '/admin-profile.html';
+            const role = window.AuthHelper ? window.AuthHelper.getRole() : null;
+            if (role !== 'Responder' && role !== 'Admin') {
+                if (role === 'Citizen') {
+                    window.location.replace('/profile.html');
                 } else {
-                    window.location.href = '/profile.html';
+                    window.location.replace('/index.html');
                 }
             }
         } catch (e) {
             window.location.href = '/index.html';
         }
     }
+    checkResponderRole();
 
     // Load responder profile
     function loadProfile() {

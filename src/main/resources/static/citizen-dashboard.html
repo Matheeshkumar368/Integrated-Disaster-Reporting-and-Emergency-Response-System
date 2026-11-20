@@ -410,6 +410,25 @@
         </div>
     </header>
 
+    <!-- =========================================================================
+         CITIZEN NAVIGATION BAR
+         ========================================================================= -->
+    <nav class="cc-nav-bar">
+        <ul class="cc-nav-links">
+            <li><a href="/citizen-notifications.html" class="cc-nav-link" style="color:var(--cc-safe-green);"><i class="fas fa-bell"></i> Notification Center</a></li>
+            <li><a href="/citizen-dashboard.html" class="cc-nav-link active"><i class="fas fa-shield-heart"></i> Dashboard</a></li>
+            <li><a href="/citizen-dashboard.html?report" class="cc-nav-link" onclick="switchTab('reportTab'); return false;"><i class="fas fa-camera-retro"></i> Report Disaster</a></li>
+            <li><a href="/citizen-dashboard.html?my-reports" class="cc-nav-link" onclick="switchTab('myReportsTab'); return false;"><i class="fas fa-clipboard-list"></i> My Reports</a></li>
+            <li><a href="/emergency-videos.html" class="cc-nav-link"><i class="fas fa-film"></i> Survival Videos</a></li>
+            <li><a href="/profile.html" class="cc-nav-link"><i class="fas fa-user"></i> Profile</a></li>
+        </ul>
+        <div class="cc-nav-user-actions">
+            <button class="cc-btn cc-btn-danger" onclick="openFastSosModal()" style="font-size:0.82rem;padding:0.4rem 0.85rem;">
+                <i class="fas fa-tower-broadcast"></i> Quick SOS
+            </button>
+        </div>
+    </nav>
+
     <main class="cc-citizen-container">
 
         <!-- EMERGENCY HOTLINES BANNER -->
@@ -990,13 +1009,25 @@
             if (window.AuthHelper && window.AuthHelper.initUrlAuth) {
                 window.AuthHelper.initUrlAuth();
             }
-            const token = localStorage.getItem('token');
-            const userRole = localStorage.getItem('userRole');
+            const token = window.AuthHelper ? window.AuthHelper.getToken() : localStorage.getItem('token');
+            const userRole = window.AuthHelper ? window.AuthHelper.getRole() : localStorage.getItem('userRole');
 
-            RoleLoadingScreen.hide();
+            if (window.RoleLoadingScreen) RoleLoadingScreen.hide();
 
             if (!token) {
                 window.location.href = '/index.html';
+                return;
+            }
+
+            // Strict Role Separation: Intercept and route Admin or Responder to their dedicated portals
+            if (userRole === 'Admin') {
+                console.log('[CitizenDashboard] Admin identity detected. Redirecting to Mission Control.');
+                window.location.replace('/admin-dashboard.html');
+                return;
+            }
+            if (userRole === 'Responder') {
+                console.log('[CitizenDashboard] Responder identity detected. Redirecting to Operations Hub.');
+                window.location.replace('/responder-dashboard.html');
                 return;
             }
 
@@ -1008,9 +1039,12 @@
                 });
 
                 if (!response.ok) {
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('userRole');
-                    window.location.href = '/index.html';
+                    if (window.AuthHelper) window.AuthHelper.logout();
+                    else {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('userRole');
+                        window.location.href = '/index.html';
+                    }
                     return;
                 }
 

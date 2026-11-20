@@ -45,23 +45,55 @@
             }
         },
 
+        /**
+         * Resolves the user's role with cryptographic ground truth.
+         * Decodes JWT payload first. If present, synchronizes localStorage.
+         */
         getRole: function() {
             try {
-                const storedRole = localStorage.getItem('userRole');
-                if (storedRole) return storedRole;
                 const token = this.getToken();
                 if (token && token.includes('.')) {
                     const payload = JSON.parse(atob(token.split('.')[1]));
-                    return payload.role || null;
+                    if (payload && payload.role) {
+                        const verifiedRole = payload.role;
+                        try {
+                            if (localStorage.getItem('userRole') !== verifiedRole) {
+                                localStorage.setItem('userRole', verifiedRole);
+                            }
+                        } catch(e) {}
+                        return verifiedRole;
+                    }
+                }
+                const storedRole = localStorage.getItem('userRole');
+                if (storedRole && storedRole !== 'null' && storedRole !== 'undefined') {
+                    return storedRole;
                 }
                 return null;
             } catch (e) {
-                return null;
+                const storedRole = localStorage.getItem('userRole');
+                return (storedRole && storedRole !== 'null') ? storedRole : null;
+            }
+        },
+
+        getName: function() {
+            try {
+                const storedName = localStorage.getItem('userName');
+                if (storedName && storedName !== 'null') return storedName;
+                const token = this.getToken();
+                if (token && token.includes('.')) {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    return payload.name || payload.sub || 'User';
+                }
+                return 'User';
+            } catch (e) {
+                return 'User';
             }
         },
 
         getEmail: function() {
             try {
+                const storedEmail = localStorage.getItem('userEmail');
+                if (storedEmail && storedEmail !== 'null') return storedEmail;
                 const token = this.getToken();
                 if (token && token.includes('.')) {
                     const payload = JSON.parse(atob(token.split('.')[1]));
@@ -106,12 +138,31 @@
             return headers;
         },
 
+        getDashboardUrl: function(role) {
+            const r = role || this.getRole();
+            if (r === 'Admin') return '/admin-dashboard.html';
+            if (r === 'Responder') return '/responder-dashboard.html';
+            return '/citizen-dashboard.html';
+        },
+
+        getNotificationUrl: function(role) {
+            const r = role || this.getRole();
+            if (r === 'Admin') return '/admin-notifications.html';
+            if (r === 'Responder') return '/responder-notifications.html';
+            return '/citizen-notifications.html';
+        },
+
+        getProfileUrl: function(role) {
+            const r = role || this.getRole();
+            if (r === 'Admin') return '/admin-profile.html';
+            if (r === 'Responder') return '/responder-profile.html';
+            return '/profile.html';
+        },
+
         handleAuthFailure: function(response, customMessage) {
             if (response && response.status === 401) {
                 console.warn('[AuthHelper] Session expired or unauthorized (401). Clearing session.');
-                localStorage.removeItem('token');
-                localStorage.removeItem('userRole');
-                sessionStorage.removeItem('adminStepUpToken');
+                this.logout();
                 const msg = customMessage || 'Your session has expired or is invalid. Please log in again.';
                 if (window.showToast) window.showToast(msg, 'error');
                 setTimeout(() => {
@@ -133,18 +184,21 @@
                 window.location.href = '/index.html';
                 return false;
             }
-            if (expectedRole) {
-                const userRole = this.getRole();
-                if (userRole !== expectedRole) {
-                    console.warn(`[AuthHelper] Role mismatch: expected ${expectedRole}, got ${userRole}`);
-                    if (window.showToast) window.showToast(`Access Denied: Only ${expectedRole} accounts can access this page.`, 'error');
-                    setTimeout(() => {
-                        if (userRole === 'Admin') window.location.href = '/admin-dashboard.html';
-                        else if (userRole === 'Responder') window.location.href = '/responder-dashboard.html';
-                        else window.location.href = '/citizen-dashboard.html';
-                    }, 800);
-                    return false;
-                }
+            const userRole = this.getRole();
+            if (!userRole) {
+                console.warn('[AuthHelper] No role detected in token or storage. Redirecting to login.');
+                this.logout();
+                return false;
+            }
+            if (expectedRole && userRole !== expectedRole) {
+                console.warn(`[AuthHelper] Role mismatch: expected ${expectedRole}, got ${userRole}`);
+                if (window.showToast) window.showToast(`Access Denied: Only ${expectedRole} accounts can access this page. Redirecting...`, 'error');
+                setTimeout(() => {
+                    if (userRole === 'Admin') window.location.href = '/admin-dashboard.html';
+                    else if (userRole === 'Responder') window.location.href = '/responder-dashboard.html';
+                    else window.location.href = '/citizen-dashboard.html';
+                }, 600);
+                return false;
             }
             return true;
         },
@@ -152,6 +206,8 @@
         logout: function() {
             localStorage.removeItem('token');
             localStorage.removeItem('userRole');
+            localStorage.removeItem('userName');
+            localStorage.removeItem('userEmail');
             sessionStorage.removeItem('adminStepUpToken');
             fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
             window.location.href = '/index.html';
@@ -163,4 +219,3 @@
     window.getAuthToken = function() { return AuthHelper.getToken(); };
     window.getAuthHeaders = function(extra) { return AuthHelper.getHeaders(extra); };
 })(window);
-
