@@ -1,0 +1,152 @@
+[
+  {
+    "name": "Admin authentication succeeds",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "name": "Citizen A authentication succeeds",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "name": "Citizen B (Secondary Citizen) authentication succeeds",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "name": "Responder A authentication succeeds",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "name": "Responder B authentication succeeds",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "name": "Unauthenticated GET /api/notifications returns 401 Unauthorized",
+    "status": "PASS",
+    "details": "Status: 401"
+  },
+  {
+    "name": "Unauthenticated GET /api/tasks returns 401 Unauthorized",
+    "status": "PASS",
+    "details": "Status: 401"
+  },
+  {
+    "name": "Unauthenticated POST /api/citizen-reports returns 401 Unauthorized",
+    "status": "PASS",
+    "details": "Status: 401"
+  },
+  {
+    "name": "Malformed JWT returns 401 Unauthorized",
+    "status": "PASS",
+    "details": "Status: 401"
+  },
+  {
+    "name": "Citizen accessing GET /api/auth/users returns 403 Forbidden",
+    "status": "PASS",
+    "details": "Status: 403"
+  },
+  {
+    "name": "Citizen creating RescueTask returns 403 Forbidden",
+    "status": "PASS",
+    "details": "Status: 403"
+  },
+  {
+    "name": "Citizen deleting Alert returns 403 Forbidden",
+    "status": "PASS",
+    "details": "Status: 403"
+  },
+  {
+    "name": "Citizen updating Responder Location returns 403 Forbidden",
+    "status": "PASS",
+    "details": "Status: 403"
+  },
+  {
+    "name": "Responder accessing GET /api/auth/users returns 403 Forbidden",
+    "status": "PASS",
+    "details": "Status: 403"
+  },
+  {
+    "name": "Citizen A submits disaster report",
+    "status": "PASS",
+    "details": "Status: 200"
+  },
+  {
+    "name": "Citizen A can retrieve their own report",
+    "status": "PASS",
+    "details": "ID: 130"
+  },
+  {
+    "name": "Citizen B is FORBIDDEN from viewing Citizen A's report",
+    "status": "PASS",
+    "details": "Status: 403 (Expected 403)"
+  },
+  {
+    "name": "Citizen A's reports list contains Report 1",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "name": "Citizen B's reports list DOES NOT contain Citizen A's Report 1",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "name": "Admin assigns Responder A to Citizen Report 1",
+    "status": "PASS",
+    "details": "Status: 200"
+  },
+  {
+    "name": "Citizen A receives notification of responder dispatch",
+    "status": "PASS",
+    "details": "Total notifications: 206"
+  },
+  {
+    "name": "Citizen B cannot mark Citizen A's notification as read (HTTP 403 Forbidden)",
+    "status": "PASS",
+    "details": "Status: 403"
+  },
+  {
+    "name": "Citizen B cannot delete Citizen A's notification (HTTP 403 Forbidden)",
+    "status": "PASS",
+    "details": "Status: 403"
+  },
+  {
+    "name": "Responder A can access assigned task/incident queue",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "name": "Responder A acknowledges Citizen Report 1",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "name": "Citizen A observes updated report status in real time",
+    "status": "PASS",
+    "details": "Current Status: Acknowledged"
+  },
+  {
+    "name": "Responder A resolves Citizen Report 1",
+    "status": "PASS",
+    "details": ""
+  },
+  {
+    "name": "Database reflects final report status 'RESOLVED'",
+    "status": "PASS",
+    "details": "Final Status: Resolved"
+  },
+  {
+    "name": "Non-existent report ID returns 404 Not Found",
+    "status": "PASS",
+    "details": "Status: 404"
+  },
+  {
+    "name": "Malformed JSON request returns 400 Bad Request (not unhandled 500)",
+    "status": "PASS",
+    "details": "Status: 400"
+  }
+]

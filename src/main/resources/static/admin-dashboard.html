@@ -984,6 +984,17 @@
                 return;
             }
 
+            // Strict Role Separation: Intercept non-Admin roles immediately and route to proper portal
+            if (userRole !== 'Admin') {
+                console.warn('[AdminDashboard] Non-admin identity detected:', userRole);
+                if (userRole === 'Responder') {
+                    window.location.replace('/responder-dashboard.html');
+                } else {
+                    window.location.replace('/citizen-dashboard.html');
+                }
+                return;
+            }
+
             try {
                 const response = await fetch('/api/auth/profile', {
                     method: 'POST',
@@ -1002,20 +1013,6 @@
                 }
             } catch (e) {
                 console.error('Token validation failed:', e);
-            }
-
-            if (userRole !== 'Admin') {
-                if (window.showToast) {
-                    window.showToast('Access Denied: Only Admin can access Mission Control', 'error');
-                }
-                setTimeout(() => {
-                    if (userRole === 'Responder') {
-                        window.location.href = '/responder-dashboard.html';
-                    } else {
-                        window.location.href = '/citizen-dashboard.html';
-                    }
-                }, 800);
-                return;
             }
 
             try {

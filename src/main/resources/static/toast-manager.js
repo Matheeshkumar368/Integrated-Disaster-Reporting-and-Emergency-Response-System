@@ -371,6 +371,8 @@
     window.openMediaLightbox = openMediaLightbox;
     window.handleEvidenceImageError = handleEvidenceImageError;
     window.retryEvidenceImage = retryEvidenceImage;
+    window.escapeHtml = escapeHtml;
+    try { globalThis.escapeHtml = escapeHtml; } catch(e) {}
 
     // Harmonize with CommandCenter singleton if loaded
     if (window.CommandCenter) {

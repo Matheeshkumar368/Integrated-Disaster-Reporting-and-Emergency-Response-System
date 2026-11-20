@@ -1001,6 +1001,12 @@
         let recInterval = null;
         let recSeconds = 0;
 
+        function escapeHtml(str) {
+            if (!str) return '';
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return String(str).replace(/[&<>"']/g, m => map[m]);
+        }
+
         // Initialize HUD Clock
         CommandCenter.initHudClock('hudClockDisplay');
 

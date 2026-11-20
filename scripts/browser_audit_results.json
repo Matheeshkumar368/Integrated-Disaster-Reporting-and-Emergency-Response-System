@@ -1,0 +1,102 @@
+[
+  {
+    "testName": "Session 1 (Admin) authenticated successfully",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "testName": "Session 2 (Citizen) authenticated successfully",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "testName": "Session 1 retains Admin credentials independently",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "testName": "Session 2 retains Citizen credentials independently",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "testName": "Admin loads Admin Mission Control Dashboard",
+    "passed": true,
+    "detail": "Title: \"Mission Control — Disaster Management & Alert System\""
+  },
+  {
+    "testName": "Admin navigates to Admin Notifications Hub",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "testName": "Browser Back button correctly navigates back to Admin Dashboard",
+    "passed": true,
+    "detail": "Current: http://localhost:8080/admin-dashboard.html"
+  },
+  {
+    "testName": "Browser Forward button correctly navigates back to Admin Notifications",
+    "passed": true,
+    "detail": "Current: http://localhost:8080/admin-notifications.html"
+  },
+  {
+    "testName": "Browser Page Refresh preserves authentication state and role",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "testName": "Citizen accessing /admin-dashboard.html is strictly intercepted & routed to Citizen Dashboard",
+    "passed": true,
+    "detail": "Landed on: http://localhost:8080/citizen-dashboard.html"
+  },
+  {
+    "testName": "Citizen accessing /responder-dashboard.html is strictly intercepted & routed to Citizen Dashboard",
+    "passed": true,
+    "detail": "Landed on: http://localhost:8080/citizen-dashboard.html"
+  },
+  {
+    "testName": "Admin accessing /citizen-dashboard.html is intercepted & routed back to Mission Control",
+    "passed": true,
+    "detail": "Landed on: http://localhost:8080/admin-dashboard.html"
+  },
+  {
+    "testName": "Unauthenticated visitor accessing /admin-dashboard.html is redirected to Login page",
+    "passed": true,
+    "detail": "Redirected to: http://localhost:8080/index.html"
+  },
+  {
+    "testName": "Admin logout clears storage and routes to landing/login",
+    "passed": true,
+    "detail": ""
+  },
+  {
+    "testName": "Browser Back after logout cannot access protected dashboard (auth guard enforces login)",
+    "passed": true,
+    "detail": "Current URL: http://localhost:8080/index.html, Token: null"
+  },
+  {
+    "testName": "Admin Dashboard loads with zero fatal script crash errors",
+    "passed": true,
+    "detail": "Errors: []"
+  },
+  {
+    "testName": "Admin Alerts Console loads cleanly",
+    "passed": true,
+    "detail": "Errors: []"
+  },
+  {
+    "testName": "Responder Dashboard loads cleanly with zero fatal script crashes",
+    "passed": true,
+    "detail": "Errors: []"
+  },
+  {
+    "testName": "Citizen Dashboard loads cleanly with zero fatal script crashes",
+    "passed": true,
+    "detail": "Errors: []"
+  },
+  {
+    "testName": "Citizen Report Submission form controls are initialized in DOM",
+    "passed": true,
+    "detail": ""
+  }
+]

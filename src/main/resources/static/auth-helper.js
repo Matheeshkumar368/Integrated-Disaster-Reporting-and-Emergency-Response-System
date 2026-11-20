@@ -14,6 +14,15 @@
         document.head.appendChild(script);
     }
 
+    if (typeof window !== 'undefined' && !window.escapeHtml) {
+        window.escapeHtml = function(text) {
+            if (!text) return '';
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return String(text).replace(/[&<>"']/g, m => map[m]);
+        };
+        try { globalThis.escapeHtml = window.escapeHtml; } catch(e) {}
+    }
+
     const AuthHelper = {
         initUrlAuth: function() {
             try {
