@@ -76,23 +76,31 @@
                                 </div>
                             </div>
 
-                            <!-- Stepper Progress Flow -->
+                            <!-- Stepper Progress Flow (6 Stages) -->
                             <div class="hud-stepper-track">
-                                <div class="hud-step-node completed" id="step-node-dispatched">
+                                <div class="hud-step-node" id="step-node-assigned">
                                     <div class="step-circle"></div>
-                                    <div class="step-label">Dispatched</div>
+                                    <div class="step-label">Assigned</div>
                                 </div>
-                                <div class="hud-step-node active" id="step-node-enroute">
+                                <div class="hud-step-node" id="step-node-accepted">
+                                    <div class="step-circle"></div>
+                                    <div class="step-label">Accepted</div>
+                                </div>
+                                <div class="hud-step-node" id="step-node-enroute">
                                     <div class="step-circle"></div>
                                     <div class="step-label">En Route</div>
                                 </div>
-                                <div class="hud-step-node" id="step-node-onscene">
+                                <div class="hud-step-node" id="step-node-arrived">
                                     <div class="step-circle"></div>
-                                    <div class="step-label">On Scene</div>
+                                    <div class="step-label">Arrived</div>
+                                </div>
+                                <div class="hud-step-node" id="step-node-inprogress">
+                                    <div class="step-circle"></div>
+                                    <div class="step-label">In Progress</div>
                                 </div>
                                 <div class="hud-step-node" id="step-node-completed">
                                     <div class="step-circle"></div>
-                                    <div class="step-label">Resolved</div>
+                                    <div class="step-label">Completed</div>
                                 </div>
                             </div>
                         </div>
@@ -235,32 +243,46 @@
                 document.getElementById('hud-responder-role').textContent = data.responderEmail || 'Emergency Unit';
             }
 
-            // Update ETA & Distance
+            // Update ETA & Distance (Straight-line vs Road Network handling)
             const etaElem = document.getElementById('hud-eta-val');
             const distElem = document.getElementById('hud-dist-val');
 
-            if (data.durationMinutes) {
-                etaElem.textContent = `${data.durationMinutes} MINS`;
-            } else if (data.etaText) {
-                etaElem.textContent = data.etaText.split('(')[0].trim().toUpperCase();
-            } else {
-                etaElem.textContent = 'ARRIVING';
-            }
+            const isStraightLine = Boolean(data.isStraightLineEstimate || data.routeSource === 'HAVERSINE_ESTIMATE');
 
-            if (data.distanceKm) {
-                distElem.textContent = `${data.distanceKm} km remaining (Road Network)`;
-            } else if (data.distanceMeters) {
-                distElem.textContent = `${Math.round(data.distanceMeters)} m remaining`;
+            if (isStraightLine) {
+                etaElem.textContent = 'ESTIMATING';
+                if (data.distanceKm) {
+                    distElem.innerHTML = `<span style="color:#38bdf8;font-weight:600;">${data.distanceKm} km</span> <span style="font-size:0.75rem;color:#94a3b8;">(Straight-line estimate)</span>`;
+                } else if (data.distanceMeters) {
+                    const km = (data.distanceMeters / 1000).toFixed(1);
+                    distElem.innerHTML = `<span style="color:#38bdf8;font-weight:600;">${km} km</span> <span style="font-size:0.75rem;color:#94a3b8;">(Straight-line estimate)</span>`;
+                } else {
+                    distElem.textContent = 'Straight-line estimate pending fix';
+                }
+            } else {
+                if (data.durationMinutes) {
+                    etaElem.textContent = `${data.durationMinutes} MINS`;
+                } else if (data.etaText) {
+                    etaElem.textContent = data.etaText.split('(')[0].trim().toUpperCase();
+                } else {
+                    etaElem.textContent = 'ARRIVING';
+                }
+
+                if (data.distanceKm) {
+                    distElem.textContent = `${data.distanceKm} km remaining (Road Network)`;
+                } else if (data.distanceMeters) {
+                    distElem.textContent = `${Math.round(data.distanceMeters)} m remaining (Road Network)`;
+                }
             }
 
             // Update Status Stepper
-            this.updateStepper(data.status);
+            this.updateStepper(data.operationStatus || data.taskStatus || data.status);
 
             // Update Stale / Live Status Chip
-            if (data.status === 'COMPLETED') {
-                this.updateChipStatus('MISSION RESOLVED', false, 'completed');
+            if (data.status === 'COMPLETED' || data.sharingStatus === 'STOPPED' || data.taskStatus === 'Completed' || data.taskStatus === 'Resolved') {
+                this.updateChipStatus('SHARING STOPPED', false, 'completed');
             } else if (data.isStale) {
-                this.updateChipStatus('SIGNAL STALE', true, 'stale');
+                this.updateChipStatus('SIGNAL STALE (>60s)', true, 'stale');
             } else {
                 this.updateChipStatus('LIVE TELEMETRY', false);
             }
@@ -352,28 +374,46 @@
             }
         }
 
-        updateStepper(status) {
-            const stepDispatched = document.getElementById('step-node-dispatched');
-            const stepEnRoute = document.getElementById('step-node-enroute');
-            const stepOnScene = document.getElementById('step-node-onscene');
-            const stepCompleted = document.getElementById('step-node-completed');
+        updateStepper(rawStatus) {
+            const nodes = [
+                document.getElementById('step-node-assigned'),
+                document.getElementById('step-node-accepted'),
+                document.getElementById('step-node-enroute'),
+                document.getElementById('step-node-arrived'),
+                document.getElementById('step-node-inprogress'),
+                document.getElementById('step-node-completed')
+            ];
 
-            [stepDispatched, stepEnRoute, stepOnScene, stepCompleted].forEach(el => {
+            if (!nodes[0]) return;
+
+            nodes.forEach(el => {
                 if (el) el.className = 'hud-step-node';
             });
 
-            if (status === 'COMPLETED' || status === 'Resolved') {
-                stepDispatched.className = 'hud-step-node completed';
-                stepEnRoute.className = 'hud-step-node completed';
-                stepOnScene.className = 'hud-step-node completed';
-                stepCompleted.className = 'hud-step-node active completed';
-            } else if (status === 'ON_SCENE' || status === 'Arrived') {
-                stepDispatched.className = 'hud-step-node completed';
-                stepEnRoute.className = 'hud-step-node completed';
-                stepOnScene.className = 'hud-step-node active';
+            const s = String(rawStatus || '').toUpperCase().trim();
+            let activeIdx = 0;
+
+            if (s.includes('COMPLETE') || s.includes('RESOLV')) {
+                activeIdx = 5;
+            } else if (s.includes('PROGRESS') || s.includes('ASSIST')) {
+                activeIdx = 4;
+            } else if (s.includes('ARRIV') || s.includes('SCENE') || s.includes('REACH')) {
+                activeIdx = 3;
+            } else if (s.includes('ROUTE') || s.includes('WAY') || s.includes('DISPATCH') || s.includes('ACTIVE')) {
+                activeIdx = 2;
+            } else if (s.includes('ACCEPT') || s.includes('ACK')) {
+                activeIdx = 1;
             } else {
-                stepDispatched.className = 'hud-step-node completed';
-                stepEnRoute.className = 'hud-step-node active';
+                activeIdx = 0;
+            }
+
+            for (let i = 0; i < nodes.length; i++) {
+                if (!nodes[i]) continue;
+                if (i < activeIdx) {
+                    nodes[i].className = 'hud-step-node completed';
+                } else if (i === activeIdx) {
+                    nodes[i].className = (activeIdx === 5) ? 'hud-step-node active completed' : 'hud-step-node active';
+                }
             }
         }
 

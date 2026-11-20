@@ -36,6 +36,9 @@ public class RescueTaskService {
     @Autowired(required = false)
     private IncidentTimelineService timelineService;
 
+    @Autowired(required = false)
+    private ResponderTrackingService trackingService;
+
     // Create a new rescue task with validation
     @Transactional
     public RescueTask createTask(RescueTask task) {
@@ -517,6 +520,17 @@ public class RescueTaskService {
             if (notes != null && !notes.trim().isEmpty()) {
                 task.setCompletionSummary(notes.trim());
             }
+
+            // Conclude any active GPS tracking session for this assignment
+            if (trackingService != null) {
+                try {
+                    trackingService.stopTracking(taskId, task.getAssignedTo() != null ? task.getAssignedTo() : "system");
+                    log.info("GPS tracking session concluded automatically for completed task #{}", taskId);
+                } catch (Exception e) {
+                    log.warn("Automatic GPS tracking stop note for task #{}: {}", taskId, e.getMessage());
+                }
+            }
+
             // Sync linked citizen report to Resolved
             if (task.getCitizenReportId() != null) {
                 try {

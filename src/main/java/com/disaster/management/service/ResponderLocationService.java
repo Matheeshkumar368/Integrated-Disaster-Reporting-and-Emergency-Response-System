@@ -129,16 +129,24 @@ public class ResponderLocationService {
             log.warn("TrackingSession stop note: {}", e.getMessage());
         }
 
-        // Fetch latest location to record stop status or save terminal record
+        // If a prior location was recorded, mark it as STOPPED
         Optional<ResponderLocation> latestOpt = locationRepository.findTopByResponderEmailOrderByRecordedAtDesc(responderEmail);
-        Double lat = 0.0;
-        Double lng = 0.0;
-        Double acc = 0.0;
-
         if (latestOpt.isPresent()) {
-            lat = latestOpt.get().getLatitude();
-            lng = latestOpt.get().getLongitude();
-            acc = latestOpt.get().getAccuracy();
+            ResponderLocation latest = latestOpt.get();
+            latest.setSharingStatus("STOPPED");
+            latest.setRecordedAt(LocalDateTime.now());
+            ResponderLocation saved = locationRepository.save(latest);
+            log.info("Responder {} marked existing telemetry as STOPPED for task #{}", responderEmail, resolvedTaskId);
+            return saved;
+        }
+
+        // If no previous location exists, look up destination coordinates from task to avoid (0.0, 0.0)
+        Double fallbackLat = 10.9601; // default to zone center
+        Double fallbackLng = 78.0766;
+        Optional<RescueTask> taskOpt = taskRepository.findById(resolvedTaskId);
+        if (taskOpt.isPresent() && taskOpt.get().getLatitude() != null && taskOpt.get().getLongitude() != null) {
+            fallbackLat = taskOpt.get().getLatitude();
+            fallbackLng = taskOpt.get().getLongitude();
         }
 
         ResponderLocation stoppedLoc = new ResponderLocation(
@@ -146,9 +154,9 @@ public class ResponderLocationService {
             null,
             resolvedTaskId,
             responderEmail,
-            lat,
-            lng,
-            acc,
+            fallbackLat,
+            fallbackLng,
+            0.0,
             0.0,
             0.0,
             "STOPPED"
@@ -207,6 +215,9 @@ public class ResponderLocationService {
         }
         if (lng < -180.0 || lng > 180.0) {
             throw new IllegalArgumentException("Longitude must be between -180.0 and 180.0 degrees.");
+        }
+        if (lat == 0.0 && lng == 0.0) {
+            throw new IllegalArgumentException("Coordinates (0.0, 0.0) are invalid.");
         }
     }
 

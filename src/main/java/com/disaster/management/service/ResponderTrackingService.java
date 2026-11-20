@@ -45,6 +45,9 @@ public class ResponderTrackingService {
     private RescueTaskRepository taskRepository;
 
     @Autowired
+    private com.disaster.management.repository.CitizenReportRepository reportRepository;
+
+    @Autowired
     private RouteEstimationService routeService;
 
     @Autowired
@@ -359,6 +362,47 @@ public class ResponderTrackingService {
         }
         payload.put("isStale", isStale);
 
+        // Retrieve linked task and report context for status progression & UI
+        String taskStatus = null;
+        String incidentType = "Emergency Rescue";
+        String progressStage = null;
+        Long citizenReportId = null;
+
+        if (session.getAssignmentId() != null) {
+            Optional<RescueTask> taskOpt = taskRepository.findById(session.getAssignmentId());
+            if (taskOpt.isPresent()) {
+                RescueTask t = taskOpt.get();
+                taskStatus = t.getStatus();
+                citizenReportId = t.getCitizenReportId();
+                if (citizenReportId != null) {
+                    Optional<com.disaster.management.entity.CitizenReport> rOpt = reportRepository.findById(citizenReportId);
+                    if (rOpt.isPresent()) {
+                        incidentType = rOpt.get().getIncidentType();
+                        progressStage = rOpt.get().getProgressStage();
+                    }
+                }
+            }
+        }
+
+        String operationStatus = resolveOperationStatus(taskStatus, progressStage, session.getStatus());
+        payload.put("taskStatus", taskStatus != null ? taskStatus : session.getStatus());
+        payload.put("incidentType", incidentType != null ? incidentType : "Emergency Rescue");
+        payload.put("progressStage", progressStage);
+        payload.put("citizenReportId", citizenReportId);
+        payload.put("operationStatus", operationStatus);
+
+        // Display notice for UI cards & radar chips
+        if ("COMPLETED".equalsIgnoreCase(session.getStatus()) || "STOPPED".equalsIgnoreCase(session.getStatus())) {
+            payload.put("displayNotice", "Live location sharing is stopped.");
+            payload.put("sharingStatus", "STOPPED");
+        } else if (isStale) {
+            payload.put("displayNotice", "Location update is outdated (signal lost >60s).");
+            payload.put("sharingStatus", "ACTIVE");
+        } else {
+            payload.put("displayNotice", "Live GPS actively broadcasting.");
+            payload.put("sharingStatus", "ACTIVE");
+        }
+
         if (routeInfo != null && "success".equals(routeInfo.get("status"))) {
             payload.put("distanceMeters", routeInfo.get("distanceMeters"));
             payload.put("distanceKm", routeInfo.get("distanceKm"));
@@ -367,9 +411,12 @@ public class ResponderTrackingService {
             payload.put("etaText", routeInfo.get("etaText"));
             payload.put("routeSource", routeInfo.get("source"));
             payload.put("routeCoordinates", routeInfo.get("coordinates"));
+            boolean isStraight = "HAVERSINE_ESTIMATE".equals(routeInfo.get("source"));
+            payload.put("isStraightLineEstimate", isStraight);
         } else {
             payload.put("distanceMeters", session.getEstimatedDistanceMeters());
             payload.put("durationSeconds", session.getEstimatedDurationSeconds());
+            payload.put("isStraightLineEstimate", true);
             if (session.getEstimatedDurationSeconds() != null) {
                 int mins = Math.max(1, (int) Math.ceil(session.getEstimatedDurationSeconds() / 60.0));
                 payload.put("etaText", mins + " mins remaining");
@@ -377,6 +424,31 @@ public class ResponderTrackingService {
         }
 
         return payload;
+    }
+
+    private String resolveOperationStatus(String taskStatus, String progressStage, String sessionStatus) {
+        if ("COMPLETED".equalsIgnoreCase(sessionStatus) || "STOPPED".equalsIgnoreCase(sessionStatus)) {
+            if (taskStatus != null && (taskStatus.equalsIgnoreCase("Completed") || taskStatus.equalsIgnoreCase("Resolved"))) {
+                return "COMPLETED";
+            }
+        }
+        String combined = ((taskStatus != null ? taskStatus : "") + " " + (progressStage != null ? progressStage : "")).trim().toUpperCase();
+        if (combined.contains("RESOLVED") || combined.contains("COMPLETED")) {
+            return "COMPLETED";
+        }
+        if (combined.contains("IN PROGRESS") || combined.contains("ASSISTANCE IN PROGRESS")) {
+            return "IN_PROGRESS";
+        }
+        if (combined.contains("ARRIVED") || combined.contains("REACHED") || combined.contains("ON SCENE")) {
+            return "ARRIVED";
+        }
+        if (combined.contains("EN ROUTE") || combined.contains("ON THE WAY")) {
+            return "EN_ROUTE";
+        }
+        if (combined.contains("ACCEPTED") || combined.contains("ACKNOWLEDGED")) {
+            return "ACCEPTED";
+        }
+        return "ASSIGNED";
     }
 
     private void broadcastTrackingPayload(Long assignmentId, Map<String, Object> payload) {

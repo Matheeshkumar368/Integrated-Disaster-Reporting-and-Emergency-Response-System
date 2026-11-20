@@ -447,6 +447,46 @@
                 <!-- Leaflet Container -->
                 <div id="disasterMap"></div>
 
+                <!-- Floating Tactical Responder Information Panel (Section 8) -->
+                <div id="ccResponderDetailPanel" style="display:none;position:absolute;bottom:54px;left:14px;z-index:900;background:rgba(9,19,34,0.92);border:1px solid #38bdf8;border-radius:10px;padding:14px 18px;max-width:340px;width:calc(100% - 28px);box-shadow:0 8px 32px rgba(0,0,0,0.6);backdrop-filter:blur(10px);color:#ffffff;font-size:0.85rem;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:6px;">
+                        <div style="font-weight:700;color:#00e5ff;font-size:0.95rem;display:flex;align-items:center;gap:6px;">
+                            <i class="fas fa-truck-medical"></i> <span id="ccRespPanelName">Responder Unit</span>
+                        </div>
+                        <button type="button" onclick="closeResponderDetailPanel()" style="background:transparent;border:none;color:#94a3b8;font-size:1.2rem;cursor:pointer;padding:0 4px;line-height:1;" title="Close Panel">&times;</button>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:5px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <span style="color:#94a3b8;font-size:0.78rem;">Mission:</span>
+                            <span id="ccRespPanelTask" style="font-weight:600;color:#38bdf8;font-family:var(--cc-font-mono);">#TASK---</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <span style="color:#94a3b8;font-size:0.78rem;">Incident Type:</span>
+                            <span id="ccRespPanelIncident" style="font-weight:600;color:#fcd34d;">Emergency Rescue</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <span style="color:#94a3b8;font-size:0.78rem;">Operation Status:</span>
+                            <span id="ccRespPanelStatus" class="cc-badge" style="background:#0284c7;color:#fff;font-size:0.72rem;padding:2px 8px;">ACTIVE</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                            <span style="color:#94a3b8;font-size:0.78rem;">Last Known GPS:</span>
+                            <span id="ccRespPanelCoords" style="font-size:0.78rem;color:#cbd5e1;font-family:var(--cc-font-mono);text-align:right;">--</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <span style="color:#94a3b8;font-size:0.78rem;">Last Updated:</span>
+                            <span id="ccRespPanelTime" style="font-size:0.78rem;color:#94a3b8;">--</span>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:6px;margin-top:10px;">
+                        <button type="button" id="ccRespPanelRadarBtn" style="flex:1;background:linear-gradient(135deg,#0284c7,#00e5ff);color:#030a16;border:none;padding:6px 8px;border-radius:4px;font-weight:700;font-size:0.78rem;cursor:pointer;">
+                            <i class="fas fa-crosshairs"></i> Radar HUD
+                        </button>
+                        <button type="button" id="ccRespPanelRoomBtn" style="background:rgba(255,255,255,0.12);color:#fff;border:none;padding:6px 10px;border-radius:4px;font-size:0.78rem;cursor:pointer;">
+                            <i class="fas fa-comments"></i> Room
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Quick Geographic Jump Filters -->
                 <div class="cc-map-quick-filters">
                     <button class="cc-quick-filter-btn active" onclick="zoomMapTo([20.5937, 78.9629], 5, this)">All India</button>
@@ -1062,17 +1102,7 @@
                     let lat = r.latitude;
                     let lon = r.longitude;
 
-                    // Fallback to gazetteer if coordinates missing
-                    if (!lat || !lon) {
-                        for (const [cityName, coords] of Object.entries(locationCoords)) {
-                            if (r.location && r.location.toLowerCase().includes(cityName.toLowerCase())) {
-                                lat = coords[0];
-                                lon = coords[1];
-                                break;
-                            }
-                        }
-                    }
-
+                    // Only plot genuine coordinates (do not invent locations or centroid fallbacks)
                     if (!lat || !lon) return;
 
                     const isPending = !r.status || r.status.toLowerCase() === 'pending';
@@ -1210,6 +1240,9 @@
                         </div>
                     `;
                     marker.bindPopup(popupContent);
+                    marker.on('click', () => {
+                        showResponderDetailPanel(s);
+                    });
 
                     if (s.accuracy && s.accuracy > 0 && s.accuracy <= 500) {
                         L.circle([s.latitude, s.longitude], {
@@ -1224,6 +1257,71 @@
             } catch (err) {
                 console.warn('Responder tracking map update error:', err);
             }
+        }
+
+        // Active Responder Information Panel (Section 8)
+        function showResponderDetailPanel(s) {
+            const panel = document.getElementById('ccResponderDetailPanel');
+            if (!panel || !s) return;
+
+            const isStale = Boolean(s.isStale);
+            const nameEl = document.getElementById('ccRespPanelName');
+            const taskEl = document.getElementById('ccRespPanelTask');
+            const incEl = document.getElementById('ccRespPanelIncident');
+            const statusEl = document.getElementById('ccRespPanelStatus');
+            const coordsEl = document.getElementById('ccRespPanelCoords');
+            const timeEl = document.getElementById('ccRespPanelTime');
+
+            if (nameEl) nameEl.textContent = s.responderName || s.responderEmail || 'Field Unit';
+            if (taskEl) taskEl.textContent = '#TASK-' + (s.assignmentId || 'N/A');
+            if (incEl) incEl.textContent = s.incidentType || 'Emergency Response';
+
+            const opStatus = s.operationStatus || s.taskStatus || s.status || 'ACTIVE';
+            if (statusEl) {
+                statusEl.textContent = opStatus;
+                if (opStatus === 'COMPLETED' || opStatus === 'STOPPED') {
+                    statusEl.style.background = '#334155';
+                    statusEl.style.color = '#94a3b8';
+                } else if (isStale) {
+                    statusEl.style.background = 'rgba(245, 158, 11, 0.2)';
+                    statusEl.style.color = '#fbbf24';
+                    statusEl.style.border = '1px solid #f59e0b';
+                } else {
+                    statusEl.style.background = 'rgba(16, 185, 129, 0.2)';
+                    statusEl.style.color = '#10b981';
+                    statusEl.style.border = '1px solid #10b981';
+                }
+            }
+
+            if (coordsEl) {
+                const latStr = (typeof s.latitude === 'number') ? s.latitude.toFixed(4) : s.latitude;
+                const lngStr = (typeof s.longitude === 'number') ? s.longitude.toFixed(4) : s.longitude;
+                const accStr = s.accuracy ? ` (±${Math.round(s.accuracy)}m)` : '';
+                coordsEl.textContent = `${latStr}, ${lngStr}${accStr}`;
+            }
+
+            if (timeEl) {
+                const updateTime = s.lastHeartbeatAt ? (window.CommandCenter && CommandCenter.formatIst ? CommandCenter.formatIst(s.lastHeartbeatAt) : s.lastHeartbeatAt) : 'Live';
+                timeEl.innerHTML = isStale 
+                    ? `<span style="color:#fbbf24;"><i class="fas fa-triangle-exclamation"></i> ${updateTime} [STALE >60s]</span>`
+                    : `<span style="color:#10b981;"><i class="fas fa-circle-dot fa-beat"></i> ${updateTime} [LIVE]</span>`;
+            }
+
+            const radarBtn = document.getElementById('ccRespPanelRadarBtn');
+            if (radarBtn) {
+                radarBtn.onclick = () => window.ResponderTracking.open(s.assignmentId);
+            }
+            const roomBtn = document.getElementById('ccRespPanelRoomBtn');
+            if (roomBtn) {
+                roomBtn.onclick = () => window.IncidentRoom.open(s.assignmentId, 'RESCUE_TASK');
+            }
+
+            panel.style.display = 'block';
+        }
+
+        function closeResponderDetailPanel() {
+            const panel = document.getElementById('ccResponderDetailPanel');
+            if (panel) panel.style.display = 'none';
         }
 
         function zoomMapTo(coords, zoomLevel, btn) {

@@ -952,8 +952,13 @@
                         } catch (gpsErr) {
                             console.warn('Auto GPS start:', gpsErr);
                         }
-                    } else if (newStatus === 'Completed' && window.ResponderTransmitter) {
-                        window.ResponderTransmitter.stop();
+                    } else if (newStatus === 'Completed' || newStatus === 'Resolved') {
+                        if (window.ResponderTransmitter) {
+                            window.ResponderTransmitter.stop();
+                        }
+                        if (typeof isGpsBroadcasting !== 'undefined' && isGpsBroadcasting) {
+                            stopDashboardLiveGps();
+                        }
                         updateGpsPill(false);
                     }
 
