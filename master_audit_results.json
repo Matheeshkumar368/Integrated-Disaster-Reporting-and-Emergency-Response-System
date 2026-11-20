@@ -1,0 +1,656 @@
+{
+  "totalTests": 108,
+  "passed": 108,
+  "failed": 0,
+  "passRate": 100.0,
+  "results": [
+    {
+      "category": "Navigation",
+      "test": "Extensionless Route /admin-dashboard",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Extensionless Route /citizen-dashboard",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Extensionless Route /responder-dashboard",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Extensionless Route /admin-notifications",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Extensionless Route /citizen-notifications",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Extensionless Route /responder-notifications",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Extensionless Route /admin-users",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Extensionless Route /admin-tasks",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Extensionless Route /admin-alerts",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Extensionless Route /admin-profile",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Extensionless Route /responder-tasks",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Extensionless Route /responder-rescue",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Extensionless Route /responder-profile",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Extensionless Route /responder-register",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Extensionless Route /reports",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Extensionless Route /profile",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Extensionless Route /alerts",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Extensionless Route /training",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Extensionless Route /home",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Extensionless Route /emergency-videos",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Extensionless Route /offline",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Extensionless Route /index",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Extensionless Route /login",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Extensionless Route /register",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Direct HTML Route /index.html",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Direct HTML Route /home.html",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Direct HTML Route /alerts.html",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Direct HTML Route /reports.html",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Direct HTML Route /profile.html",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Direct HTML Route /training.html",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Direct HTML Route /admin-dashboard.html",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Direct HTML Route /citizen-dashboard.html",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Direct HTML Route /responder-dashboard.html",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Direct HTML Route /admin-notifications.html",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Direct HTML Route /citizen-notifications.html",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Direct HTML Route /responder-notifications.html",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Direct HTML Route /admin-users.html",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Direct HTML Route /admin-tasks.html",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Direct HTML Route /admin-alerts.html",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Direct HTML Route /admin-profile.html",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Direct HTML Route /responder-tasks.html",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Direct HTML Route /responder-rescue.html",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Direct HTML Route /responder-profile.html",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Direct HTML Route /responder-register.html",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Direct HTML Route /emergency-videos.html",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Direct HTML Route /offline.html",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Direct HTML Route /toast_showcase.html",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Navigation",
+      "test": "Direct HTML Route /index-new-login.html",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Auth",
+      "test": "Admin Login (admin@disaster.gov.in)",
+      "status": "PASSED",
+      "details": "Role: Admin"
+    },
+    {
+      "category": "Auth",
+      "test": "Primary Responder Login (responder@disaster.gov.in)",
+      "status": "PASSED",
+      "details": "Role: Responder"
+    },
+    {
+      "category": "Auth",
+      "test": "Secondary Responder Login (responder2@disaster.gov.in)",
+      "status": "PASSED",
+      "details": "Role: Responder"
+    },
+    {
+      "category": "Auth",
+      "test": "Dynamic Citizen Registration",
+      "status": "PASSED",
+      "details": "Status: 200"
+    },
+    {
+      "category": "Auth",
+      "test": "Dynamic Citizen Login",
+      "status": "PASSED",
+      "details": "Email: audit_citizen_1795180973@gmail.com"
+    },
+    {
+      "category": "Routing API",
+      "test": "GET /api/routing/route endpoint",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Routing API",
+      "test": "Route payload contains distance & geometry",
+      "status": "PASSED",
+      "details": "Keys: ['distanceMeters', 'durationMinutes', 'durationSeconds', 'coordinates', 'distanceKm', 'etaText', 'source', 'status']"
+    },
+    {
+      "category": "Routing API",
+      "test": "GET /api/routing/directions endpoint",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 1: Citizen Registration & Login",
+      "status": "PASSED",
+      "details": ""
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 2: Citizen Emergency Report Submission (HTTP 200/201)",
+      "status": "PASSED",
+      "details": ""
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 2: Report ID Generated",
+      "status": "PASSED",
+      "details": "Report ID: #121"
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 3: MySQL Report Persistence & Retrieval",
+      "status": "PASSED",
+      "details": ""
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 3: Initial Status is 'Pending' / 'Submitted'",
+      "status": "PASSED",
+      "details": ""
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 4: Admin Notification Endpoint Accessible",
+      "status": "PASSED",
+      "details": ""
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 4: Admin Distress Notification Received for Report",
+      "status": "PASSED",
+      "details": ""
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 5: Admin Verifies Incident Report (HTTP 200)",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 6: Admin Assigns Responder to Incident (HTTP 200)",
+      "status": "PASSED",
+      "details": ""
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 6: Linked Rescue Task Created",
+      "status": "PASSED",
+      "details": "Rescue Task #89"
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 7: Responder Notifications Accessible",
+      "status": "PASSED",
+      "details": ""
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 7: Responder Received Task Assignment Notification",
+      "status": "PASSED",
+      "details": ""
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 8: Responder Acknowledges Task (HTTP 200)",
+      "status": "PASSED",
+      "details": ""
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 8: Task Status is 'Acknowledged'",
+      "status": "PASSED",
+      "details": ""
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 9: Responder Activates Live GPS Broadcast (HTTP 200)",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 10: Genuine GPS Coordinate Telemetry Transmitted",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 11: Admin Mission Control Queries Active GPS Responders",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 11: Assigned Responder Present on Admin Radar",
+      "status": "PASSED",
+      "details": "Found 6 sessions"
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 12: Reporting Citizen Retrieves Authorized Live GPS Telemetry",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 12: Citizen Telemetry Matches Active Location",
+      "status": "PASSED",
+      "details": ""
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 13a: Responder Updates Operational Status to 'En Route' (HTTP 200)",
+      "status": "PASSED",
+      "details": ""
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 13b: Responder Updates Operational Status to 'Arrived' (HTTP 200)",
+      "status": "PASSED",
+      "details": ""
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 14: Responder Updates Status to 'In Progress' (HTTP 200)",
+      "status": "PASSED",
+      "details": ""
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 15: Responder Resolves Task (Completed) (HTTP 200)",
+      "status": "PASSED",
+      "details": ""
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 15: Task Status is 'Completed' / 'Resolved'",
+      "status": "PASSED",
+      "details": ""
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 16: Citizen Notification Endpoint Accessible",
+      "status": "PASSED",
+      "details": ""
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 16: Citizen Received Operation Completion Notification",
+      "status": "PASSED",
+      "details": ""
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 17: Admin Closes Incident Report (Resolved) (HTTP 200)",
+      "status": "PASSED",
+      "details": ""
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 17: Final Report Status is 'Resolved'",
+      "status": "PASSED",
+      "details": ""
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 18: Report Persisted with Status 'Resolved'",
+      "status": "PASSED",
+      "details": ""
+    },
+    {
+      "category": "18-Step E2E",
+      "test": "Step 18: Task Persisted with Status 'Completed'",
+      "status": "PASSED",
+      "details": ""
+    },
+    {
+      "category": "Security / RBAC",
+      "test": "Cross-Citizen Report Access Rejection (HTTP 403)",
+      "status": "PASSED",
+      "details": "HTTP 403"
+    },
+    {
+      "category": "Security / RBAC",
+      "test": "Cross-Citizen Live Tracking Rejection (HTTP 403)",
+      "status": "PASSED",
+      "details": "HTTP 403"
+    },
+    {
+      "category": "Security / RBAC",
+      "test": "Unassigned Responder Task Modification Rejection (HTTP 403)",
+      "status": "PASSED",
+      "details": "HTTP 403"
+    },
+    {
+      "category": "Security / RBAC",
+      "test": "Citizen Forbidden from Assigning Responders (HTTP 403)",
+      "status": "PASSED",
+      "details": "HTTP 403"
+    },
+    {
+      "category": "Security / GPS",
+      "test": "Out-of-bounds Latitude (+95.0) Rejected (HTTP 400)",
+      "status": "PASSED",
+      "details": "HTTP 400"
+    },
+    {
+      "category": "Security / GPS",
+      "test": "Out-of-bounds Longitude (+190.0) Rejected (HTTP 400)",
+      "status": "PASSED",
+      "details": "HTTP 400"
+    },
+    {
+      "category": "Security / GPS",
+      "test": "Null Island (0.0, 0.0) Rejected (HTTP 400)",
+      "status": "PASSED",
+      "details": "HTTP 400"
+    },
+    {
+      "category": "Security / RBAC",
+      "test": "Unauthenticated Request Rejected (HTTP 401)",
+      "status": "PASSED",
+      "details": "HTTP 401"
+    },
+    {
+      "category": "NDMA Sachet",
+      "test": "GET /api/official-alerts/status Endpoint (HTTP 200)",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "NDMA Sachet",
+      "test": "NDMA Status contains sync metrics",
+      "status": "PASSED",
+      "details": "Keys: ['lastSyncAttempt', 'lastSuccessfulSync', 'totalRecordsImported', 'totalDuplicatesPrevented', 'status', 'lastError', 'activeOfficialAlertsCount', 'lastEtag', 'lastDurationMs', 'activeFeedUrl']"
+    },
+    {
+      "category": "NDMA Sachet",
+      "test": "GET /api/official-alerts/active Public Endpoint",
+      "status": "PASSED",
+      "details": ""
+    },
+    {
+      "category": "NDMA Sachet",
+      "test": "Database Contains Active Official NDMA Alerts",
+      "status": "PASSED",
+      "details": "Count: 16"
+    },
+    {
+      "category": "NDMA Sachet",
+      "test": "GET /api/official-alerts/state/Tamil%20Nadu (HTTP 200)",
+      "status": "PASSED",
+      "details": ""
+    },
+    {
+      "category": "NDMA Sachet",
+      "test": "POST /api/admin/ndma/sync Manual Trigger (HTTP 200)",
+      "status": "PASSED",
+      "details": "HTTP 200"
+    },
+    {
+      "category": "Notifications",
+      "test": "Admin Unread Count Endpoint (HTTP 200)",
+      "status": "PASSED",
+      "details": ""
+    },
+    {
+      "category": "Notifications",
+      "test": "Citizen Unread Count Endpoint (HTTP 200)",
+      "status": "PASSED",
+      "details": ""
+    },
+    {
+      "category": "Notifications",
+      "test": "Notification Category Filtering (DISASTERS)",
+      "status": "PASSED",
+      "details": ""
+    },
+    {
+      "category": "Notifications",
+      "test": "Mark Notification #566 as Read (HTTP 200)",
+      "status": "PASSED",
+      "details": ""
+    },
+    {
+      "category": "Notifications",
+      "test": "Citizen Mark All as Read (HTTP 200)",
+      "status": "PASSED",
+      "details": ""
+    },
+    {
+      "category": "Notifications",
+      "test": "Citizen Unread Count Zero After Mark All Read",
+      "status": "PASSED",
+      "details": "Unread: 0"
+    },
+    {
+      "category": "Notifications",
+      "test": "Delete Notification #565 (HTTP 200/204)",
+      "status": "PASSED",
+      "details": ""
+    }
+  ]
+}

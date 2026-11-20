@@ -20,7 +20,7 @@ public class RoutingController {
     @Autowired
     private RouteEstimationService routeService;
 
-    @GetMapping("/directions")
+    @GetMapping({"/directions", "/route"})
     public ResponseEntity<?> getDirections(
             @RequestParam double startLat,
             @RequestParam double startLng,

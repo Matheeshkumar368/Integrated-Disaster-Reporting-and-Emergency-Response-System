@@ -107,7 +107,7 @@ public class NotificationController {
     }
 
     // Mark all notifications as read for current user
-    @PutMapping("/read-all")
+    @PutMapping({"/read-all", "/mark-all-read"})
     public ResponseEntity<?> markAllAsRead() {
         Authentication auth = getAuthenticatedUser();
         if (auth == null) {
