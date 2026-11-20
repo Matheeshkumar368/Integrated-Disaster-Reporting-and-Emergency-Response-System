@@ -89,7 +89,8 @@ public class AlertService {
 
         if (notificationService != null) {
             try {
-                notificationService.notifyAllCitizens(
+                notificationService.notifyCitizensInRegion(
+                    alert.getRegion(),
                     "Severe Disaster Alert: " + alert.getRegion(),
                     alert.getMessage(),
                     "ALERTS",
@@ -98,7 +99,8 @@ public class AlertService {
                     "ALERT",
                     "citizen-notifications.html"
                 );
-                notificationService.notifyAllResponders(
+                notificationService.notifyRespondersInRegion(
+                    alert.getRegion(),
                     "Emergency Alert Broadcast: " + alert.getRegion(),
                     alert.getMessage(),
                     "ALERTS",
@@ -200,7 +202,8 @@ public class AlertService {
             Alert saved = alertRepository.save(alert);
             if (notificationService != null) {
                 try {
-                    notificationService.notifyAllCitizens(
+                    notificationService.notifyCitizensInRegion(
+                        saved.getRegion(),
                         "Broadcasted Alert: " + saved.getRegion(),
                         saved.getMessage(),
                         "ALERTS",
@@ -209,7 +212,8 @@ public class AlertService {
                         "ALERT",
                         "citizen-notifications.html"
                     );
-                    notificationService.notifyAllResponders(
+                    notificationService.notifyRespondersInRegion(
+                        saved.getRegion(),
                         "Emergency Alert Broadcast: " + saved.getRegion(),
                         saved.getMessage(),
                         "ALERTS",

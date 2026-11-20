@@ -34,7 +34,7 @@ import com.disaster.management.service.ResponderTrackingService;
 
 @RestController
 @RequestMapping("/api/tasks")
-@CrossOrigin(origins = {"http://localhost:8080", "http://localhost:8081", "http://127.0.0.1:8080", "http://127.0.0.1:8081"})
+@CrossOrigin(origins = {"http://localhost:8080", "http://localhost:8081", "http://127.0.0.1:8080", "http://127.0.0.1:8081", "*"}, allowedHeaders = "*")
 public class RescueTaskController {
 
     private static final Logger log = LoggerFactory.getLogger(RescueTaskController.class);

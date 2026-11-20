@@ -190,9 +190,9 @@ async function runStandaloneNotificationAudit() {
         const adminPillKeys = await client.evaluate(`
             Array.from(document.querySelectorAll('.shade-filter-pill')).map(p => p.getAttribute('data-category'))
         `);
-        const expectedPills = ['ALL', 'ALERTS', 'UPDATES', 'RESPONDER', 'MESSAGES'];
+        const expectedPills = ['ALL', 'REPORTS', 'ASSIGNMENTS', 'BROADCASTS', 'SYSTEM'];
         const hasAllPills = expectedPills.every(k => adminPillKeys.includes(k));
-        record('Admin Notifications: All 5 filter pills present (All, Alerts, Updates, Responder Updates, Messages)', hasAllPills, `Found: ${JSON.stringify(adminPillKeys)}`);
+        record('Admin Notifications: All 5 role-specific filter pills present (All, Reports, Assignments, Broadcasts, System)', hasAllPills, `Found: ${JSON.stringify(adminPillKeys)}`);
 
         // Check Feed Cards or Empty State
         const adminCardCount = await client.evaluate("document.querySelectorAll('.notif-card').length");
@@ -332,14 +332,14 @@ async function runStandaloneNotificationAudit() {
         // =====================================================================
         console.log('\n--- SECTION 5: Interactive Functional Actions ---');
 
-        // 5.1 Click ALERTS filter pill
+        // 5.1 Click category filter pill
         await client.evaluate(`(() => {
-            const pill = document.querySelector('.shade-filter-pill[data-category="ALERTS"]');
+            const pill = document.querySelector('.shade-filter-pill[data-category="REPORTS"]') || document.querySelector('.shade-filter-pill[data-category="ALERTS"]') || document.querySelector('.shade-filter-pill[data-category="DISPATCH"]');
             if (pill) pill.click();
         })()`);
         await sleep(500);
         const alertsPillActive = await client.evaluate(`(() => {
-            const pill = document.querySelector('.shade-filter-pill[data-category="ALERTS"]');
+            const pill = document.querySelector('.shade-filter-pill[data-category="REPORTS"]') || document.querySelector('.shade-filter-pill[data-category="ALERTS"]') || document.querySelector('.shade-filter-pill[data-category="DISPATCH"]');
             return pill ? pill.classList.contains('active') : false;
         })()`);
         record('Filter pill click activates category view', alertsPillActive === true);

@@ -30,7 +30,7 @@ import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/api/alerts")
-@CrossOrigin(origins = {"http://localhost:8080", "http://localhost:8081", "http://127.0.0.1:8080", "http://127.0.0.1:8081"})
+@CrossOrigin(origins = {"http://localhost:8080", "http://localhost:8081", "http://127.0.0.1:8080", "http://127.0.0.1:8081", "*"}, allowedHeaders = "*")
 public class AlertController {
 
     private static final Logger log = LoggerFactory.getLogger(AlertController.class);
@@ -49,10 +49,23 @@ public class AlertController {
             HttpServletRequest httpRequest) {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String adminEmail = auth != null ? auth.getName() : "admin@disaster.gov.in";
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equalsIgnoreCase(auth.getName())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("status", "error", "message", "Unauthorized: Authentication required to broadcast alerts"));
+        }
 
-        // If alert severity is "High" or alert is broadcasted, require step-up verification if PIN is enrolled
-        if ("High".equalsIgnoreCase(alert.getSeverity())) {
+        boolean isAdmin = auth.getAuthorities().stream().anyMatch(a ->
+            a.getAuthority().equalsIgnoreCase("ROLE_Admin") || a.getAuthority().equalsIgnoreCase("ROLE_ADMIN")
+        );
+        if (!isAdmin) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of("status", "error", "message", "Forbidden: Insufficient privileges. Only Central Command Administrators can broadcast emergency alerts."));
+        }
+
+        String adminEmail = auth.getName();
+
+        // If alert severity is "High", "Critical", or "Extreme", require step-up verification if PIN is enrolled
+        if ("High".equalsIgnoreCase(alert.getSeverity()) || "Critical".equalsIgnoreCase(alert.getSeverity()) || "Extreme".equalsIgnoreCase(alert.getSeverity())) {
             Map<String, Object> pinStatus = adminPinService.getPinStatus(adminEmail);
             if (Boolean.TRUE.equals(pinStatus.get("enrolled"))) {
                 if (!adminPinService.validateStepUpAuthorization(stepUpToken, adminEmail)) {
@@ -202,7 +215,7 @@ public class AlertController {
             @PathVariable Long alertId,
             @RequestBody Alert updatedData) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_Admin"))) {
+        if (auth == null || !auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equalsIgnoreCase("ROLE_Admin") || a.getAuthority().equalsIgnoreCase("ROLE_ADMIN"))) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(Map.of("status", "error", "message", "Forbidden: Admin privileges required to edit alerts"));
         }
@@ -264,7 +277,7 @@ public class AlertController {
             @PathVariable Long alertId,
             @RequestBody(required = false) Map<String, String> body) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_Admin"))) {
+        if (auth == null || !auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equalsIgnoreCase("ROLE_Admin") || a.getAuthority().equalsIgnoreCase("ROLE_ADMIN"))) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(Map.of("status", "error", "message", "Forbidden: Admin privileges required to withdraw alerts"));
         }
@@ -305,7 +318,7 @@ public class AlertController {
     @org.springframework.web.bind.annotation.DeleteMapping("/{alertId}")
     public ResponseEntity<?> deleteAlert(@PathVariable Long alertId) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_Admin"))) {
+        if (auth == null || !auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equalsIgnoreCase("ROLE_Admin") || a.getAuthority().equalsIgnoreCase("ROLE_ADMIN"))) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(Map.of("status", "error", "message", "Forbidden: Admin privileges required to delete alerts"));
         }

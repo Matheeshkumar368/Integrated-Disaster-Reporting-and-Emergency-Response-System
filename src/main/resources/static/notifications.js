@@ -273,11 +273,10 @@
         }
 
         /**
-         * Normalizes raw categories into the 4 primary filter categories:
-         * - ALERTS (Official NDMA warnings, emergency broadcasts, disasters)
-         * - RESPONDER (Responder dispatches, assignments, rescue tracking)
-         * - MESSAGES (Direct messages, communication broadcasts)
-         * - UPDATES (Citizen report verification, mission completions, system updates)
+         * Normalizes raw categories into role-specific filter categories:
+         * - Admin: REPORTS, ASSIGNMENTS, BROADCASTS, SYSTEM
+         * - Citizen: REPORTS, RESCUE, WARNINGS, MESSAGES
+         * - Responder: DISPATCH, STATUS_LOG, HQ_UPDATES, HAZARDS
          */
         normalizeCategory(rawCategory, item) {
             const cat = (rawCategory || '').trim().toUpperCase();
@@ -285,30 +284,71 @@
             const title = ((item && item.title) || '').toLowerCase();
             const msg = ((item && item.message) || '').toLowerCase();
 
-            // 1. Emergency Alerts & Disaster Warnings
-            if (cat === 'ALERT' || cat === 'ALERTS' || cat === 'DISASTER' || cat === 'DISASTERS' || 
-                title.includes('alert') || title.includes('warning') || title.includes('emergency') || 
-                title.includes('flood') || title.includes('fire') || title.includes('cyclone') || 
-                title.includes('earthquake') || relType === 'ALERT') {
-                return 'ALERTS';
+            if (this.role === 'Admin') {
+                // 1. Citizen Reports
+                if (cat === 'REPORTS' || cat === 'DISASTER' || cat === 'DISASTERS' || relType === 'CITIZEN_REPORT' ||
+                    title.includes('report') || title.includes('disaster') || title.includes('incident #')) {
+                    return 'REPORTS';
+                }
+                // 2. Responder Operations & Progress
+                if (cat === 'ASSIGNMENTS' || cat === 'ASSIGNMENT' || cat === 'TASK' || cat === 'TASKS' || cat === 'RESPONSE' ||
+                    title.includes('responder') || title.includes('dispatched') || title.includes('en route') || 
+                    title.includes('arrived') || title.includes('acknowledged') || title.includes('mission') || title.includes('rescue')) {
+                    return 'ASSIGNMENTS';
+                }
+                // 3. Emergency Broadcasts & NDMA Warnings
+                if (cat === 'BROADCASTS' || cat === 'BROADCAST' || cat === 'ALERTS' || cat === 'ALERT' ||
+                    title.includes('broadcast') || title.includes('ndma') || title.includes('warning') || title.includes('alert')) {
+                    return 'BROADCASTS';
+                }
+                // 4. System & Personnel
+                return 'SYSTEM';
             }
 
-            // 2. Responder Updates & Rescue Operations
-            if (cat === 'RESPONDER' || cat === 'RESPONDERS' || cat === 'ASSIGNMENT' || cat === 'ASSIGNMENTS' || 
-                cat === 'RESPONSE' || cat === 'TASK' || cat === 'TASKS' || 
-                title.includes('responder') || title.includes('rescue') || title.includes('assigned') || 
-                title.includes('en route') || title.includes('arrived') || title.includes('dispatched') || 
-                title.includes('mission') || relType === 'TASK') {
-                return 'RESPONDER';
-            }
-
-            // 3. Messages & Direct Communications
-            if (cat === 'MESSAGE' || cat === 'MESSAGES' || title.includes('message') || title.includes('broadcast') || relType === 'MESSAGE') {
+            if (this.role === 'Citizen') {
+                // 1. My Report Status
+                if (cat === 'REPORTS' || cat === 'REPORT' || relType === 'CITIZEN_REPORT' || 
+                    title.includes('report submitted') || title.includes('report received') || 
+                    title.includes('under review') || title.includes('report verified') || title.includes('report rejected')) {
+                    return 'REPORTS';
+                }
+                // 2. Responder & Rescue Operations
+                if (cat === 'RESCUE' || cat === 'RESPONSE' || cat === 'ASSIGNMENT' || 
+                    title.includes('rescue team') || title.includes('responder assigned') || 
+                    title.includes('acknowledged assignment') || title.includes('en route') || 
+                    title.includes('arrived') || title.includes('mission completed') || title.includes('resolved') || title.includes('assistance in progress')) {
+                    return 'RESCUE';
+                }
+                // 3. Disaster Warnings & NDMA Alerts
+                if (cat === 'WARNINGS' || cat === 'ALERTS' || cat === 'ALERT' || 
+                    title.includes('warning') || title.includes('flood') || title.includes('cyclone') || title.includes('evacuation') || title.includes('alert')) {
+                    return 'WARNINGS';
+                }
+                // 4. Safety Directives & Advisories
                 return 'MESSAGES';
             }
 
-            // 4. Everything else defaults to General Updates
-            return 'UPDATES';
+            if (this.role === 'Responder') {
+                // 1. New Rescue Assignments & Dispatch
+                if (cat === 'DISPATCH' || cat === 'ASSIGNMENT' || cat === 'ASSIGNMENTS' || 
+                    title.includes('assignment') || title.includes('dispatch') || title.includes('coordinates') || title.includes('location & incident')) {
+                    return 'DISPATCH';
+                }
+                // 2. Mission Progress & Status
+                if (cat === 'STATUS_LOG' || cat === 'RESPONSE' || 
+                    title.includes('acknowledged') || title.includes('en route') || title.includes('arrived') || title.includes('progress') || title.includes('completed')) {
+                    return 'STATUS_LOG';
+                }
+                // 3. HQ Orders & Central Command Directives
+                if (cat === 'HQ_UPDATES' || cat === 'MESSAGES' || cat === 'MESSAGE' ||
+                    title.includes('hq') || title.includes('command') || title.includes('instructions') || title.includes('orders') || title.includes('advisory update')) {
+                    return 'HQ_UPDATES';
+                }
+                // 4. Severe Hazards & Weather Warnings
+                return 'HAZARDS';
+            }
+
+            return 'ALL';
         }
 
         updateCounters() {
@@ -322,16 +362,26 @@
                 totalDisplay.textContent = `${this.totalCount} total`;
             }
 
-            // Category Counters
-            const counts = { ALL: this.notifications.length, ALERTS: 0, UPDATES: 0, RESPONDER: 0, MESSAGES: 0 };
-            this.notifications.forEach(n => {
-                const cat = this.normalizeCategory(n.category, n);
-                counts[cat] = (counts[cat] || 0) + 1;
+            // Category Counters dynamically matching pills on active page
+            const pills = document.querySelectorAll('.shade-filter-pill');
+            const counts = { ALL: this.notifications.length };
+
+            pills.forEach(p => {
+                const cat = p.getAttribute('data-category');
+                if (cat && cat !== 'ALL') counts[cat] = 0;
             });
 
-            ['ALL', 'ALERTS', 'UPDATES', 'RESPONDER', 'MESSAGES'].forEach(k => {
-                const badge = document.getElementById(`countPill_${k}`);
-                if (badge) badge.textContent = counts[k] || 0;
+            this.notifications.forEach(n => {
+                const cat = this.normalizeCategory(n.category, n);
+                if (counts[cat] !== undefined) {
+                    counts[cat]++;
+                }
+            });
+
+            pills.forEach(p => {
+                const cat = p.getAttribute('data-category');
+                const badge = p.querySelector('.filter-count-badge') || p.querySelector('.pill-count') || document.getElementById(`countPill_${cat}`);
+                if (badge) badge.textContent = counts[cat] !== undefined ? counts[cat] : 0;
             });
         }
 

@@ -32,7 +32,7 @@ import com.disaster.management.service.IncidentReportService;
 
 @RestController
 @RequestMapping("/api/reports")
-@CrossOrigin(origins = {"http://localhost:8080", "http://localhost:8081", "http://127.0.0.1:8080", "http://127.0.0.1:8081"})
+@CrossOrigin(origins = {"http://localhost:8080", "http://localhost:8081", "http://127.0.0.1:8080", "http://127.0.0.1:8081", "*"}, allowedHeaders = "*")
 public class IncidentReportController {
 
     private static final Logger log = LoggerFactory.getLogger(IncidentReportController.class);

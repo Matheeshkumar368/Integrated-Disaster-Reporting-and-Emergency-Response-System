@@ -25,14 +25,14 @@
     "detail": "Href: /admin-dashboard.html"
   },
   {
-    "testName": "Admin Notifications: All 5 filter pills present (All, Alerts, Updates, Responder Updates, Messages)",
+    "testName": "Admin Notifications: All 5 role-specific filter pills present (All, Reports, Assignments, Broadcasts, System)",
     "passed": true,
-    "detail": "Found: [\"ALL\",\"ALERTS\",\"UPDATES\",\"RESPONDER\",\"MESSAGES\"]"
+    "detail": "Found: [\"ALL\",\"REPORTS\",\"ASSIGNMENTS\",\"BROADCASTS\",\"SYSTEM\"]"
   },
   {
     "testName": "Admin Notifications: Notification cards rendered in feed",
     "passed": true,
-    "detail": "Cards: 272"
+    "detail": "Cards: 18"
   },
   {
     "testName": "Admin Notifications: Clicking Dashboard returns strictly to Admin Dashboard",
@@ -57,7 +57,7 @@
   {
     "testName": "Citizen Notifications: Notification cards rendered in feed",
     "passed": true,
-    "detail": "Cards: 226"
+    "detail": "Cards: 17"
   },
   {
     "testName": "Citizen Notifications: Clicking Dashboard returns strictly to Citizen Dashboard",
@@ -82,7 +82,7 @@
   {
     "testName": "Responder Notifications: Notification cards rendered in feed",
     "passed": true,
-    "detail": "Cards: 38"
+    "detail": "Cards: 12"
   },
   {
     "testName": "Responder Notifications: Clicking Dashboard returns strictly to Responder Dashboard",
