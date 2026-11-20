@@ -346,6 +346,156 @@ public class CitizenReportService {
     }
 
     @Transactional
+    public CitizenReport verifyReport(Long reportId, String adminEmail) {
+        CitizenReport report = reportRepository.findById(reportId)
+            .orElseThrow(() -> new IllegalArgumentException("Report not found with ID: " + reportId));
+
+        if (Boolean.TRUE.equals(report.getIsDeleted())) {
+            throw new IllegalStateException("Cannot verify a deleted report");
+        }
+
+        report.setStatus("Verified");
+        report.setProgressStage("Verified");
+        CitizenReport saved = reportRepository.save(report);
+
+        // Timeline event
+        try {
+            timelineService.logEvent(
+                reportId,
+                "CITIZEN_REPORT",
+                "REPORT_VERIFIED",
+                adminEmail != null ? adminEmail : "admin@disaster.gov.in",
+                "Admin",
+                report.getCitizenEmail(),
+                "Incident report verified by Command Staff",
+                null,
+                null
+            );
+        } catch (Exception e) {
+            log.warn("Timeline warning on verify: {}", e.getMessage());
+        }
+
+        // Admin audit
+        try {
+            adminPinService.recordAudit(
+                adminEmail != null ? adminEmail : "admin@disaster.gov.in",
+                "VERIFY_REPORT",
+                "CitizenReport",
+                String.valueOf(reportId),
+                "SUCCESS",
+                "Report #" + reportId + " verified",
+                null
+            );
+        } catch (Exception e) {
+            log.warn("Audit record warning: {}", e.getMessage());
+        }
+
+        if (notificationService != null) {
+            try {
+                notificationService.notifyCitizen(
+                    saved.getCitizenEmail(),
+                    "Report Verified",
+                    "Your incident report #" + reportId + " has been verified by command personnel.",
+                    "UPDATES",
+                    "High",
+                    reportId,
+                    "CITIZEN_REPORT",
+                    "citizen-notifications.html"
+                );
+                notificationService.notifyAdmins(
+                    "Report Verified",
+                    "Incident #" + reportId + " verified by " + (adminEmail != null ? adminEmail : "Command"),
+                    "DISASTERS",
+                    "Low",
+                    reportId,
+                    "CITIZEN_REPORT",
+                    "admin-notifications.html"
+                );
+            } catch (Exception e) {
+                log.warn("Notification dispatch warning on verifyReport: {}", e.getMessage());
+            }
+        }
+
+        return saved;
+    }
+
+    @Transactional
+    public CitizenReport rejectReport(Long reportId, String reason, String adminEmail) {
+        CitizenReport report = reportRepository.findById(reportId)
+            .orElseThrow(() -> new IllegalArgumentException("Report not found with ID: " + reportId));
+
+        if (Boolean.TRUE.equals(report.getIsDeleted())) {
+            throw new IllegalStateException("Cannot reject a deleted report");
+        }
+
+        String explanation = reason != null && !reason.trim().isEmpty() ? reason.trim() : "Incident report did not meet verification criteria";
+        report.setStatus("Rejected");
+        report.setProgressStage("Rejected");
+        report.setRejectionReason(explanation);
+        CitizenReport saved = reportRepository.save(report);
+
+        // Timeline event
+        try {
+            timelineService.logEvent(
+                reportId,
+                "CITIZEN_REPORT",
+                "REPORT_REJECTED",
+                adminEmail != null ? adminEmail : "admin@disaster.gov.in",
+                "Admin",
+                report.getCitizenEmail(),
+                "Incident report rejected: " + explanation,
+                null,
+                "{\"reason\":\"" + explanation.replace("\"", "\\\"") + "\"}"
+            );
+        } catch (Exception e) {
+            log.warn("Timeline warning on reject: {}", e.getMessage());
+        }
+
+        // Admin audit
+        try {
+            adminPinService.recordAudit(
+                adminEmail != null ? adminEmail : "admin@disaster.gov.in",
+                "REJECT_REPORT",
+                "CitizenReport",
+                String.valueOf(reportId),
+                "SUCCESS",
+                "Report #" + reportId + " rejected: " + explanation,
+                null
+            );
+        } catch (Exception e) {
+            log.warn("Audit record warning: {}", e.getMessage());
+        }
+
+        if (notificationService != null) {
+            try {
+                notificationService.notifyCitizen(
+                    saved.getCitizenEmail(),
+                    "Report Rejected",
+                    "Your incident report #" + reportId + " was reviewed and rejected. Reason: " + explanation,
+                    "UPDATES",
+                    "Medium",
+                    reportId,
+                    "CITIZEN_REPORT",
+                    "citizen-notifications.html"
+                );
+                notificationService.notifyAdmins(
+                    "Report Rejected",
+                    "Incident #" + reportId + " rejected by " + (adminEmail != null ? adminEmail : "Command"),
+                    "DISASTERS",
+                    "Low",
+                    reportId,
+                    "CITIZEN_REPORT",
+                    "admin-notifications.html"
+                );
+            } catch (Exception e) {
+                log.warn("Notification dispatch warning on rejectReport: {}", e.getMessage());
+            }
+        }
+
+        return saved;
+    }
+
+    @Transactional
     public CitizenReport acknowledgeReport(Long reportId) {
         CitizenReport report = reportRepository.findById(reportId).orElse(null);
         if (report != null && !Boolean.TRUE.equals(report.getIsDeleted())) {
@@ -578,6 +728,22 @@ public class CitizenReportService {
             null,
             null
         );
+
+        if (notificationService != null) {
+            try {
+                notificationService.notifyAdmins(
+                    "Report Details Updated",
+                    "Incident #" + reportId + " (" + report.getTitle() + ") updated by " + actorEmail,
+                    "DISASTERS",
+                    report.getSeverity() != null ? report.getSeverity() : "Medium",
+                    reportId,
+                    "CITIZEN_REPORT",
+                    "admin-notifications.html"
+                );
+            } catch (Exception e) {
+                log.warn("Notification dispatch warning on updateReport: {}", e.getMessage());
+            }
+        }
 
         return saved;
     }

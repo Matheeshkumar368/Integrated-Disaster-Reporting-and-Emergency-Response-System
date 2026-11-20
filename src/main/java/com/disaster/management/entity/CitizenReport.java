@@ -100,6 +100,9 @@ public class CitizenReport {
     @Column(name = "cancellation_reason")
     private String cancellationReason;
 
+    @Column(name = "rejection_reason")
+    private String rejectionReason;
+
     public CitizenReport() {
         this.timestamp = LocalDateTime.now();
         this.status = "Pending";
@@ -214,4 +217,7 @@ public class CitizenReport {
 
     public String getCancellationReason() { return cancellationReason; }
     public void setCancellationReason(String cancellationReason) { this.cancellationReason = cancellationReason; }
+
+    public String getRejectionReason() { return rejectionReason; }
+    public void setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; }
 }

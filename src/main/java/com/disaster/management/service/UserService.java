@@ -28,6 +28,9 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired(required = false)
+    private NotificationService notificationService;
+
     /**
      * Registers a new Citizen or Responder.
      * Prevents administrative self-registration.
@@ -105,6 +108,35 @@ public class UserService {
 
         User savedUser = userRepository.save(user);
         log.info("New {} successfully registered: {}", savedUser.getRole(), savedUser.getEmail());
+
+        if (notificationService != null) {
+            try {
+                if ("Responder".equalsIgnoreCase(savedUser.getRole())) {
+                    notificationService.notifyAdmins(
+                        "New Responder Registered",
+                        "Emergency responder " + savedUser.getName() + " (" + savedUser.getEmail() + ") registered for duty in " + savedUser.getLocation(),
+                        "RESPONDERS",
+                        "Medium",
+                        savedUser.getId(),
+                        "USER",
+                        "admin-users.html"
+                    );
+                } else {
+                    notificationService.notifyAdmins(
+                        "New User Registered",
+                        "Citizen " + savedUser.getName() + " (" + savedUser.getEmail() + ") registered from " + savedUser.getLocation(),
+                        "USERS",
+                        "Low",
+                        savedUser.getId(),
+                        "USER",
+                        "admin-users.html"
+                    );
+                }
+            } catch (Exception e) {
+                log.warn("Notification dispatch warning on user registration: {}", e.getMessage());
+            }
+        }
+
         return savedUser;
     }
 

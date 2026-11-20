@@ -188,9 +188,13 @@
             const cat = (rawCategory || '').trim().toUpperCase();
             const relType = ((item && item.relatedIncidentType) || '').toUpperCase();
             const title = ((item && item.title) || '').toLowerCase();
+            const msg = ((item && item.message) || '').toLowerCase();
 
             if (this.role === 'Admin') {
-                if (cat === 'DISASTERS' || cat === 'DISASTER' || relType === 'CITIZEN_REPORT' || relType === 'REPORT' || title.includes('disaster') || title.includes('distress')) {
+                if (cat === 'RESPONDERS' || cat === 'RESPONDER' || title.includes('responder') || title.includes('rescue team') || title.includes('assigned to') || title.includes('acknowledged by')) {
+                    return 'RESPONDERS';
+                }
+                if (cat === 'DISASTERS' || cat === 'DISASTER' || relType === 'CITIZEN_REPORT' || relType === 'REPORT' || title.includes('disaster') || title.includes('distress') || title.includes('incident')) {
                     return 'DISASTERS';
                 }
                 if (cat === 'USERS' || cat === 'USER' || title.includes('user') || title.includes('registered')) {
@@ -206,6 +210,9 @@
                 if (cat === 'ALERTS' || cat === 'ALERT' || relType === 'ALERT' || title.includes('alert') || title.includes('warning')) {
                     return 'ALERTS';
                 }
+                if (cat === 'MESSAGES' || cat === 'MESSAGE' || title.includes('message') || title.includes('broadcast')) {
+                    return 'MESSAGES';
+                }
                 return 'UPDATES';
             }
 
@@ -213,8 +220,11 @@
             if (cat === 'ALERTS' || cat === 'ALERT' || cat === 'DISASTERS' || cat === 'DISASTER' || title.includes('alert') || title.includes('warning')) {
                 return 'ALERTS';
             }
-            if (cat === 'RESPONSE' || cat === 'RESPONSES' || title.includes('rescue team') || title.includes('deployed') || title.includes('resolved')) {
+            if (cat === 'RESPONSE' || cat === 'RESPONSES' || title.includes('rescue team') || title.includes('deployed') || title.includes('en route') || title.includes('arrived') || title.includes('resolved') || title.includes('responder')) {
                 return 'RESPONSE';
+            }
+            if (cat === 'MESSAGES' || cat === 'MESSAGE' || title.includes('message')) {
+                return 'MESSAGES';
             }
             return 'UPDATES';
         }
@@ -333,6 +343,14 @@
                 color = 'green';
                 icon = 'fa-solid fa-circle-check';
                 titleColor = '#4ade80';
+            } else if (cat === 'MESSAGES' || title.includes('message')) {
+                color = 'blue';
+                icon = 'fa-solid fa-comments';
+                titleColor = '#60a5fa';
+            } else if (cat === 'RESPONDERS' || title.includes('responder')) {
+                color = 'orange';
+                icon = 'fa-solid fa-truck-medical';
+                titleColor = '#fb923c';
             } else if (cat === 'SYSTEM' || title.includes('system') || title.includes('maintenance')) {
                 color = 'purple';
                 icon = 'fa-solid fa-gear';

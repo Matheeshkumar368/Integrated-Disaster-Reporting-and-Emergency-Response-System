@@ -179,6 +179,74 @@ public class CitizenReportController {
         }
     }
 
+    // Admin verifies citizen report
+    @PutMapping("/{reportId}/verify")
+    public ResponseEntity<?> verifyReport(@PathVariable Long reportId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("status", "error", "message", "Authentication required"));
+        }
+
+        boolean isAdmin = auth.getAuthorities().stream()
+            .anyMatch(a -> a.getAuthority().equals("ROLE_Admin"));
+        if (!isAdmin) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of("status", "error", "message", "Access denied: Admin role required to verify reports"));
+        }
+
+        try {
+            CitizenReport verified = reportService.verifyReport(reportId, auth.getName());
+            return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "message", "Report #" + reportId + " verified successfully",
+                "report", verified
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("status", "error", "message", e.getMessage()));
+        } catch (Exception e) {
+            log.error("Error verifying report {}: {}", reportId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("status", "error", "message", "Failed to verify report: " + e.getMessage()));
+        }
+    }
+
+    // Admin rejects citizen report
+    @PutMapping("/{reportId}/reject")
+    public ResponseEntity<?> rejectReport(
+            @PathVariable Long reportId,
+            @RequestBody(required = false) Map<String, String> body) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("status", "error", "message", "Authentication required"));
+        }
+
+        boolean isAdmin = auth.getAuthorities().stream()
+            .anyMatch(a -> a.getAuthority().equals("ROLE_Admin"));
+        if (!isAdmin) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of("status", "error", "message", "Access denied: Admin role required to reject reports"));
+        }
+
+        String reason = (body != null && body.get("reason") != null) ? body.get("reason") : "Report rejected by Admin";
+
+        try {
+            CitizenReport rejected = reportService.rejectReport(reportId, reason, auth.getName());
+            return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "message", "Report #" + reportId + " rejected successfully",
+                "report", rejected
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("status", "error", "message", e.getMessage()));
+        } catch (Exception e) {
+            log.error("Error rejecting report {}: {}", reportId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("status", "error", "message", "Failed to reject report: " + e.getMessage()));
+        }
+    }
+
     // Responders or Admin acknowledges report
     @PutMapping("/{reportId}/acknowledge")
     public ResponseEntity<?> acknowledgeReport(@PathVariable Long reportId) {
