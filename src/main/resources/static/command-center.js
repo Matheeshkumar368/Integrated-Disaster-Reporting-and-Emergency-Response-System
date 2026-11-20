@@ -199,15 +199,15 @@ const CommandCenter = (function () {
         const hazard = item.hazardType || item.type || 'Disaster Advisory';
         const locationName = item.areaDescription || item.location || 'India';
         const severity = item.severity || 'Moderate';
-        const isOfficial = !!item.sourceAlertId;
+        const isOfficial = !!item.sourceAlertId || !!item.identifier || item.sourceAgency === 'NDMA' || (item.sourceAgency && item.sourceAgency.includes('IMD'));
         const sourceName = item.sourceAgency || (isOfficial ? 'NDMA SACHET (CAP 1.2)' : 'Civil Protection');
         const headline = item.headline || item.description || 'Verified Warning Advisory';
         const instructions = item.instruction || 'Follow official SDMA safety guidelines.';
         const effectiveTime = item.effectiveTime || item.timestamp || new Date().toISOString();
-        const expiresTime = item.expiresTime ? new Date(item.expiresTime).toLocaleString('en-IN') : 'Ongoing';
+        const expiresTime = item.expiresTime || item.expiryTime ? new Date(item.expiresTime || item.expiryTime).toLocaleString('en-IN') : 'Ongoing';
         const precision = item.locationPrecision ? item.locationPrecision.replace('_', ' ') : 'Centroid';
-        const lat = (item.latitude || 0).toFixed(4);
-        const lon = (item.longitude || 0).toFixed(4);
+        const lat = (item.latitude != null && !isNaN(item.latitude)) ? Number(item.latitude).toFixed(4) : 'Unlocated';
+        const lon = (item.longitude != null && !isNaN(item.longitude)) ? Number(item.longitude).toFixed(4) : 'Unlocated';
 
         const sevBadgeClass = /high|extreme|severe/i.test(severity) ? 'severity-extreme' :
             /medium|moderate/i.test(severity) ? 'severity-moderate' : 'severity-low';

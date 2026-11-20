@@ -411,6 +411,7 @@
                         <span style="color:#64748b;">|</span>
                         <span id="mapAlertCountBadge" style="color:#38bdf8;font-family:var(--cc-font-mono);">0 Active Markers</span>
                         <span id="mapResponderBadge" style="color:#10b981;font-family:var(--cc-font-mono);font-size:0.75rem;margin-left:6px;display:none;"></span>
+                        <span id="unlocatedAlertsBadge" style="display:none;margin-left:6px;background:rgba(245,158,11,0.15);border:1px solid #f59e0b;color:#f59e0b;padding:0.15rem 0.5rem;border-radius:4px;font-size:0.75rem;cursor:pointer;" title="Click to view unlocated warnings"></span>
                     </div>
 
                     <!-- Tactical Layer Toggles -->
@@ -611,6 +612,9 @@
                 </button>
                 <button type="button" class="cc-sub-tab-btn" id="tabAlertsAll" onclick="switchFeedView('alerts', 'ALL')">
                     <i class="fas fa-layer-group"></i> All Alerts (<span id="tabTotalCount">0</span>)
+                </button>
+                <button type="button" class="cc-sub-tab-btn" id="tabNdmaWarnings" onclick="switchFeedView('ndma', 'ALL')">
+                    <i class="fas fa-satellite" style="color:var(--cc-cyan);"></i> Official NDMA Warnings (<span id="tabNdmaCount">0</span>)
                 </button>
                 <button type="button" class="cc-sub-tab-btn" id="tabCitizenReports" onclick="switchFeedView('citizen', 'ALL')">
                     <i class="fas fa-triangle-exclamation" style="color:var(--cc-critical-red);"></i> Citizen Distress Reports (<span id="tabCitizenCount">0</span>)
@@ -1368,45 +1372,161 @@
             if (!map || !alertsLayerGroup) return;
             alertsLayerGroup.clearLayers();
 
-            if (!items || items.length === 0) return;
+            if (!items || items.length === 0) {
+                const countBadge = document.getElementById('mapAlertCountBadge');
+                if (countBadge) countBadge.textContent = '0 Active Markers';
+                const unlocatedBadge = document.getElementById('unlocatedAlertsBadge');
+                if (unlocatedBadge) unlocatedBadge.style.display = 'none';
+                return;
+            }
+
+            let plottedCount = 0;
+            let unlocatedAlerts = [];
 
             items.forEach(item => {
                 const hazard = item.hazardType || item.type || 'Advisory';
                 const locationName = item.areaDescription || item.location || 'India';
                 const severity = item.severity || 'Moderate';
-                const lat = item.latitude || (locationCoords[locationName] ? locationCoords[locationName][0] : 11.1271);
-                const lon = item.longitude || (locationCoords[locationName] ? locationCoords[locationName][1] : 78.6569);
+                
+                let lat = item.latitude;
+                let lon = item.longitude;
+                let isApproximate = false;
 
+                if (!lat || !lon || item.locationPrecision === 'UNLOCATED') {
+                    // Check if district / state center is known in gazetteer
+                    const matchKey = Object.keys(locationCoords).find(k => locationName.toLowerCase().includes(k.toLowerCase()));
+                    if (matchKey) {
+                        lat = locationCoords[matchKey][0];
+                        lon = locationCoords[matchKey][1];
+                        isApproximate = true;
+                    }
+                }
+
+                if (!lat || !lon) {
+                    // Genuine unlocated alert: never invent fake coordinates
+                    unlocatedAlerts.push(item);
+                    return;
+                }
+
+                plottedCount++;
                 const icon = CommandCenter.createTacticalMarker(hazard, severity);
                 const marker = L.marker([lat, lon], { icon: icon }).addTo(alertsLayerGroup);
+                
+                let popupHtml = `<strong>${hazard}</strong><br/>${locationName}`;
+                if (isApproximate) {
+                    popupHtml += `<br/><small style="color:#f59e0b;">(Approximate District Center)</small>`;
+                }
+                marker.bindPopup(popupHtml);
 
-                // Clicking marker slides open the tactical incident inspection drawer
                 marker.on('click', () => {
                     CommandCenter.openIncidentDrawer(item, (clickedItem) => {
-                        // Pre-populate broadcast form from drawer action
-                        document.getElementById('title').value = `${hazard} Alert - ${locationName}`;
-                        document.getElementById('message').value = clickedItem.headline || clickedItem.description || `Emergency warning for ${locationName}. Follow safety instructions.`;
-                        
-                        let matchedType = 'Other';
-                        if (/rain/i.test(hazard)) matchedType = 'Heavy Rain';
-                        else if (/flood/i.test(hazard)) matchedType = 'Flood';
-                        else if (/cyclone/i.test(hazard)) matchedType = 'Cyclone';
-                        else if (/earthquake/i.test(hazard)) matchedType = 'Earthquake';
-                        document.getElementById('disasterType').value = matchedType;
-                        document.getElementById('severity').value = /high|extreme|severe/i.test(severity) ? 'High' : 'Medium';
-                        
-                        // Select region if in list
-                        for (let opt of document.getElementById('region').options) {
-                            if (locationName.toLowerCase().includes(opt.value.toLowerCase())) {
-                                document.getElementById('region').value = opt.value;
-                                break;
-                            }
-                        }
-
-                        document.getElementById('alertForm').scrollIntoView({ behavior: 'smooth' });
+                        escalateNdmaToBroadcast(
+                            clickedItem.identifier || clickedItem.id || 'N/A',
+                            hazard,
+                            clickedItem.headline || clickedItem.title || '',
+                            clickedItem.instruction || clickedItem.description || clickedItem.message || '',
+                            severity,
+                            locationName
+                        );
                     });
                 });
             });
+
+            const countBadge = document.getElementById('mapAlertCountBadge');
+            if (countBadge) countBadge.textContent = `${plottedCount} Active Markers`;
+
+            const unlocatedBadge = document.getElementById('unlocatedAlertsBadge');
+            if (unlocatedBadge) {
+                if (unlocatedAlerts.length > 0) {
+                    unlocatedBadge.style.display = 'inline-flex';
+                    unlocatedBadge.innerHTML = `<i class="fas fa-triangle-exclamation"></i> ${unlocatedAlerts.length} Unlocated Warnings`;
+                    unlocatedBadge.onclick = () => showUnlocatedAlertsModal(unlocatedAlerts);
+                } else {
+                    unlocatedBadge.style.display = 'none';
+                }
+            }
+        }
+
+        function showUnlocatedAlertsModal(unlocatedList) {
+            let modal = document.getElementById('unlocatedAlertsModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'unlocatedAlertsModal';
+                modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);';
+                document.body.appendChild(modal);
+            }
+            modal.innerHTML = `
+                <div style="background:#091322;border:1px solid #38bdf8;border-radius:10px;padding:1.5rem;max-width:650px;width:90%;max-height:85vh;overflow-y:auto;color:#fff;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:0.75rem;margin-bottom:1rem;">
+                        <h3 style="margin:0;font-size:1.15rem;color:#38bdf8;display:flex;align-items:center;gap:0.5rem;">
+                            <i class="fas fa-triangle-exclamation" style="color:#f59e0b;"></i> Unlocated NDMA Warnings (${unlocatedList.length})
+                        </h3>
+                        <button type="button" onclick="document.getElementById('unlocatedAlertsModal').style.display='none'" style="background:transparent;border:none;color:#94a3b8;font-size:1.4rem;cursor:pointer;">&times;</button>
+                    </div>
+                    <p style="font-size:0.85rem;color:#94a3b8;margin-bottom:1rem;">These official warnings do not specify pinpoint GPS coordinates or district centroids. Per NDMA safety policy, they are not rendered with false map markers.</p>
+                    <div style="display:flex;flex-direction:column;gap:0.75rem;">
+                        ${unlocatedList.map(a => `
+                            <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:0.75rem;">
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem;">
+                                    <strong style="color:#f8fafc;font-size:0.92rem;">${a.hazardType || a.type || 'Advisory'}</strong>
+                                    <span class="cc-badge severity-${(a.severity || 'Moderate').toLowerCase()}">${a.severity || 'Moderate'}</span>
+                                </div>
+                                <div style="font-size:0.82rem;color:#cbd5e1;margin-bottom:0.4rem;">${a.headline || a.description || ''}</div>
+                                <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:#64748b;font-family:var(--cc-font-mono);">
+                                    <span>Area: ${a.areaDescription || a.location || 'All India'}</span>
+                                    <span>${a.sourceAgency || 'NDMA Sachet'}</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            modal.style.display = 'flex';
+        }
+
+        function escalateNdmaToBroadcast(identifier, hazard, headline, instructions, severity, region) {
+            const titleEl = document.getElementById('title');
+            const msgEl = document.getElementById('message');
+            const hazardEl = document.getElementById('disasterType');
+            const sevEl = document.getElementById('severity');
+            const regEl = document.getElementById('region');
+
+            if (titleEl) titleEl.value = `[OFFICIAL NDMA ESCALATION] ${hazard ? hazard + ': ' : ''}${headline || 'Emergency Warning'}`;
+            if (msgEl) msgEl.value = `[Source: Official NDMA SACHET Alert, Ref ID: ${identifier}]\n\n${instructions || headline || 'Official safety instructions in effect.'}\n\nAll residents in the affected sector must heed instructions immediately.`;
+
+            if (hazardEl) {
+                if (/rain/i.test(hazard)) hazardEl.value = 'Heavy Rain';
+                else if (/flood/i.test(hazard)) hazardEl.value = 'Flood';
+                else if (/cyclone/i.test(hazard)) hazardEl.value = 'Cyclone';
+                else if (/earthquake/i.test(hazard)) hazardEl.value = 'Earthquake';
+                else if (/fog/i.test(hazard)) hazardEl.value = 'Dense Fog';
+                else if (/landslide/i.test(hazard)) hazardEl.value = 'Landslide';
+                else if (/tsunami/i.test(hazard)) hazardEl.value = 'Tsunami';
+                else hazardEl.value = 'Other';
+            }
+
+            if (sevEl) {
+                const s = (severity || '').toUpperCase();
+                if (s.includes('EXTREME') || s.includes('SEVERE') || s.includes('HIGH')) sevEl.value = 'High';
+                else if (s.includes('MODERATE') || s.includes('MEDIUM')) sevEl.value = 'Medium';
+                else sevEl.value = 'Low';
+            }
+
+            if (regEl && region) {
+                let matched = false;
+                for (let opt of regEl.options) {
+                    if (region.toLowerCase().includes(opt.value.toLowerCase())) {
+                        regEl.value = opt.value;
+                        matched = true;
+                        break;
+                    }
+                }
+                if (!matched) regEl.value = 'Tamil Nadu';
+            }
+
+            const form = document.getElementById('alertForm');
+            if (form) form.scrollIntoView({ behavior: 'smooth' });
+            CommandCenter.showToast(`Official NDMA Alert ${identifier} loaded into Broadcast Terminal with audit traceability`, 'info');
         }
 
         function filterMapMarkers() {
@@ -1428,23 +1548,81 @@
 
         // Live Feed Telemetry Check
         async function loadNdmaFeedStatus() {
+            const pill = document.getElementById('ndmaStatusPill');
+            const metaEl = document.getElementById('ndmaSyncMetaText');
+            const countEl = document.getElementById('ndmaAlertsCount');
+
             try {
                 const res = await fetch('/api/official-alerts/status');
-                if (res.ok) {
-                    const data = await res.json();
-                    const lastSync = data.lastSuccessfulSync ? new Date(data.lastSuccessfulSync).toLocaleTimeString('en-IN') : 'Active';
-                    document.getElementById('ndmaSyncMetaText').textContent = `Synced: ${lastSync} • Ingested: ${data.totalRecordsImported || 0}`;
-                    document.getElementById('ndmaAlertsCount').textContent = data.activeOfficialAlertsCount || 0;
+                if (!res.ok) {
+                    if (pill) {
+                        pill.className = 'cc-telemetry-pill error';
+                        pill.innerHTML = '<i class="fas fa-triangle-exclamation" style="color:#ef4444;"></i> <span style="color:#f87171;">NDMA: FEED UNAVAILABLE</span>';
+                        pill.title = `HTTP ${res.status}: Failed to reach official telemetry`;
+                    }
+                    if (metaEl) metaEl.textContent = 'Feed Offline / Check Failed';
+                    return;
                 }
-            } catch (e) {}
+
+                const data = await res.json();
+                const st = (data.status || 'IDLE').toUpperCase();
+                const lastSync = data.lastSuccessfulSync ? (window.formatIndianDateTime ? window.formatIndianDateTime(data.lastSuccessfulSync) : new Date(data.lastSuccessfulSync).toLocaleTimeString('en-IN')) : null;
+
+                if (countEl) countEl.textContent = data.activeOfficialAlertsCount || 0;
+
+                if (st === 'RUNNING') {
+                    if (pill) {
+                        pill.className = 'cc-telemetry-pill syncing';
+                        pill.innerHTML = '<i class="fas fa-rotate fa-spin" style="color:#38bdf8;"></i> <span style="color:#38bdf8;">NDMA: SYNCHRONIZING...</span>';
+                        pill.title = 'Active CAP 1.2 RSS Ingestion in progress';
+                    }
+                    if (metaEl) metaEl.textContent = 'Ingesting live CAP feeds...';
+                } else if (st === 'SUCCESS' || st === 'SUCCESS_304_CACHED' || (st === 'IDLE' && lastSync)) {
+                    if (pill) {
+                        pill.className = 'cc-telemetry-pill live';
+                        pill.innerHTML = '<span class="cc-pulse-dot"></span> <span>NDMA SACHET: CONNECTED</span>';
+                        pill.title = `Last Sync: ${lastSync || 'Active'} • ETag: ${data.lastEtag || 'Cached'} • Ingested: ${data.totalRecordsImported || 0}`;
+                    }
+                    const cachedNotice = st === 'SUCCESS_304_CACHED' ? ' (ETag 304 Cached)' : '';
+                    if (metaEl) metaEl.textContent = `Synced: ${lastSync || 'Active'}${cachedNotice} • ${data.totalRecordsImported || 0} Ingested`;
+                } else if (st === 'ERROR') {
+                    if (pill) {
+                        pill.className = 'cc-telemetry-pill error';
+                        pill.innerHTML = '<i class="fas fa-triangle-exclamation" style="color:#f59e0b;"></i> <span style="color:#fca5a5;">NDMA: FEED ERROR</span>';
+                        pill.title = data.lastError || 'Synchronization error';
+                    }
+                    if (metaEl) metaEl.textContent = data.lastError ? `Error: ${data.lastError}` : 'Feed Error';
+                } else {
+                    if (pill) {
+                        pill.className = 'cc-telemetry-pill';
+                        pill.innerHTML = '<span class="cc-pulse-dot" style="background:#94a3b8;"></span> <span style="color:#94a3b8;">NDMA: STANDBY</span>';
+                        pill.title = 'Awaiting initial feed poll';
+                    }
+                    if (metaEl) metaEl.textContent = 'Awaiting feed poll';
+                }
+            } catch (err) {
+                if (pill) {
+                    pill.className = 'cc-telemetry-pill error';
+                    pill.innerHTML = '<i class="fas fa-triangle-exclamation" style="color:#ef4444;"></i> <span style="color:#f87171;">NDMA: OFFLINE</span>';
+                    pill.title = err.message;
+                }
+                if (metaEl) metaEl.textContent = 'Connection Error';
+            }
         }
 
         async function triggerNdmaManualSync() {
             const btn = document.getElementById('btnManualSync');
             const icon = document.getElementById('syncSpinnerIcon');
+            const pill = document.getElementById('ndmaStatusPill');
+
             try {
                 btn.disabled = true;
                 icon.classList.add('fa-spin');
+                if (pill) {
+                    pill.className = 'cc-telemetry-pill syncing';
+                    pill.innerHTML = '<i class="fas fa-rotate fa-spin" style="color:#38bdf8;"></i> <span style="color:#38bdf8;">NDMA: SYNCHRONIZING...</span>';
+                }
+
                 const token = localStorage.getItem('token');
                 const res = await fetch('/api/admin/ndma/sync', {
                     method: 'POST',
@@ -1452,14 +1630,19 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    CommandCenter.showToast('NDMA SACHET feed ingested successfully!', 'success');
+                    const m = data.metrics || {};
+                    const msg = `NDMA Feed Ingested: ${m.totalRecordsImported || 0} alerts imported, ${m.totalDuplicatesPrevented || 0} duplicates skipped, ${m.activeOfficialAlertsCount || 0} active warnings.`;
+                    CommandCenter.showToast(msg, 'success');
                     await loadNdmaFeedStatus();
                     loadDisastersOnMap();
+                    loadLiveAlerts();
                 } else {
                     CommandCenter.showToast(data.message || 'Sync failed', 'error');
+                    await loadNdmaFeedStatus();
                 }
             } catch (err) {
                 CommandCenter.showToast('Network error: ' + err.message, 'error');
+                await loadNdmaFeedStatus();
             } finally {
                 btn.disabled = false;
                 icon.classList.remove('fa-spin');
@@ -1491,7 +1674,10 @@
             const taskId = params.get('taskId') || params.get('task') || (hash.startsWith('#task-') ? hash.replace('#task-', '') : null);
             const alertId = params.get('alertId') || params.get('alert') || (hash.startsWith('#alert-') ? hash.replace('#alert-', '') : null);
 
-            if (hasParam('disasters') || hasParam('reports') || hasParam('citizen') || hash.includes('disaster') || hash.includes('report') || reportId) {
+            if (hasParam('ndma') || hasParam('official') || hash.includes('ndma') || hash.includes('official')) {
+                switchFeedView('ndma', 'ALL');
+                scrollToFeedSection();
+            } else if (hasParam('disasters') || hasParam('reports') || hasParam('citizen') || hash.includes('disaster') || hash.includes('report') || reportId) {
                 window.__targetReportId = reportId;
                 switchFeedView('citizen', 'ALL');
                 scrollToFeedSection();
@@ -1530,6 +1716,12 @@
                 const titleEl = document.getElementById('feedSectionTitle');
                 if (titleEl) titleEl.textContent = 'Live Broadcasted Emergency Alerts';
                 renderAlertCards();
+            } else if (mode === 'ndma') {
+                const el = document.getElementById('tabNdmaWarnings');
+                if (el) el.classList.add('active');
+                const titleEl = document.getElementById('feedSectionTitle');
+                if (titleEl) titleEl.textContent = 'Official NDMA Sachet Live Warnings';
+                loadNdmaAlertsFeed();
             } else if (mode === 'citizen') {
                 const el = document.getElementById('tabCitizenReports');
                 if (el) el.classList.add('active');
@@ -1543,6 +1735,142 @@
                 if (titleEl) titleEl.textContent = 'Field Rescue Operations & Missions';
                 loadActiveMissions();
             }
+        }
+
+        let cachedOfficialAlerts = [];
+
+        async function loadNdmaAlertsFeed() {
+            try {
+                const res = await fetch('/api/official-alerts/active');
+                if (res.ok) {
+                    cachedOfficialAlerts = await res.json();
+                    if (!Array.isArray(cachedOfficialAlerts)) cachedOfficialAlerts = [];
+                    const badge = document.getElementById('tabNdmaCount');
+                    if (badge) badge.textContent = cachedOfficialAlerts.length;
+                    const countEl = document.getElementById('ndmaAlertsCount');
+                    if (countEl) countEl.textContent = cachedOfficialAlerts.length;
+                    renderNdmaAlertCards();
+                }
+            } catch (err) {
+                console.error('Error loading NDMA alerts feed:', err);
+            }
+        }
+
+        function renderNdmaAlertCards() {
+            const grid = document.getElementById('liveAlertsGrid');
+            const noAlerts = document.getElementById('noAlerts');
+            if (!grid) return;
+
+            if (!cachedOfficialAlerts || cachedOfficialAlerts.length === 0) {
+                grid.innerHTML = '';
+                noAlerts.style.display = 'block';
+                noAlerts.innerHTML = `
+                    <i class="fas fa-satellite" style="font-size:3rem;margin-bottom:0.8rem;opacity:0.4;"></i>
+                    <p>No active NDMA Sachet alerts currently received.</p>
+                `;
+                return;
+            }
+
+            noAlerts.style.display = 'none';
+            grid.innerHTML = '';
+
+            cachedOfficialAlerts.forEach(alert => {
+                const item = document.createElement('div');
+                const sev = (alert.severity || 'Moderate').toLowerCase();
+                item.className = `cc-alert-feed-item ${sev}`;
+                item.id = 'NDMA-' + (alert.identifier || alert.id);
+
+                const expiryStr = alert.expiryTime ? (window.formatIndianDateTime ? window.formatIndianDateTime(alert.expiryTime) : new Date(alert.expiryTime).toLocaleString('en-IN')) : 'Ongoing';
+                const revBadge = alert.revisionNumber && alert.revisionNumber > 1 ?
+                    `<span class="cc-badge" style="background:rgba(168,85,247,0.15);border:1px solid #a855f7;color:#c084fc;font-size:0.75rem;"><i class="fas fa-code-branch"></i> Rev #${alert.revisionNumber}</span>` : '';
+
+                const safeAlertJson = JSON.stringify(alert).replace(/"/g, '&quot;');
+
+                item.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;">
+                        <span class="cc-badge ndma" style="background:rgba(56,189,248,0.15);border:1px solid #38bdf8;color:#38bdf8;">
+                            <i class="fas fa-satellite"></i> OFFICIAL NDMA SACHET
+                        </span>
+                        <div style="display:flex;gap:4px;align-items:center;">
+                            ${revBadge}
+                            <span class="cc-badge severity-${sev}">${alert.severity || 'Moderate'}</span>
+                        </div>
+                    </div>
+                    <h3 style="color:#ffffff;font-size:1.05rem;font-weight:700;margin-bottom:0.4rem;line-height:1.3;">
+                        ${alert.hazardType || 'Advisory'}: ${alert.headline || 'Official Warning'}
+                    </h3>
+                    <div style="font-size:0.76rem;color:#38bdf8;font-family:var(--cc-font-mono);margin-bottom:0.5rem;">
+                        <i class="fas fa-building-columns"></i> ${alert.sourceAgency || 'NDMA Sachet'} | Ref: ${alert.identifier || 'N/A'}
+                    </div>
+                    <p style="color:#94a3b8;font-size:0.86rem;line-height:1.45;margin-bottom:0.8rem;">
+                        ${alert.instruction || alert.description || 'Public disaster advisory in effect.'}
+                    </p>
+                    <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.78rem;color:#64748b;font-family:var(--cc-font-mono);margin-bottom:0.8rem;">
+                        <span><i class="fas fa-location-dot" style="color:var(--cc-cyan);"></i> ${alert.areaDescription || 'Regional Sector'}${alert.state ? ' (' + alert.state + ')' : ''}</span>
+                        <span><i class="fas fa-clock"></i> Exp: ${expiryStr}</span>
+                    </div>
+                    <div class="cc-card-actions" style="display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center;">
+                        <button type="button" class="cc-btn cc-btn-primary" style="font-size:0.8rem;padding:0.45rem 0.65rem;" onclick="escalateNdmaToBroadcast('${escapeJs(alert.identifier || '')}', '${escapeJs(alert.hazardType || '')}', '${escapeJs(alert.headline || '')}', '${escapeJs(alert.instruction || alert.description || '')}', '${escapeJs(alert.severity || '')}', '${escapeJs(alert.district || alert.state || alert.areaDescription || '')}')">
+                            <i class="fas fa-bullhorn"></i> Re-Broadcast via Terminal
+                        </button>
+                        <button type="button" class="cc-btn cc-btn-secondary" style="font-size:0.8rem;padding:0.45rem 0.65rem;" data-ndma-meta="${safeAlertJson}" onclick="openOfficialAlertModalFromEl(this)">
+                            <i class="fas fa-file-code"></i> CAP Metadata
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(item);
+            });
+        }
+
+        function openOfficialAlertModalFromEl(el) {
+            try {
+                const data = JSON.parse(el.getAttribute('data-ndma-meta'));
+                openOfficialAlertModal(data);
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        function openOfficialAlertModal(alert) {
+            let modal = document.getElementById('officialAlertModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'officialAlertModal';
+                modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);';
+                document.body.appendChild(modal);
+            }
+            modal.innerHTML = `
+                <div style="background:#091322;border:1px solid #38bdf8;border-radius:10px;padding:1.5rem;max-width:650px;width:90%;max-height:85vh;overflow-y:auto;color:#fff;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:0.75rem;margin-bottom:1rem;">
+                        <h3 style="margin:0;font-size:1.15rem;color:#38bdf8;display:flex;align-items:center;gap:0.5rem;">
+                            <i class="fas fa-satellite"></i> CAP 1.2 Telemetry: ${alert.identifier || 'Alert Details'}
+                        </h3>
+                        <button type="button" onclick="document.getElementById('officialAlertModal').style.display='none'" style="background:transparent;border:none;color:#94a3b8;font-size:1.4rem;cursor:pointer;">&times;</button>
+                    </div>
+                    <table style="width:100%;font-size:0.83rem;color:#cbd5e1;border-collapse:collapse;margin-bottom:1rem;">
+                        <tr><td style="padding:4px 8px;color:#64748b;font-weight:600;width:140px;">Identifier</td><td style="padding:4px 8px;font-family:var(--cc-font-mono);">${alert.identifier || 'N/A'}</td></tr>
+                        <tr><td style="padding:4px 8px;color:#64748b;font-weight:600;">Sender / Agency</td><td style="padding:4px 8px;">${alert.sourceAgency || 'N/A'} (${alert.sender || 'N/A'})</td></tr>
+                        <tr><td style="padding:4px 8px;color:#64748b;font-weight:600;">Hazard / Event</td><td style="padding:4px 8px;"><strong style="color:#f8fafc;">${alert.hazardType || alert.event || 'N/A'}</strong></td></tr>
+                        <tr><td style="padding:4px 8px;color:#64748b;font-weight:600;">Severity / Urgency</td><td style="padding:4px 8px;">${alert.severity || 'N/A'} / ${alert.urgency || 'N/A'} (Certainty: ${alert.certainty || 'N/A'})</td></tr>
+                        <tr><td style="padding:4px 8px;color:#64748b;font-weight:600;">Area / District</td><td style="padding:4px 8px;">${alert.areaDescription || 'N/A'} (District: ${alert.district || 'N/A'}, State: ${alert.state || 'N/A'})</td></tr>
+                        <tr><td style="padding:4px 8px;color:#64748b;font-weight:600;">Coordinates / GPS</td><td style="padding:4px 8px;font-family:var(--cc-font-mono);">${alert.latitude ? alert.latitude + ', ' + alert.longitude : 'UNLOCATED / Centroid'}</td></tr>
+                        <tr><td style="padding:4px 8px;color:#64748b;font-weight:600;">Effective Time</td><td style="padding:4px 8px;">${alert.effectiveTime || 'N/A'}</td></tr>
+                        <tr><td style="padding:4px 8px;color:#64748b;font-weight:600;">Expiry Time</td><td style="padding:4px 8px;">${alert.expiryTime || 'N/A'}</td></tr>
+                        <tr><td style="padding:4px 8px;color:#64748b;font-weight:600;">ETag Hash</td><td style="padding:4px 8px;font-family:var(--cc-font-mono);font-size:0.75rem;word-break:break-all;">${alert.etag || 'N/A'}</td></tr>
+                        <tr><td style="padding:4px 8px;color:#64748b;font-weight:600;">Revision Number</td><td style="padding:4px 8px;">Rev #${alert.revisionNumber || 1}</td></tr>
+                    </table>
+                    <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:0.75rem;margin-bottom:1rem;">
+                        <div style="font-size:0.75rem;color:#38bdf8;font-weight:700;text-transform:uppercase;margin-bottom:0.3rem;">Official Instruction:</div>
+                        <div style="font-size:0.85rem;color:#cbd5e1;line-height:1.45;">${alert.instruction || alert.description || 'No specific safety instructions provided.'}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <button type="button" class="cc-btn cc-btn-primary" onclick="document.getElementById('officialAlertModal').style.display='none'; escalateNdmaToBroadcast('${escapeJs(alert.identifier || '')}', '${escapeJs(alert.hazardType || '')}', '${escapeJs(alert.headline || '')}', '${escapeJs(alert.instruction || alert.description || '')}', '${escapeJs(alert.severity || '')}', '${escapeJs(alert.district || alert.state || alert.areaDescription || '')}')">
+                            <i class="fas fa-bullhorn"></i> Re-Broadcast This Alert
+                        </button>
+                    </div>
+                </div>
+            `;
+            modal.style.display = 'flex';
         }
 
         async function loadCitizenReportsFeed() {
@@ -1732,9 +2060,25 @@
 
                     if (currentFeedMode === 'alerts') {
                         renderAlertCards();
+                    } else if (currentFeedMode === 'ndma') {
+                        renderNdmaAlertCards();
                     }
                 })
                 .catch(err => console.error('Error loading live alerts:', err));
+
+            // Also keep official NDMA alerts count updated
+            fetch('/api/official-alerts/active')
+                .then(res => res.json())
+                .then(official => {
+                    if (Array.isArray(official)) {
+                        cachedOfficialAlerts = official;
+                        const badge = document.getElementById('tabNdmaCount');
+                        if (badge) badge.innerText = official.length;
+                        const countEl = document.getElementById('ndmaAlertsCount');
+                        if (countEl) countEl.innerText = official.length;
+                    }
+                })
+                .catch(() => {});
 
             // Also keep citizen reports count updated
             fetch('/api/citizen-reports', { headers: headers })
@@ -1800,7 +2144,7 @@
 
                 item.innerHTML = `
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;">
-                        <span class="cc-badge broadcast"><i class="fas fa-tower-broadcast"></i> BROADCAST #${alert.alertId}</span>
+                        <span class="cc-badge broadcast"><i class="fas fa-tower-broadcast"></i> INTERNAL BROADCAST #${alert.alertId}</span>
                         <span class="cc-badge severity-${sev}">${alert.severity || 'Moderate'}</span>
                     </div>
                     <h3 style="color:#ffffff;font-size:1.05rem;font-weight:700;margin-bottom:0.4rem;line-height:1.3;">${alert.title}</h3>

@@ -25,7 +25,8 @@ import jakarta.persistence.Table;
     @Index(name = "idx_official_severity", columnList = "severity"),
     @Index(name = "idx_official_expires", columnList = "expiresTime"),
     @Index(name = "idx_official_expired", columnList = "isExpired"),
-    @Index(name = "idx_official_sync", columnList = "syncTimestamp")
+    @Index(name = "idx_official_sync", columnList = "syncTimestamp"),
+    @Index(name = "idx_official_state", columnList = "state")
 })
 public class OfficialAlert {
 
@@ -108,6 +109,32 @@ public class OfficialAlert {
     // Dynamic lifecycle indicator: true if current time exceeds expiresTime
     @Column(nullable = false)
     private Boolean isExpired = false;
+
+    // Geotargeting: State and District
+    @Column(length = 100)
+    private String state;
+
+    @Column(length = 100)
+    private String district;
+
+    // CAP Language
+    @Column(length = 20)
+    private String language = "en-IN";
+
+    // ETag caching header value
+    @Column(length = 200)
+    private String etag;
+
+    // CAP polygon coordinate string
+    @Column(columnDefinition = "TEXT")
+    private String polygon;
+
+    // Version / Revision number for updates
+    private Integer revisionNumber = 1;
+
+    // Whether internal notifications have been dispatched for this alert
+    @Column(name = "is_notified")
+    private Boolean isNotified = false;
 
     // Ingestion metadata
     private LocalDateTime syncTimestamp;
@@ -211,5 +238,26 @@ public class OfficialAlert {
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    public String getState() { return state; }
+    public void setState(String state) { this.state = state; }
+
+    public String getDistrict() { return district; }
+    public void setDistrict(String district) { this.district = district; }
+
+    public String getLanguage() { return language; }
+    public void setLanguage(String language) { this.language = language; }
+
+    public String getEtag() { return etag; }
+    public void setEtag(String etag) { this.etag = etag; }
+
+    public String getPolygon() { return polygon; }
+    public void setPolygon(String polygon) { this.polygon = polygon; }
+
+    public Integer getRevisionNumber() { return revisionNumber; }
+    public void setRevisionNumber(Integer revisionNumber) { this.revisionNumber = revisionNumber; }
+
+    public Boolean getIsNotified() { return isNotified; }
+    public void setIsNotified(Boolean isNotified) { this.isNotified = isNotified; }
 }
 

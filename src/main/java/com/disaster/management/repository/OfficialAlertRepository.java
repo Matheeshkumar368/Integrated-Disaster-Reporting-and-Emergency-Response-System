@@ -18,6 +18,12 @@ public interface OfficialAlertRepository extends JpaRepository<OfficialAlert, Lo
 
     Optional<OfficialAlert> findBySourceAlertId(String sourceAlertId);
 
+    Optional<OfficialAlert> findFirstBySourceAlertIdOrderByEffectiveTimeDesc(String sourceAlertId);
+
+    Optional<OfficialAlert> findByCapIdentifier(String capIdentifier);
+
+    Optional<OfficialAlert> findFirstByCapIdentifierOrderByEffectiveTimeDesc(String capIdentifier);
+
     boolean existsBySourceAlertId(String sourceAlertId);
 
     List<OfficialAlert> findByIsExpiredFalseOrderByPublishedTimeDesc();
@@ -29,6 +35,14 @@ public interface OfficialAlertRepository extends JpaRepository<OfficialAlert, Lo
     List<OfficialAlert> findBySeverityAndIsExpiredFalse(String severity);
 
     List<OfficialAlert> findByHazardTypeIgnoreCaseAndIsExpiredFalse(String hazardType);
+
+    List<OfficialAlert> findByStateIgnoreCaseAndIsExpiredFalseOrderByEffectiveTimeDesc(String state);
+
+    List<OfficialAlert> findByStateContainingIgnoreCaseAndIsExpiredFalseOrderByEffectiveTimeDesc(String state);
+
+    List<OfficialAlert> findByDistrictContainingIgnoreCaseAndIsExpiredFalseOrderByEffectiveTimeDesc(String district);
+
+    List<OfficialAlert> findByAreaDescriptionContainingIgnoreCaseAndIsExpiredFalseOrderByEffectiveTimeDesc(String areaKeyword);
 
     long countByIsExpiredFalse();
 

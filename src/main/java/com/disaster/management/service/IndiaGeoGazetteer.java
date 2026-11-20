@@ -286,18 +286,19 @@ public final class IndiaGeoGazetteer {
             }
         }
 
-        // 4. Check sender
+        // 4. Check sender (only for state SDMAs, not central national agencies like NDMA HQ or IMD HQ)
         String cleanSender = (sender != null ? sender : "").toLowerCase(Locale.ENGLISH);
-        if (!cleanSender.isEmpty()) {
+        if (!cleanSender.isEmpty() && (cleanSender.contains("sdma") || cleanSender.contains("state") || cleanSender.contains("mc "))) {
             for (Map.Entry<String, double[]> entry : STATE_CENTROIDS.entrySet()) {
-                if (containsWord(cleanSender, entry.getKey())) {
+                if (containsWord(cleanSender, entry.getKey()) && !entry.getKey().equals("delhi")) {
                     return new GeoLocation(entry.getValue()[0], entry.getValue()[1], "STATE_CENTROID", capitalize(entry.getKey()));
                 }
             }
         }
 
-        // 5. Fallback: National Centroid of India
-        return new GeoLocation(20.5937, 78.9629, "NATIONAL_CENTROID", "India");
+        // If no genuine geographical location was matched from areaDesc, headline, or SDMA:
+        // Return null so the system marks it as UNLOCATED instead of placing false/invented markers
+        return null;
     }
 
     /**

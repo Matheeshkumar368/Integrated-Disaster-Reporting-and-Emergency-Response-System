@@ -226,6 +226,16 @@ body {
     color: #6ee7b7;
 }
 
+.cc-telemetry-pill.syncing {
+    border-color: rgba(56, 189, 248, 0.4);
+    color: #38bdf8;
+}
+
+.cc-telemetry-pill.error {
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #fca5a5;
+}
+
 .cc-pulse-dot {
     width: 8px;
     height: 8px;
