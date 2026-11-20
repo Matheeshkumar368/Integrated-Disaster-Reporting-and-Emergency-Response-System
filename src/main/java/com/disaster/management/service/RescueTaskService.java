@@ -299,6 +299,10 @@ public class RescueTaskService {
                     || targetStatus.equalsIgnoreCase("Assistance in Progress");
             case "arrived":
             case "reached location":
+                return targetStatus.equalsIgnoreCase("In Progress")
+                    || targetStatus.equalsIgnoreCase("Assistance in Progress")
+                    || targetStatus.equalsIgnoreCase("Completed") 
+                    || targetStatus.equalsIgnoreCase("Resolved");
             case "in progress":
             case "assistance in progress":
                 return targetStatus.equalsIgnoreCase("Completed") 
