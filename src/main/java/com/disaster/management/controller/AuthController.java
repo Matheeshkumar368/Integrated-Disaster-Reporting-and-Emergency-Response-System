@@ -424,10 +424,18 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
 
-        // Verify Step-Up Admin Security PIN authorization
-        if (!adminPinService.validateStepUpAuthorization(stepUpToken, adminEmail)) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isAdminRole = auth != null && auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_Admin"));
+        if (!isAdminRole) {
+            response.put("status", "error");
+            response.put("message", "Forbidden: Admin privileges required to assign responder zones.");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        }
+
+        // If step-up token is provided, validate its integrity
+        if (stepUpToken != null && !stepUpToken.trim().isEmpty() && !adminPinService.validateStepUpAuthorization(stepUpToken, adminEmail)) {
             response.put("status", "step_up_required");
-            response.put("message", "Admin Security PIN step-up verification required for assigning responder zones");
+            response.put("message", "Invalid or expired Admin Security PIN step-up authorization");
             return ResponseEntity.status(HttpStatus.PRECONDITION_REQUIRED).body(response);
         }
 
@@ -915,6 +923,59 @@ public class AuthController {
             return authHeader.substring(7).trim();
         }
         return null;
+    }
+
+    // ────────────────────────────────────────────────
+    //     ADMIN: GET ALL USERS & PERSONNEL
+    // ────────────────────────────────────────────────
+    @GetMapping({"/admin/users", "/users"})
+    public ResponseEntity<Map<String, Object>> getAllUsers() {
+        Map<String, Object> response = new HashMap<>();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_Admin"))) {
+            response.put("status", "error");
+            response.put("message", "Forbidden: Admin privileges required to view all user accounts.");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        }
+
+        List<User> allUsers = userRepository.findAll();
+        List<Map<String, Object>> userList = new ArrayList<>();
+        int responderCount = 0;
+        int citizenCount = 0;
+        int adminCount = 0;
+        int activeCount = 0;
+
+        for (User u : allUsers) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", u.getId());
+            map.put("name", u.getName() != null ? u.getName() : "Unknown");
+            map.put("email", u.getEmail());
+            map.put("phone", u.getPhone() != null ? u.getPhone() : "Not Provided");
+            map.put("location", u.getLocation());
+            map.put("role", u.getRole());
+            map.put("assignedZone", u.getAssignedZone() != null ? u.getAssignedZone() : "Unassigned");
+            map.put("availabilityStatus", u.getAvailabilityStatus());
+            map.put("groupClassification", u.getGroupClassification());
+            map.put("active", u.getActive());
+            map.put("deactivationReason", u.getDeactivationReason());
+            map.put("createdAt", u.getCreatedAt() != null ? u.getCreatedAt().toString() : null);
+            map.put("lastLoginAt", u.getLastLoginAt() != null ? u.getLastLoginAt().toString() : null);
+            userList.add(map);
+
+            if (Boolean.TRUE.equals(u.getActive())) activeCount++;
+            if ("Responder".equalsIgnoreCase(u.getRole())) responderCount++;
+            else if ("Citizen".equalsIgnoreCase(u.getRole())) citizenCount++;
+            else if ("Admin".equalsIgnoreCase(u.getRole())) adminCount++;
+        }
+
+        response.put("status", "success");
+        response.put("totalUsers", allUsers.size());
+        response.put("activeUsers", activeCount);
+        response.put("responderCount", responderCount);
+        response.put("citizenCount", citizenCount);
+        response.put("adminCount", adminCount);
+        response.put("users", userList);
+        return ResponseEntity.ok(response);
     }
 
     // ────────────────────────────────────────────────

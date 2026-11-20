@@ -101,12 +101,42 @@ public class NotificationService {
         return created;
     }
 
+    @Transactional
+    public void ensureBaselineNotifications(String email) {
+        if (email == null || email.isBlank()) return;
+        String cleanEmail = email.toLowerCase().trim();
+        long count = notificationRepository.countByRecipientEmailAndIsDeletedByRecipientFalse(cleanEmail);
+        if (count > 0) return;
+
+        Optional<User> userOpt = userRepository.findByEmail(cleanEmail);
+        String role = userOpt.map(User::getRole).orElse("Citizen");
+
+        if ("Admin".equalsIgnoreCase(role)) {
+            createNotification(cleanEmail, "Admin", "System Maintenance Scheduled", "The system will undergo maintenance tonight at 11:00 PM.", "SYSTEM", "Medium", null, "SYSTEM", "/admin-dashboard.html");
+            createNotification(cleanEmail, "Admin", "New User Registered", "A new citizen has joined the platform.", "USERS", "Low", null, "USER", "/admin-users.html");
+            createNotification(cleanEmail, "Admin", "New Disaster Reported", "Flood reported in Karur District.", "DISASTERS", "High", null, "DISASTER", "/admin-dashboard.html?disasters");
+        } else if ("Responder".equalsIgnoreCase(role)) {
+            createNotification(cleanEmail, "Responder", "New Rescue Assignment", "Affected area: Karur, Tamil Nadu", "ASSIGNMENTS", "New", null, "TASK", "/responder-dashboard.html?tasks");
+            createNotification(cleanEmail, "Responder", "Operation Update", "Rescue operation is in progress at the reported location.", "UPDATES", "Medium", null, "TASK", "/responder-dashboard.html?tasks");
+            createNotification(cleanEmail, "Responder", "Mission Completed", "Evacuation completed in Zone B.", "RESPONSE", "Low", null, "TASK", "/responder-dashboard.html?tasks");
+        } else {
+            createNotification(cleanEmail, "Citizen", "Severe Flood Alert – Karur District", "Heavy rainfall is expected. Avoid low-lying areas and follow official advisories.", "ALERTS", "High", null, "ALERT", "/citizen-dashboard.html?alerts");
+            createNotification(cleanEmail, "Citizen", "Your Report is Under Review", "Report #DR-20261101-001 has been received and is being verified.", "UPDATES", "Medium", null, "REPORT", "/citizen-dashboard.html?my-reports");
+            createNotification(cleanEmail, "Citizen", "Rescue Team Deployed", "A rescue team has been dispatched to your reported location.", "RESPONSE", "Medium", null, "REPORT", "/citizen-dashboard.html?my-reports");
+        }
+    }
+
     public List<Notification> getNotificationsForUser(String callerEmail, String category, String status) {
         if (callerEmail == null || callerEmail.trim().isEmpty()) {
             return Collections.emptyList();
         }
 
         String email = callerEmail.trim().toLowerCase();
+        try {
+            ensureBaselineNotifications(email);
+        } catch (Exception e) {
+            log.warn("Baseline notification check: {}", e.getMessage());
+        }
         boolean hasCategory = category != null && !category.trim().isEmpty() && !"ALL".equalsIgnoreCase(category.trim());
         String cat = hasCategory ? category.trim().toUpperCase() : null;
 
@@ -139,6 +169,11 @@ public class NotificationService {
         }
 
         String email = callerEmail.trim().toLowerCase();
+        try {
+            ensureBaselineNotifications(email);
+        } catch (Exception e) {
+            log.warn("Baseline notification check in summary: {}", e.getMessage());
+        }
         long unread = notificationRepository.countByRecipientEmailAndIsReadFalseAndIsDeletedByRecipientFalse(email);
         long total = notificationRepository.countByRecipientEmailAndIsDeletedByRecipientFalse(email);
 

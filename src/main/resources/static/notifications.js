@@ -285,7 +285,7 @@
                 const timeFormatted = this.formatTime(item.createdAt);
 
                 html += `
-                    <div class="notif-card ${isUnread ? 'unread' : ''}" data-id="${item.id}">
+                    <div class="notif-card card-tint-${visual.color} ${isUnread ? 'unread' : ''}" data-id="${item.id}">
                         <div class="notif-left" onclick="window.__notifCenter.handleCardClick(${item.id})">
                             <div class="notif-icon-circle ${visual.color}">
                                 <i class="${visual.icon}"></i>

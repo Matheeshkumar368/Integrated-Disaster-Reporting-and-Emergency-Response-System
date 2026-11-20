@@ -153,6 +153,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.DELETE, "/api/emergency-videos/**").hasRole("Admin")
                 .requestMatchers("/api/reports/export/**").hasRole("Admin")
                 .requestMatchers("/api/auth/admin/**").hasRole("Admin")
+                .requestMatchers("/api/auth/users", "/api/auth/users/**").hasRole("Admin")
                 .requestMatchers("/api/admin/**").hasRole("Admin")
                 .requestMatchers("/api/auth/responders/**").hasRole("Admin")
                 .requestMatchers("/api/auth/assign-zone").hasRole("Admin")

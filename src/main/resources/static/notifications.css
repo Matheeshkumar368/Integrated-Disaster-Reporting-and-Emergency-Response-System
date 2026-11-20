@@ -495,93 +495,152 @@ body.theme-admin .motto-banner {
 .notifications-list {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
 }
 
 .notif-card {
     background: var(--notif-surface-card);
     backdrop-filter: blur(14px);
     border: 1px solid var(--notif-border);
-    border-radius: 16px;
-    padding: 16px 22px;
+    border-radius: 18px;
+    padding: 22px 28px;
+    min-height: 88px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     cursor: pointer;
 }
 
 .notif-card:hover {
-    background: rgba(20, 32, 56, 0.88);
+    background: rgba(20, 32, 56, 0.92);
     border-color: var(--notif-border-hover);
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.42);
+}
+
+/* Category-specific tinting matching the tactical reference design */
+.notif-card.card-tint-red {
+    background: rgba(28, 17, 23, 0.88);
+    border-color: rgba(239, 68, 68, 0.24);
+}
+.notif-card.card-tint-red:hover {
+    background: rgba(38, 22, 30, 0.96);
+    border-color: rgba(239, 68, 68, 0.48);
+    box-shadow: 0 10px 30px rgba(239, 68, 68, 0.16);
+}
+
+.notif-card.card-tint-blue {
+    background: rgba(14, 25, 45, 0.88);
+    border-color: rgba(59, 130, 246, 0.24);
+}
+.notif-card.card-tint-blue:hover {
+    background: rgba(18, 34, 62, 0.96);
+    border-color: rgba(59, 130, 246, 0.48);
+    box-shadow: 0 10px 30px rgba(59, 130, 246, 0.16);
+}
+
+.notif-card.card-tint-green {
+    background: rgba(13, 30, 24, 0.88);
+    border-color: rgba(34, 197, 94, 0.24);
+}
+.notif-card.card-tint-green:hover {
+    background: rgba(17, 38, 30, 0.96);
+    border-color: rgba(34, 197, 94, 0.48);
+    box-shadow: 0 10px 30px rgba(34, 197, 94, 0.16);
+}
+
+.notif-card.card-tint-orange {
+    background: rgba(32, 22, 14, 0.88);
+    border-color: rgba(249, 115, 22, 0.24);
+}
+.notif-card.card-tint-orange:hover {
+    background: rgba(42, 28, 18, 0.96);
+    border-color: rgba(249, 115, 22, 0.48);
+    box-shadow: 0 10px 30px rgba(249, 115, 22, 0.16);
+}
+
+.notif-card.card-tint-purple {
+    background: rgba(26, 18, 38, 0.88);
+    border-color: rgba(168, 85, 247, 0.24);
+}
+.notif-card.card-tint-purple:hover {
+    background: rgba(34, 24, 52, 0.96);
+    border-color: rgba(168, 85, 247, 0.48);
+    box-shadow: 0 10px 30px rgba(168, 85, 247, 0.16);
 }
 
 .notif-card.unread {
-    border-left: 4px solid var(--role-accent);
+    border-left: 5px solid var(--role-accent);
 }
 
 .notif-card.unread::after {
     content: '';
     position: absolute;
-    top: 14px;
-    right: 14px;
-    width: 8px;
-    height: 8px;
+    top: 16px;
+    right: 18px;
+    width: 9px;
+    height: 9px;
     border-radius: 50%;
     background: #38bdf8;
-    box-shadow: 0 0 8px #38bdf8;
+    box-shadow: 0 0 10px #38bdf8;
 }
 
 .notif-left {
     display: flex;
     align-items: center;
-    gap: 18px;
+    gap: 22px;
     flex: 1;
     min-width: 0;
 }
 
 .notif-icon-circle {
-    width: 44px;
-    height: 44px;
+    width: 58px;
+    height: 58px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: 24px;
     flex-shrink: 0;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 
 .notif-icon-circle.red {
-    background: var(--color-red-bg);
-    color: var(--color-red);
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.35);
 }
 
 .notif-icon-circle.blue {
-    background: var(--color-blue-bg);
-    color: var(--color-blue);
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.35);
 }
 
 .notif-icon-circle.green {
-    background: var(--color-green-bg);
-    color: var(--color-green);
+    background: rgba(34, 197, 94, 0.2);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.35);
 }
 
 .notif-icon-circle.orange {
-    background: var(--color-orange-bg);
-    color: var(--color-orange);
+    background: rgba(249, 115, 22, 0.2);
+    color: #fb923c;
+    border: 1px solid rgba(249, 115, 22, 0.35);
 }
 
 .notif-icon-circle.purple {
-    background: var(--color-purple-bg);
-    color: var(--color-purple);
+    background: rgba(168, 85, 247, 0.2);
+    color: #c084fc;
+    border: 1px solid rgba(168, 85, 247, 0.35);
 }
 
 .notif-icon-circle.amber {
-    background: var(--color-amber-bg);
-    color: var(--color-amber);
+    background: rgba(234, 179, 8, 0.2);
+    color: #fde047;
+    border: 1px solid rgba(234, 179, 8, 0.35);
 }
 
 .notif-content {
@@ -592,23 +651,24 @@ body.theme-admin .motto-banner {
 .notif-title-row {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 4px;
+    gap: 12px;
+    margin-bottom: 6px;
 }
 
 .notif-title {
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 17.5px;
+    font-weight: 700;
     color: #ffffff;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    letter-spacing: -0.2px;
 }
 
 .notif-desc {
-    font-size: 13.5px;
-    color: var(--notif-text-muted);
-    line-height: 1.45;
+    font-size: 14.5px;
+    color: #cbd5e1;
+    line-height: 1.5;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -617,49 +677,50 @@ body.theme-admin .motto-banner {
 .notif-right {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 20px;
     flex-shrink: 0;
-    margin-left: 20px;
+    margin-left: 24px;
 }
 
 /* Priority tags */
 .priority-pill {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
-    padding: 4px 10px;
+    padding: 6px 14px;
     border-radius: 9999px;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
+    letter-spacing: 0.3px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
 .priority-pill.high, .priority-pill.critical {
-    background: rgba(239, 68, 68, 0.2);
-    color: #f87171;
-    border: 1px solid rgba(239, 68, 68, 0.35);
+    background: #ef4444;
+    color: #ffffff;
+    border: none;
 }
 
 .priority-pill.medium, .priority-pill.warning {
-    background: rgba(245, 158, 11, 0.2);
-    color: #fbbf24;
-    border: 1px solid rgba(245, 158, 11, 0.35);
+    background: #f59e0b;
+    color: #ffffff;
+    border: none;
 }
 
 .priority-pill.low, .priority-pill.info {
-    background: rgba(59, 130, 246, 0.2);
-    color: #60a5fa;
-    border: 1px solid rgba(59, 130, 246, 0.35);
+    background: #3b82f6;
+    color: #ffffff;
+    border: none;
 }
 
 .priority-pill.new {
-    background: rgba(249, 115, 22, 0.25);
-    color: #fb923c;
-    border: 1px solid rgba(249, 115, 22, 0.4);
+    background: #ea580c;
+    color: #ffffff;
+    border: none;
 }
 
 .notif-time {
-    font-size: 12.5px;
-    color: var(--notif-text-dim);
+    font-size: 13.5px;
+    color: #94a3b8;
     font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
     white-space: nowrap;
 }
 
@@ -667,9 +728,9 @@ body.theme-admin .motto-banner {
     background: transparent;
     border: none;
     color: var(--notif-text-muted);
-    font-size: 14px;
-    width: 32px;
-    height: 32px;
+    font-size: 15px;
+    width: 36px;
+    height: 36px;
     border-radius: 8px;
     display: flex;
     align-items: center;
@@ -689,9 +750,9 @@ body.theme-admin .motto-banner {
 }
 
 .chevron-icon {
-    color: var(--notif-text-dim);
-    font-size: 14px;
-    transition: transform 0.2s ease;
+    color: #64748b;
+    font-size: 16px;
+    transition: transform 0.2s ease, color 0.2s ease;
 }
 
 .notif-card:hover .chevron-icon {
