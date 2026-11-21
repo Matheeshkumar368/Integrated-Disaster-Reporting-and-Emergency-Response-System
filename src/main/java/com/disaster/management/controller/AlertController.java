@@ -120,9 +120,18 @@ public class AlertController {
         return ResponseEntity.ok(alertService.getBroadcastedAlerts());
     }
 
-    // Admin broadcasts an existing alert to all citizens and responders
+    // Admin broadcasts an existing alert to all citizens and responders (supports both PUT and POST)
     @PutMapping("/{alertId}/broadcast")
     public ResponseEntity<?> broadcastAlert(@PathVariable Long alertId) {
+        return executeBroadcastAlert(alertId);
+    }
+
+    @PostMapping("/{alertId}/broadcast")
+    public ResponseEntity<?> broadcastAlertPost(@PathVariable Long alertId) {
+        return executeBroadcastAlert(alertId);
+    }
+
+    private ResponseEntity<?> executeBroadcastAlert(Long alertId) {
         try {
             Alert alert = alertService.broadcastAlert(alertId);
             if (alert != null) {

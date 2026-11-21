@@ -37,20 +37,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String role = jwtUtil.extractRole(token);
 
             if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                String cleanRole = (role != null && !role.trim().isEmpty()) ? role.trim() : "Citizen";
-                List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-                authorities.add(new SimpleGrantedAuthority("ROLE_" + cleanRole));
-
-                if ("admin".equalsIgnoreCase(cleanRole)) {
-                    if (!"Admin".equals(cleanRole)) authorities.add(new SimpleGrantedAuthority("ROLE_Admin"));
-                    if (!"ADMIN".equals(cleanRole)) authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
-                } else if ("responder".equalsIgnoreCase(cleanRole)) {
-                    if (!"Responder".equals(cleanRole)) authorities.add(new SimpleGrantedAuthority("ROLE_Responder"));
-                    if (!"RESPONDER".equals(cleanRole)) authorities.add(new SimpleGrantedAuthority("ROLE_RESPONDER"));
-                } else {
-                    if (!"Citizen".equals(cleanRole)) authorities.add(new SimpleGrantedAuthority("ROLE_Citizen"));
-                    if (!"CITIZEN".equals(cleanRole)) authorities.add(new SimpleGrantedAuthority("ROLE_CITIZEN"));
-                }
+                List<SimpleGrantedAuthority> authorities = RoleUtil.toGrantedAuthorities(role);
 
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                     email, null, authorities

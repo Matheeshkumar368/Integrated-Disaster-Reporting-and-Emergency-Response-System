@@ -162,12 +162,18 @@ public class SecurityConfig {
                 .requestMatchers("/api/tasks/*/acknowledge", "/api/tasks/*/resolve").hasAnyRole("Responder", "Admin")
                 .requestMatchers("/api/tasks/my", "/api/tasks/my-tasks").hasAnyRole("Responder", "Admin")
 
+                // Responder & Admin Alert Actions (Acknowledge & Resolve) MUST precede wildcard alert matchers
+                .requestMatchers(HttpMethod.POST, "/api/alerts/*/acknowledge", "/api/alerts/*/resolve").hasAnyRole("Responder", "RESPONDER", "Admin", "ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/alerts/*/acknowledge", "/api/alerts/*/resolve").hasAnyRole("Responder", "RESPONDER", "Admin", "ADMIN")
+
+                // Admin Alert Actions (Broadcast, Media, Withdraw)
+                .requestMatchers(HttpMethod.POST, "/api/alerts/*/broadcast").hasAnyRole("Admin", "ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/alerts/*/broadcast").hasAnyRole("Admin", "ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/alerts/*/media", "/api/alerts/*/withdraw").hasAnyRole("Admin", "ADMIN")
+
                 // Admin-only Rescue Task & Alert Management
                 .requestMatchers(HttpMethod.POST, "/api/admin/ndma/sync").hasAnyRole("Admin", "ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/alerts", "/api/alerts/**").hasAnyRole("Admin", "ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/alerts/*/broadcast", "/api/alerts/*/media", "/api/alerts/*/withdraw").hasAnyRole("Admin", "ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/alerts/*/resolve", "/api/alerts/*/acknowledge").hasAnyRole("Responder", "RESPONDER", "Admin", "ADMIN")
-                .requestMatchers(HttpMethod.POST, "/api/alerts/*/resolve", "/api/alerts/*/acknowledge").hasAnyRole("Responder", "RESPONDER", "Admin", "ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/alerts/*", "/api/alerts/**").hasAnyRole("Admin", "ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/alerts/**").hasAnyRole("Admin", "ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/tasks").hasRole("Admin")

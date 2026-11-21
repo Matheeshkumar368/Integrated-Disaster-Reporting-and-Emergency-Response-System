@@ -84,8 +84,7 @@ public class NotificationService {
         List<Notification> created = new ArrayList<>();
 
         if (admins == null || admins.isEmpty()) {
-            Notification fallback = createNotification("admin@disaster.gov.in", "Admin", title, message, category, priority, relatedId, relatedType, actionUrl);
-            if (fallback != null) created.add(fallback);
+            log.warn("No registered Admin users found in database to receive notification: title='{}'", title);
             return created;
         }
 
@@ -179,23 +178,12 @@ public class NotificationService {
         return created;
     }
 
-    @Transactional
-    public void ensureBaselineNotifications(String email) {
-        // Genuine real-time notifications are generated strictly from live workflow events (citizen reports, assignments, status updates, emergency broadcasts).
-        // No fake or hardcoded records are seeded, ensuring 100% genuine MySQL auditability and clean empty states.
-    }
-
     public List<Notification> getNotificationsForUser(String callerEmail, String category, String status) {
         if (callerEmail == null || callerEmail.trim().isEmpty()) {
             return Collections.emptyList();
         }
 
         String email = callerEmail.trim().toLowerCase();
-        try {
-            ensureBaselineNotifications(email);
-        } catch (Exception e) {
-            log.warn("Baseline notification check: {}", e.getMessage());
-        }
 
         String normStatus = status != null ? status.trim().toLowerCase() : "all";
         List<Notification> list;
@@ -240,11 +228,6 @@ public class NotificationService {
         }
 
         String email = callerEmail.trim().toLowerCase();
-        try {
-            ensureBaselineNotifications(email);
-        } catch (Exception e) {
-            log.warn("Baseline notification check in summary: {}", e.getMessage());
-        }
         long unread = notificationRepository.countByRecipientEmailAndIsReadFalseAndIsDeletedByRecipientFalse(email);
         long total = notificationRepository.countByRecipientEmailAndIsDeletedByRecipientFalse(email);
 

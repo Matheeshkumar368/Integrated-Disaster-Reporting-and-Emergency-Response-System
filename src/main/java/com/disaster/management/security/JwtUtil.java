@@ -28,16 +28,15 @@ public class JwtUtil {
     private final long stepUpValidityMs;
 
     public JwtUtil(
-            @Value("${app.jwt.secret:disaster-management-academic-super-secure-jwt-secret-key-2026-disaster-response-system-368}") String secret,
+            @Value("${app.jwt.secret:}") String secret,
             @Value("${app.jwt.expiration-ms:86400000}") long tokenValidityMs,
             @Value("${app.admin.step-up-duration-minutes:15}") int stepUpMinutes) {
         
         // Ensure secret meets HS256 minimum bit length requirement (256 bits = 32 bytes)
-        if (secret == null || secret.length() < 32) {
-            this.secretKeyString = "disaster-management-academic-super-secure-jwt-secret-key-2026-disaster-response-system-368";
-        } else {
-            this.secretKeyString = secret;
+        if (secret == null || secret.trim().length() < 32) {
+            throw new IllegalStateException("JWT Secret is unconfigured or shorter than 32 characters (256 bits). Please configure 'app.jwt.secret' in application.properties or JWT_SECRET environment variable.");
         }
+        this.secretKeyString = secret.trim();
         this.tokenValidityMs = tokenValidityMs;
         this.stepUpValidityMs = (long) stepUpMinutes * 60 * 1000L;
     }

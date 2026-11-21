@@ -98,53 +98,7 @@ public class DataInitializer {
                     log.error("Failed to seed baseline users: {}", e.getMessage());
                 }
             } else {
-                log.info("Existing users found ({}); verifying baseline credentials synchronization...", userRepo.count());
-                try {
-                    // Synchronize Admin user PIN if not enrolled
-                    userRepo.findByEmail("admin@disaster.gov.in").ifPresent(admin -> {
-                        boolean updated = false;
-                        if (!passwordEncoder.matches("admin123", admin.getPassword())) {
-                            admin.setPassword(passwordEncoder.encode("admin123"));
-                            updated = true;
-                        }
-                        if (admin.getAdminPin() == null || !Boolean.TRUE.equals(admin.getAdminPinEnrolled())) {
-                            admin.setAdminPin(passwordEncoder.encode("123456"));
-                            admin.setAdminPinEnrolled(true);
-                            admin.resetPinFailures();
-                            updated = true;
-                        }
-                        if (admin.getAdminPinRecoveryCode() == null || !Boolean.TRUE.equals(admin.getBackupCodeConfigured())) {
-                            admin.setAdminPinRecoveryCode(passwordEncoder.encode("922523244035"));
-                            admin.setBackupCodeConfigured(true);
-                            admin.resetBackupCodeFailures();
-                            updated = true;
-                        }
-                        if (updated) {
-                            userRepo.save(admin);
-                            log.info("Synchronized baseline admin credentials, security PIN & backup code.");
-                        }
-                    });
-
-                    // Synchronize Responder credentials
-                    userRepo.findByEmail("responder@disaster.gov.in").ifPresent(responder -> {
-                        if (!passwordEncoder.matches("responder123", responder.getPassword())) {
-                            responder.setPassword(passwordEncoder.encode("responder123"));
-                            userRepo.save(responder);
-                            log.info("Synchronized baseline responder credentials.");
-                        }
-                    });
-
-                    // Synchronize Citizen credentials
-                    userRepo.findByEmail("citizen@gmail.com").ifPresent(citizen -> {
-                        if (!passwordEncoder.matches("citizen123", citizen.getPassword())) {
-                            citizen.setPassword(passwordEncoder.encode("citizen123"));
-                            userRepo.save(citizen);
-                            log.info("Synchronized baseline citizen credentials.");
-                        }
-                    });
-                } catch (Exception e) {
-                    log.error("Failed to synchronize user security settings: {}", e.getMessage());
-                }
+                log.info("Existing users found ({}). Baseline user credentials and PINs preserved without overwrite.", userRepo.count());
             }
 
             // No fake rescue tasks or citizen reports are seeded.
