@@ -32,6 +32,9 @@ public interface CitizenReportRepository extends JpaRepository<CitizenReport, Lo
 
     long countByIsDeletedFalse();
 
+    java.util.Optional<CitizenReport> findTopByCitizenEmailAndMessageAndLocationOrderByTimestampDesc(
+        String citizenEmail, String message, String location);
+
     @Query("SELECT r FROM CitizenReport r WHERE r.isDeleted = false " +
            "AND (:status IS NULL OR :status = '' OR LOWER(r.status) = LOWER(:status)) " +
            "AND (:search IS NULL OR :search = '' OR " +

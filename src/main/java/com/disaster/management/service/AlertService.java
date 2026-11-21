@@ -8,12 +8,14 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.disaster.management.entity.Alert;
 import com.disaster.management.entity.RescueTask;
 import com.disaster.management.entity.User;
+import com.disaster.management.event.EmergencyBroadcastCreatedEvent;
 import com.disaster.management.repository.AlertRepository;
 import com.disaster.management.repository.UserRepository;
 
@@ -33,6 +35,9 @@ public class AlertService {
 
     @Autowired(required = false)
     private NotificationService notificationService;
+
+    @Autowired(required = false)
+    private ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public Alert createAlertAndDispatchTasks(Alert alert, String adminEmail) {
@@ -120,6 +125,14 @@ public class AlertService {
                 );
             } catch (Exception e) {
                 log.warn("Notification dispatch warning on createAlert: {}", e.getMessage());
+            }
+        }
+
+        if (eventPublisher != null) {
+            try {
+                eventPublisher.publishEvent(new EmergencyBroadcastCreatedEvent(savedAlert, adminEmail));
+            } catch (Exception e) {
+                log.warn("Event publication warning on createAlert: {}", e.getMessage());
             }
         }
 
@@ -235,6 +248,15 @@ public class AlertService {
                     log.warn("Notification dispatch warning on broadcastAlert: {}", e.getMessage());
                 }
             }
+
+            if (eventPublisher != null) {
+                try {
+                    eventPublisher.publishEvent(new EmergencyBroadcastCreatedEvent(saved, "Central Command Admin"));
+                } catch (Exception e) {
+                    log.warn("Event publication warning on broadcastAlert: {}", e.getMessage());
+                }
+            }
+
             return saved;
         }
         return null;

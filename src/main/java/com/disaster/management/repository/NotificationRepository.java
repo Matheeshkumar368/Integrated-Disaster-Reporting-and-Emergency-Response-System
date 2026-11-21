@@ -25,6 +25,12 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     Optional<Notification> findByIdAndRecipientEmail(Long id, String recipientEmail);
 
+    Optional<Notification> findFirstByRecipientEmailAndTitleAndRelatedIncidentIdAndRelatedIncidentTypeOrderByCreatedAtDesc(
+        String recipientEmail, String title, Long relatedIncidentId, String relatedIncidentType);
+
+    Optional<Notification> findFirstByRecipientEmailAndTitleAndMessageOrderByCreatedAtDesc(
+        String recipientEmail, String title, String message);
+
     long countByRecipientEmailAndIsReadFalseAndIsDeletedByRecipientFalse(String recipientEmail);
 
     long countByRecipientEmailAndIsDeletedByRecipientFalse(String recipientEmail);

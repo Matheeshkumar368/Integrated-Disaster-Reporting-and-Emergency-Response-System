@@ -9,6 +9,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.disaster.management.entity.CitizenReport;
 import com.disaster.management.entity.RescueTask;
 import com.disaster.management.entity.User;
+import com.disaster.management.event.ReportCreatedEvent;
+import com.disaster.management.event.ReportVerifiedEvent;
+import com.disaster.management.event.ResponderAssignedEvent;
 import com.disaster.management.repository.CitizenReportRepository;
 import com.disaster.management.repository.RescueTaskRepository;
 import com.disaster.management.repository.UserRepository;
@@ -45,6 +49,9 @@ public class CitizenReportService {
     @Autowired(required = false)
     private NotificationService notificationService;
 
+    @Autowired(required = false)
+    private ApplicationEventPublisher eventPublisher;
+
     @Transactional
     public CitizenReport createReport(CitizenReport report) {
         if (report.getMessage() == null || report.getMessage().trim().isEmpty()) {
@@ -53,6 +60,22 @@ public class CitizenReportService {
         if (report.getLocation() == null || report.getLocation().trim().isEmpty()) {
             throw new IllegalArgumentException("Report location is required");
         }
+
+        // Duplicate report submission prevention (e.g. rapid double submit within 5 seconds)
+        if (report.getCitizenEmail() != null) {
+            Optional<CitizenReport> duplicate = reportRepository.findTopByCitizenEmailAndMessageAndLocationOrderByTimestampDesc(
+                report.getCitizenEmail().trim().toLowerCase(),
+                report.getMessage().trim(),
+                report.getLocation().trim()
+            );
+            if (duplicate.isPresent() && duplicate.get().getTimestamp() != null &&
+                duplicate.get().getTimestamp().isAfter(LocalDateTime.now().minusSeconds(5))) {
+                log.info("Duplicate citizen report detected within 5 seconds for user [{}], returning existing report #{}",
+                    report.getCitizenEmail(), duplicate.get().getReportId());
+                return duplicate.get();
+            }
+        }
+
         report.setTimestamp(LocalDateTime.now());
         if (report.getStatus() == null || report.getStatus().trim().isEmpty()) {
             report.setStatus("Pending");
@@ -128,6 +151,14 @@ public class CitizenReportService {
                 );
             } catch (Exception e) {
                 log.warn("Notification dispatch warning: {}", e.getMessage());
+            }
+        }
+
+        if (eventPublisher != null) {
+            try {
+                eventPublisher.publishEvent(new ReportCreatedEvent(saved));
+            } catch (Exception e) {
+                log.warn("Event publication warning on createReport: {}", e.getMessage());
             }
         }
 
@@ -292,6 +323,14 @@ public class CitizenReportService {
             }
         }
 
+        if (eventPublisher != null) {
+            try {
+                eventPublisher.publishEvent(new ResponderAssignedEvent(saved, task, responder.getEmail(), responderName, adminEmail));
+            } catch (Exception e) {
+                log.warn("Event publication warning on assignResponder: {}", e.getMessage());
+            }
+        }
+
         return saved;
     }
 
@@ -413,6 +452,14 @@ public class CitizenReportService {
                 );
             } catch (Exception e) {
                 log.warn("Notification dispatch warning on verifyReport: {}", e.getMessage());
+            }
+        }
+
+        if (eventPublisher != null) {
+            try {
+                eventPublisher.publishEvent(new ReportVerifiedEvent(saved, adminEmail));
+            } catch (Exception e) {
+                log.warn("Event publication warning on verifyReport: {}", e.getMessage());
             }
         }
 

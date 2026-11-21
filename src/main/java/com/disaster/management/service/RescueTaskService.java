@@ -7,11 +7,15 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.disaster.management.entity.CitizenReport;
 import com.disaster.management.entity.RescueTask;
+import com.disaster.management.event.AssignmentAcknowledgedEvent;
+import com.disaster.management.event.MissionStatusChangedEvent;
+import com.disaster.management.event.ResponderAssignedEvent;
 import com.disaster.management.repository.CitizenReportRepository;
 import com.disaster.management.repository.RescueTaskRepository;
 import com.disaster.management.repository.UserRepository;
@@ -38,6 +42,9 @@ public class RescueTaskService {
 
     @Autowired(required = false)
     private ResponderTrackingService trackingService;
+
+    @Autowired(required = false)
+    private ApplicationEventPublisher eventPublisher;
 
     // Create a new rescue task with validation
     @Transactional
@@ -197,6 +204,17 @@ public class RescueTaskService {
                 log.warn("Admin notification warning: {}", e.getMessage());
             }
         }
+
+        if (eventPublisher != null) {
+            try {
+                CitizenReport linkedReport = saved.getCitizenReportId() != null
+                    ? citizenReportRepository.findById(saved.getCitizenReportId()).orElse(null) : null;
+                eventPublisher.publishEvent(new AssignmentAcknowledgedEvent(saved, linkedReport, responderEmail));
+            } catch (Exception e) {
+                log.warn("Event publication warning on acknowledgeTask: {}", e.getMessage());
+            }
+        }
+
         return saved;
     }
 
@@ -262,6 +280,16 @@ public class RescueTaskService {
                 );
             } catch (Exception ex) {
                 log.warn("Admin notification warning: {}", ex.getMessage());
+            }
+        }
+
+        if (eventPublisher != null) {
+            try {
+                CitizenReport linkedReport = saved.getCitizenReportId() != null
+                    ? citizenReportRepository.findById(saved.getCitizenReportId()).orElse(null) : null;
+                eventPublisher.publishEvent(new MissionStatusChangedEvent(saved, linkedReport, "Completed", summary, responderEmail));
+            } catch (Exception e) {
+                log.warn("Event publication warning on resolveTask: {}", e.getMessage());
             }
         }
 
@@ -595,7 +623,19 @@ public class RescueTaskService {
             task.setNotes(existingNotes + "\n[" + LocalDateTime.now() + "] " + notes);
         }
 
-        return rescueTaskRepository.save(task);
+        RescueTask saved = rescueTaskRepository.save(task);
+
+        if (eventPublisher != null) {
+            try {
+                CitizenReport linkedReport = saved.getCitizenReportId() != null
+                    ? citizenReportRepository.findById(saved.getCitizenReportId()).orElse(null) : null;
+                eventPublisher.publishEvent(new MissionStatusChangedEvent(saved, linkedReport, status, notes, "system"));
+            } catch (Exception e) {
+                log.warn("Event publication warning on updateTaskStatus: {}", e.getMessage());
+            }
+        }
+
+        return saved;
     }
 
     // Assign task to responder with validation
@@ -694,6 +734,16 @@ public class RescueTaskService {
                 );
             } catch (Exception e) {
                 log.warn("Responder notification warning: {}", e.getMessage());
+            }
+        }
+
+        if (eventPublisher != null) {
+            try {
+                CitizenReport linkedReport = savedTask.getCitizenReportId() != null
+                    ? citizenReportRepository.findById(savedTask.getCitizenReportId()).orElse(null) : null;
+                eventPublisher.publishEvent(new ResponderAssignedEvent(linkedReport, savedTask, responderEmail, responderName, task.getCreatedBy()));
+            } catch (Exception e) {
+                log.warn("Event publication warning on assignTask: {}", e.getMessage());
             }
         }
 

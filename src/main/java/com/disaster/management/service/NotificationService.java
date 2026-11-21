@@ -38,8 +38,31 @@ public class NotificationService {
             return null;
         }
 
+        String cleanEmail = recipientEmail.trim().toLowerCase();
+
+        // Duplicate notification prevention
+        if (relatedId != null && relatedType != null) {
+            Optional<Notification> existing = notificationRepository.findFirstByRecipientEmailAndTitleAndRelatedIncidentIdAndRelatedIncidentTypeOrderByCreatedAtDesc(
+                cleanEmail, title, relatedId, relatedType
+            );
+            if (existing.isPresent()) {
+                log.info("Duplicate notification prevented for [{}] - title: '{}', relatedId: {}, type: {}", cleanEmail, title, relatedId, relatedType);
+                return existing.get();
+            }
+        } else {
+            // General announcements or broadcasts without related incident id: prevent duplicate if within 15 seconds
+            Optional<Notification> recent = notificationRepository.findFirstByRecipientEmailAndTitleAndMessageOrderByCreatedAtDesc(
+                cleanEmail, title, message
+            );
+            if (recent.isPresent() && recent.get().getCreatedAt() != null &&
+                recent.get().getCreatedAt().isAfter(LocalDateTime.now().minusSeconds(15))) {
+                log.info("Duplicate notification throttled for [{}] within 15s - title: '{}'", cleanEmail, title);
+                return recent.get();
+            }
+        }
+
         Notification notification = new Notification(
-            recipientEmail.trim().toLowerCase(),
+            cleanEmail,
             recipientRole,
             title,
             message,
@@ -51,7 +74,7 @@ public class NotificationService {
         );
 
         Notification saved = notificationRepository.save(notification);
-        log.info("Notification #{} dispatched to [{}] (Role: {}): {}", saved.getId(), recipientEmail, recipientRole, title);
+        log.info("Notification #{} dispatched to [{}] (Role: {}): {}", saved.getId(), cleanEmail, recipientRole, title);
         return saved;
     }
 
