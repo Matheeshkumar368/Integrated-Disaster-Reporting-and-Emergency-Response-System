@@ -401,7 +401,7 @@
             <!-- Notification Bell Icon -->
             <button type="button" class="cc-btn cc-btn-secondary" id="notifBellBtn" onclick="toggleNotificationDrawer()" style="padding:0.4rem 0.75rem;font-size:0.85rem;position:relative;" title="View notifications">
                 <i class="fas fa-bell"></i>
-                <span id="notifBadgeCount" style="position:absolute;top:-4px;right:-4px;background:var(--cc-critical-red);color:#fff;border-radius:50%;width:18px;height:18px;font-size:0.7rem;font-weight:700;display:flex;align-items:center;justify-content:center;">3</span>
+                <span id="notifBadgeCount" style="position:absolute;top:-4px;right:-4px;background:var(--cc-critical-red);color:#fff;border-radius:50%;width:18px;height:18px;font-size:0.7rem;font-weight:700;display:none;align-items:center;justify-content:center;">0</span>
             </button>
 
             <button class="cc-btn cc-btn-danger" onclick="AuthHelper.logout()" style="padding:0.4rem 0.85rem;font-size:0.8rem;">
@@ -1619,11 +1619,12 @@
             }
 
             if (!reports || reports.length === 0) {
+                const isFiltered = statusFilter !== 'ALL' && rawMyReports.length > 0;
                 listEl.innerHTML = `
                     <div class="cc-card" style="text-align:center;padding:3rem;color:#64748b;">
                         <i class="fas fa-inbox" style="font-size:3rem;opacity:0.4;margin-bottom:0.8rem;"></i>
-                        <h3 style="color:#f8fafc;font-size:1.1rem;">No Incident Reports Found</h3>
-                        <p style="font-size:0.88rem;color:#94a3b8;margin-top:0.3rem;">There are no reports matching this filter criteria.</p>
+                        <h3 style="color:#f8fafc;font-size:1.1rem;">No disaster reports available.</h3>
+                        <p style="font-size:0.88rem;color:#94a3b8;margin-top:0.3rem;">${isFiltered ? 'There are no reports matching this filter criteria.' : 'You have not submitted any disaster reports yet. Use the Report Disaster tab above to file an emergency report.'}</p>
                     </div>
                 `;
                 return;
@@ -2106,71 +2107,48 @@
                 const res = await fetch('/api/notifications', { headers });
                 if (res.ok) {
                     const dbNotifs = await res.json();
-                    if (Array.isArray(dbNotifs) && dbNotifs.length > 0) {
+                    if (Array.isArray(dbNotifs)) {
                         const unreadCount = dbNotifs.filter(n => !n.isRead).length;
-                        if (badgeEl) badgeEl.innerText = unreadCount;
+                        if (badgeEl) {
+                            badgeEl.innerText = unreadCount;
+                            badgeEl.style.display = unreadCount > 0 ? 'flex' : 'none';
+                        }
                         if (listEl) {
-                            listEl.innerHTML = '';
-                            dbNotifs.slice(0, 15).forEach(n => {
-                                const item = document.createElement('div');
-                                item.className = 'cc-notif-item';
-                                if (!n.isRead) item.style.borderLeft = '3px solid var(--cc-cyan)';
-                                item.innerHTML = `
-                                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem;">
-                                        <strong style="color:#ffffff;font-size:0.88rem;">${n.title}</strong>
-                                        <div style="display:flex;align-items:center;gap:0.4rem;">
-                                            <span style="font-size:0.72rem;color:#94a3b8;font-family:var(--cc-font-mono);">${new Date(n.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                            if (dbNotifs.length === 0) {
+                                listEl.innerHTML = '<div style="text-align:center;color:var(--cc-text-muted);padding:2.5rem 1rem;"><i class="fas fa-bell-slash" style="font-size:2rem;margin-bottom:0.75rem;opacity:0.4;display:block;"></i>No new notifications.</div>';
+                            } else {
+                                listEl.innerHTML = '';
+                                dbNotifs.slice(0, 15).forEach(n => {
+                                    const item = document.createElement('div');
+                                    item.className = 'cc-notif-item';
+                                    if (!n.isRead) item.style.borderLeft = '3px solid var(--cc-cyan)';
+                                    item.innerHTML = `
+                                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem;">
+                                            <strong style="color:#ffffff;font-size:0.88rem;">${escapeHtml(n.title)}</strong>
+                                            <div style="display:flex;align-items:center;gap:0.4rem;">
+                                                <span style="font-size:0.72rem;color:#94a3b8;font-family:var(--cc-font-mono);">${new Date(n.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div style="color:#cbd5e1;line-height:1.4;">${n.message}</div>
-                                `;
-                                listEl.appendChild(item);
-                            });
+                                        <div style="color:#cbd5e1;line-height:1.4;">${escapeHtml(n.message)}</div>
+                                    `;
+                                    listEl.appendChild(item);
+                                });
+                            }
                         }
                         return;
                     }
                 }
             } catch (e) {
-                console.warn('[CitizenNotifications] Backend sync error, falling back to local store:', e);
+                console.warn('[CitizenNotifications] Backend sync error:', e);
             }
 
-            const key = getNotificationStore();
-            let notifs = JSON.parse(localStorage.getItem(key) || 'null');
-
-            if (!notifs) {
-                // Baseline default notification events derived from active state
-                notifs = [
-                    { title: 'Emergency Safety Hub Connected', body: 'System telemetry established with National Disaster Management Authority.', time: 'Just now', type: 'system' },
-                    { title: 'Official Warning Advisory Active', body: 'Cyclone & heavy rainfall watch active for Coastal Districts.', time: '10 mins ago', type: 'warning' },
-                    { title: 'Local Safe Shelters Open', body: '3 designated community evacuation bases operational in Coimbatore sector.', time: '1 hr ago', type: 'shelter' }
-                ];
-                localStorage.setItem(key, JSON.stringify(notifs));
+            if (badgeEl) {
+                badgeEl.innerText = '0';
+                badgeEl.style.display = 'none';
             }
-
-            if (badgeEl) badgeEl.innerText = notifs.length;
-
-            if (!listEl) return;
-            if (notifs.length === 0) {
-                listEl.innerHTML = '<div style="text-align:center;color:#64748b;padding:2rem;">No new notifications.</div>';
-                return;
+            if (listEl) {
+                listEl.innerHTML = '<div style="text-align:center;color:var(--cc-text-muted);padding:2.5rem 1rem;"><i class="fas fa-bell-slash" style="font-size:2rem;margin-bottom:0.75rem;opacity:0.4;display:block;"></i>No new notifications.</div>';
             }
-
-            listEl.innerHTML = '';
-            notifs.forEach((n, idx) => {
-                const item = document.createElement('div');
-                item.className = 'cc-notif-item';
-                item.innerHTML = `
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem;">
-                        <strong style="color:#ffffff;font-size:0.88rem;">${n.title}</strong>
-                        <div style="display:flex;align-items:center;gap:0.4rem;">
-                            <span style="font-size:0.72rem;color:#94a3b8;font-family:var(--cc-font-mono);">${n.time}</span>
-                            <button type="button" onclick="dismissNotification(${idx})" style="background:none;border:none;color:#94a3b8;cursor:pointer;padding:2px 5px;font-size:0.85rem;" title="Dismiss notification">&times;</button>
-                        </div>
-                    </div>
-                    <div style="color:#cbd5e1;line-height:1.4;">${n.body}</div>
-                `;
-                listEl.appendChild(item);
-            });
         }
 
         async function clearAllNotifications() {

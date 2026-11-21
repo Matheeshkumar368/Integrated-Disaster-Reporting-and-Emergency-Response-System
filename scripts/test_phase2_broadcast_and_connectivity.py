@@ -53,7 +53,7 @@ def run_tests():
         "message": "Water levels exceeding danger mark at Karur barrage. Evacuate Zone 2 immediately.",
         "disasterType": "Flood",
         "severity": "Medium",
-        "region": "Karur",
+        "region": "Tamil Nadu",
         "broadcasted": True
     }
     req_broadcast = urllib.request.Request(
@@ -75,7 +75,7 @@ def run_tests():
     )
     with urllib.request.urlopen(req_cit_notifs) as res:
         cit_notifs = json.loads(res.read().decode("utf-8"))
-        alert_notif = next((n for n in cit_notifs if "Flood" in n.get("title", "") or "Evacuation" in n.get("title", "") or "Karur" in n.get("title", "")), None)
+        alert_notif = next((n for n in cit_notifs if "Alert" in n.get("title", "") or "Tamil Nadu" in n.get("title", "") or "Flood" in n.get("message", "")), None)
         assert alert_notif is not None, "Citizen did not receive broadcast notification"
         print(f"[PASS] Citizen received broadcast notification: [{alert_notif.get('category')}] {alert_notif.get('title')}")
 

@@ -158,45 +158,8 @@ public class NotificationService {
 
     @Transactional
     public void ensureBaselineNotifications(String email) {
-        if (email == null || email.isBlank()) return;
-        String cleanEmail = email.toLowerCase().trim();
-        long count = notificationRepository.countByRecipientEmailAndIsDeletedByRecipientFalse(cleanEmail);
-        if (count > 0) return;
-
-        Optional<User> userOpt = userRepository.findByEmail(cleanEmail);
-        String role = userOpt.map(User::getRole).orElse("Citizen");
-
-        if ("Admin".equalsIgnoreCase(role)) {
-            createNotification(cleanEmail, "Admin", "New Citizen Disaster Report #CR-104", "Severe flash flood reported by citizen in Karur riverbank area.", "REPORTS", "High", 104L, "CITIZEN_REPORT", "/admin-dashboard.html");
-            createNotification(cleanEmail, "Admin", "New Citizen Registered", "Citizen Rahul Sharma registered on Public Safety Portal.", "SYSTEM", "Low", null, "USER", "/admin-users.html");
-            createNotification(cleanEmail, "Admin", "New Responder Registered", "Emergency Field Responder Amit Kumar joined active duty roster.", "SYSTEM", "Medium", null, "USER", "/admin-users.html");
-            createNotification(cleanEmail, "Admin", "Official NDMA Alert Ingested", "CAP 1.2 Feed: Red Alert Cyclone Warning for Coastal Belt.", "BROADCASTS", "Critical", null, "ALERT", "/admin-dashboard.html");
-            createNotification(cleanEmail, "Admin", "Emergency Broadcast Transmitted", "Statewide evacuation advisory broadcasted to 2,400 citizens.", "BROADCASTS", "High", null, "ALERT", "/admin-alerts.html");
-            createNotification(cleanEmail, "Admin", "Responder Unit Alpha Dispatched", "Unit Alpha-1 assigned to Incident #CR-104 in Karur.", "ASSIGNMENTS", "High", 104L, "TASK", "/admin-tasks.html");
-            createNotification(cleanEmail, "Admin", "Mission Progress: En Route", "Unit Alpha-1 is en route to scene. Speed: 42 km/h • ETA: 6 mins.", "ASSIGNMENTS", "Medium", 104L, "TASK", "/admin-tasks.html");
-            createNotification(cleanEmail, "Admin", "Mission Completed: Rescue Sector 4", "Evacuation safely executed. 14 citizens sheltered.", "ASSIGNMENTS", "Low", 104L, "TASK", "/admin-tasks.html");
-            createNotification(cleanEmail, "Admin", "System Health Check Passed", "All database replication, GIS mapping, and telemetry gateways nominal.", "SYSTEM", "Low", null, "SYSTEM", "/admin-dashboard.html");
-        } else if ("Responder".equalsIgnoreCase(role)) {
-            createNotification(cleanEmail, "Responder", "New Rescue Assignment #RT-401", "Dispatch order for Incident #CR-104 (Flash Flood Distress). Immediate response required.", "DISPATCH", "Critical", 401L, "TASK", "/responder-dashboard.html");
-            createNotification(cleanEmail, "Responder", "Emergency Location & Incident Details", "Target: Riverbank Sector 4 • Coordinates: 10.9571° N, 78.0766° E • Water Depth: 1.4m.", "DISPATCH", "High", 401L, "TASK", "/responder-dashboard.html");
-            createNotification(cleanEmail, "Responder", "Assignment Priority: Urgent Critical", "Priority designated Level 1 Critical due to rising flood waters and trapped families.", "DISPATCH", "Critical", 401L, "TASK", "/responder-dashboard.html");
-            createNotification(cleanEmail, "Responder", "Mission Instructions: Evacuate Sector 4", "Deploy inflatable rescue boats. Transfer evacuees to High School Relief Camp.", "DISPATCH", "High", 401L, "TASK", "/responder-dashboard.html");
-            createNotification(cleanEmail, "Responder", "Assignment Acknowledged", "Dispatch center recorded your acknowledgment for Task #RT-401.", "STATUS_LOG", "Medium", 401L, "TASK", "/responder-dashboard.html");
-            createNotification(cleanEmail, "Responder", "Central Command Advisory Update", "Secondary access bridge submerged. Route via Eastern Bypass Highway.", "HQ_UPDATES", "High", 401L, "TASK", "/responder-dashboard.html");
-            createNotification(cleanEmail, "Responder", "Mission Status Changed to En Route", "Telemetry telemetry synchronized. Central Command monitoring live GPS.", "STATUS_LOG", "Medium", 401L, "TASK", "/responder-dashboard.html");
-            createNotification(cleanEmail, "Responder", "Official Hazard Warning: Gale Force Winds", "NDMA Sachet Warning: 65 km/h gusts expected. Secure aerial and watercraft equipment.", "HAZARDS", "High", null, "ALERT", "/responder-dashboard.html");
-        } else {
-            createNotification(cleanEmail, "Citizen", "Report Submitted: Confirmation #CR-104", "Your disaster report has been recorded and transmitted to Central Command.", "REPORTS", "Medium", 104L, "CITIZEN_REPORT", "/citizen-dashboard.html");
-            createNotification(cleanEmail, "Citizen", "Report Verified by Command", "Incident #CR-104 has been verified by emergency authorities. Priority set to High.", "REPORTS", "High", 104L, "CITIZEN_REPORT", "/citizen-dashboard.html");
-            createNotification(cleanEmail, "Citizen", "Rescue Team Assigned", "Emergency Rescue Team Alpha-1 has been dispatched to your distress coordinates.", "RESCUE", "High", 104L, "CITIZEN_REPORT", "/citizen-dashboard.html");
-            createNotification(cleanEmail, "Citizen", "Responder Acknowledged Assignment", "Responder Amit Kumar (Alpha-1) accepted dispatch and prepared gear.", "RESCUE", "Medium", 104L, "CITIZEN_REPORT", "/citizen-dashboard.html");
-            createNotification(cleanEmail, "Citizen", "Responder En Route", "Rescue Vehicle Alpha-1 is en route to your location. Estimated arrival in 7 minutes.", "RESCUE", "High", 104L, "CITIZEN_REPORT", "/citizen-dashboard.html");
-            createNotification(cleanEmail, "Citizen", "Responder Arrived on Scene", "Rescue Team Alpha-1 has arrived at your reported location. Please signal if safe.", "RESCUE", "Critical", 104L, "CITIZEN_REPORT", "/citizen-dashboard.html");
-            createNotification(cleanEmail, "Citizen", "Mission Progress: Assistance in Progress", "Emergency medical and evacuation assistance actively underway.", "RESCUE", "High", 104L, "CITIZEN_REPORT", "/citizen-dashboard.html");
-            createNotification(cleanEmail, "Citizen", "Mission Completed & Resolved", "Rescue operation safely completed. Your report is now resolved.", "RESCUE", "Low", 104L, "CITIZEN_REPORT", "/citizen-dashboard.html");
-            createNotification(cleanEmail, "Citizen", "Official Disaster Warning: Severe Flood", "IMD & NDMA Advisory: Avoid low-lying riverbank areas. Relief centers open 24/7.", "WARNINGS", "Critical", null, "ALERT", "/citizen-dashboard.html");
-            createNotification(cleanEmail, "Citizen", "Community Safety Advisory", "Emergency relief supplies and medical assistance available at Camp B.", "MESSAGES", "Low", null, "ALERT", "/citizen-dashboard.html");
-        }
+        // Genuine real-time notifications are generated strictly from live workflow events (citizen reports, assignments, status updates, emergency broadcasts).
+        // No fake or hardcoded records are seeded, ensuring 100% genuine MySQL auditability and clean empty states.
     }
 
     public List<Notification> getNotificationsForUser(String callerEmail, String category, String status) {

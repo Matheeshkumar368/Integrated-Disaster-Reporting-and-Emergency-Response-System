@@ -491,12 +491,12 @@
             let destLng = mission.lng;
 
             if (!destLat || !destLng) {
-                if (mission.address && mission.address.toLowerCase().includes('coimbatore')) { destLat = 11.0168; destLng = 76.9558; }
-                else if (mission.address && mission.address.toLowerCase().includes('chennai')) { destLat = 13.0827; destLng = 80.2707; }
-                else if (mission.address && mission.address.toLowerCase().includes('tiruchirappalli')) { destLat = 10.7905; destLng = 78.7047; }
-                else { destLat = 11.1271; destLng = 78.6569; }
-                activeFieldTask.lat = destLat;
-                activeFieldTask.lng = destLng;
+                document.getElementById('telemetryDistance').innerText = 'Unlocated';
+                document.getElementById('telemetryEta').innerText = 'GPS N/A';
+                if (window.showToast) {
+                    window.showToast('Selected incident destination does not have recorded GPS coordinates. Target pin omitted.', 'info');
+                }
+                return;
             }
 
             const targetIcon = L.divIcon({

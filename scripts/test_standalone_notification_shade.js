@@ -163,6 +163,7 @@ async function runStandaloneNotificationAudit() {
                 localStorage.setItem('userEmail', 'admin@disaster.gov.in');
             })()
         `);
+        await sleep(500);
 
         // 1.2 Open Admin Notifications
         await client.send('Page.navigate', { url: `${BASE_URL}/admin-notifications.html` });

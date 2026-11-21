@@ -147,6 +147,20 @@
             return headers;
         },
 
+        getBaseUrl: function() {
+            try {
+                if (typeof window !== 'undefined' && window.location) {
+                    return window.location.origin;
+                }
+            } catch(e) {}
+            return '';
+        },
+
+        apiUrl: function(path) {
+            const cleanPath = path ? (path.startsWith('/') ? path : '/' + path) : '';
+            return this.getBaseUrl() + cleanPath;
+        },
+
         getDashboardUrl: function(role) {
             const r = role || this.getRole();
             if (r === 'Admin') return '/admin-dashboard.html';

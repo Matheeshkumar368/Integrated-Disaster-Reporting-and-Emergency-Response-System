@@ -32,7 +32,7 @@
   {
     "testName": "Admin Notifications: Notification cards rendered in feed",
     "passed": true,
-    "detail": "Cards: 18"
+    "detail": "Cards: 44"
   },
   {
     "testName": "Admin Notifications: Clicking Dashboard returns strictly to Admin Dashboard",
@@ -57,7 +57,7 @@
   {
     "testName": "Citizen Notifications: Notification cards rendered in feed",
     "passed": true,
-    "detail": "Cards: 17"
+    "detail": "Cards: 50"
   },
   {
     "testName": "Citizen Notifications: Clicking Dashboard returns strictly to Citizen Dashboard",
@@ -82,7 +82,7 @@
   {
     "testName": "Responder Notifications: Notification cards rendered in feed",
     "passed": true,
-    "detail": "Cards: 12"
+    "detail": "Cards: 20"
   },
   {
     "testName": "Responder Notifications: Clicking Dashboard returns strictly to Responder Dashboard",

@@ -147,67 +147,10 @@ public class DataInitializer {
                 }
             }
 
-            // Baseline Demonstration Rescue Tasks
-            try {
-                if (rescueTaskRepo.count() == 0) {
-                    log.info("No rescue tasks found. Seeding baseline academic demonstration tasks...");
-                    RescueTask task1 = new RescueTask();
-                    task1.setTitle("Peelamedu Flood Evacuation & Shelter Transport");
-                    task1.setDescription("[ACADEMIC DEMO] Evacuate low-lying households near Peelamedu lake breach to designated community hall relief shelter.");
-                    task1.setZone("Coimbatore");
-                    task1.setPriority("High");
-                    task1.setStatus("In Progress");
-                    task1.setAssignedTo("responder@disaster.gov.in");
-                    task1.setAssignedResponderName("Emergency Responder");
-                    task1.setLocationName("Peelamedu, Coimbatore");
-                    task1.setLatitude(11.0267);
-                    task1.setLongitude(76.9984);
-                    task1.setCreatedBy("admin@disaster.gov.in");
-                    rescueTaskRepo.save(task1);
-
-                    RescueTask task2 = new RescueTask();
-                    task2.setTitle("Medical Relief Kits Distribution");
-                    task2.setDescription("[ACADEMIC DEMO] Distribute emergency first-aid kits and potable water filters to vulnerable flood relief centers.");
-                    task2.setZone("Tiruchirappalli");
-                    task2.setPriority("Medium");
-                    task2.setStatus("Pending");
-                    task2.setAssignedTo("responder2@disaster.gov.in");
-                    task2.setAssignedResponderName("Rescue Team Lead");
-                    task2.setLocationName("Gandhi Market, Tiruchirappalli");
-                    task2.setLatitude(10.7905);
-                    task2.setLongitude(78.7047);
-                    task2.setCreatedBy("admin@disaster.gov.in");
-                    rescueTaskRepo.save(task2);
-
-                    log.info("Successfully seeded baseline demo rescue tasks.");
-                }
-            } catch (Exception e) {
-                log.warn("Demo rescue tasks seeding skipped: {}", e.getMessage());
-            }
-
-            // Baseline Demonstration Citizen SOS Reports
-            try {
-                if (citizenReportRepo.count() == 0) {
-                    log.info("No citizen distress reports found. Seeding baseline academic demo citizen reports...");
-                    CitizenReport r1 = new CitizenReport();
-                    r1.setCitizenEmail("citizen@gmail.com");
-                    r1.setLocation("Peelamedu, Coimbatore");
-                    r1.setMessage("[ACADEMIC DEMO SOS] Flash water surge entering ground floor homes. 4 senior citizens require immediate boat evacuation assistance.");
-                    r1.setStatus("Pending");
-                    citizenReportRepo.save(r1);
-
-                    CitizenReport r2 = new CitizenReport();
-                    r2.setCitizenEmail("citizen2@gmail.com");
-                    r2.setLocation("Velachery, Chennai");
-                    r2.setMessage("[ACADEMIC DEMO REPORT] High winds have toppled trees and power lines across junction. Road traffic completely blocked.");
-                    r2.setStatus("Acknowledged");
-                    citizenReportRepo.save(r2);
-
-                    log.info("Successfully seeded baseline demo citizen distress reports.");
-                }
-            } catch (Exception e) {
-                log.warn("Demo citizen reports seeding skipped: {}", e.getMessage());
-            }
+            // No fake rescue tasks or citizen reports are seeded.
+            // All real data must come from actual Admin broadcasts and Citizen submissions.
+            // This ensures genuine three-role connectivity during evaluation.
+            log.info("Rescue task and citizen report seeding skipped: data must come from live workflow actions.");
 
             // Emergency Survival & Evacuation Video Library Seeding
             try {

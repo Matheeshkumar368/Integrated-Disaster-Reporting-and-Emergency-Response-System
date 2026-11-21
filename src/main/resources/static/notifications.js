@@ -421,8 +421,8 @@
                         <div class="notif-empty-icon">
                             <i class="fa-solid fa-bell-slash"></i>
                         </div>
-                        <h3>All Caught Up!</h3>
-                        <p>No notifications found matching your current filter. Real-time emergency broadcasts and updates will appear here automatically.</p>
+                        <h3>No new notifications</h3>
+                        <p>No disaster notifications available in this category. Real-time emergency broadcasts and operational dispatches will appear here automatically.</p>
                     </div>
                 `;
                 return;

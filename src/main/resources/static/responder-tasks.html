@@ -754,8 +754,14 @@
                 }
                 
                 // Get responder info
+                let email = localStorage.getItem('userEmail') || '';
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    email = payload.sub || email;
+                } catch(pe) {}
+
                 myResponderInfo = {
-                    email: payload.sub,
+                    email: email,
                     role: role
                 };
             } catch(e) {
