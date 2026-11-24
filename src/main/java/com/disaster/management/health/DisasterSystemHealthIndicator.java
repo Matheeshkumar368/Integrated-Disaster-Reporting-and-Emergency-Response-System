@@ -17,6 +17,7 @@ import java.io.File;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.*;
 
 /**
@@ -75,16 +76,46 @@ public class DisasterSystemHealthIndicator implements HealthIndicator {
         boolean dbHealthy = false;
         List<String> presentTables = new ArrayList<>();
         List<String> missingTables = new ArrayList<>();
+        String dbProduct = "Database";
         try (Connection conn = dataSource.getConnection()) {
             dbHealthy = conn.isValid(2);
             DatabaseMetaData metaData = conn.getMetaData();
-            for (String requiredTable : REQUIRED_TABLES) {
-                try (ResultSet rs = metaData.getTables(conn.getCatalog(), null, requiredTable, new String[]{"TABLE"})) {
-                    if (rs.next()) {
-                        presentTables.add(requiredTable);
-                    } else {
-                        missingTables.add(requiredTable);
+            dbProduct = metaData.getDatabaseProductName();
+            Set<String> existingTables = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+
+            // Fetch tables using current catalog (MySQL database name or H2 catalog)
+            try (ResultSet rs = metaData.getTables(conn.getCatalog(), null, "%", new String[]{"TABLE"})) {
+                while (rs.next()) {
+                    String name = rs.getString("TABLE_NAME");
+                    if (name != null) {
+                        existingTables.add(name);
                     }
+                }
+            }
+
+            // Fallback for drivers that expect null catalog / schema
+            if (existingTables.isEmpty()) {
+                try (ResultSet rs = metaData.getTables(null, null, "%", new String[]{"TABLE"})) {
+                    while (rs.next()) {
+                        String name = rs.getString("TABLE_NAME");
+                        if (name != null) {
+                            existingTables.add(name);
+                        }
+                    }
+                }
+            }
+
+            // Verify each required table
+            for (String requiredTable : REQUIRED_TABLES) {
+                if (existingTables.contains(requiredTable)) {
+                    presentTables.add(requiredTable);
+                    continue;
+                }
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.execute("SELECT 1 FROM " + requiredTable + " WHERE 1=0");
+                    presentTables.add(requiredTable);
+                } catch (Exception ex) {
+                    missingTables.add(requiredTable);
                 }
             }
         } catch (Exception e) {
@@ -94,7 +125,7 @@ public class DisasterSystemHealthIndicator implements HealthIndicator {
 
         Map<String, Object> dbDetails = new LinkedHashMap<>();
         dbDetails.put("connected", dbHealthy);
-        dbDetails.put("databaseType", "MySQL");
+        dbDetails.put("databaseType", dbProduct);
         dbDetails.put("verifiedTablesCount", presentTables.size());
         dbDetails.put("requiredTablesCount", REQUIRED_TABLES.size());
         if (!missingTables.isEmpty()) {

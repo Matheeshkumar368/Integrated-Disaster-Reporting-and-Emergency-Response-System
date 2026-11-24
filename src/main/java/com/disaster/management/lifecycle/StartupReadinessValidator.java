@@ -13,17 +13,22 @@ import java.io.File;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Startup Readiness Validator
- * Validates that Spring Boot, MySQL connectivity, required database tables,
- * storage directories, and essential services are fully operational before
- * declaring the server as READY.
+ * Validates that Spring Boot, database connectivity (MySQL in production / H2 in tests),
+ * required database tables, storage directories, and essential services are fully operational
+ * before declaring the server as READY.
  *
- * If any critical requirement fails, logs an explicit diagnostic error banner
- * and triggers immediate graceful shutdown to avoid operating on corrupted or incomplete state.
+ * If any critical requirement fails:
+ * - In production: logs an explicit diagnostic error banner and triggers immediate graceful shutdown.
+ * - In test environment: logs the diagnostic and throws an IllegalStateException so the test
+ *   fails cleanly with a clear stack trace without killing the test runner JVM.
  */
 @Component
 public class StartupReadinessValidator {
@@ -63,22 +68,53 @@ public class StartupReadinessValidator {
 
         // 1. Database Connection and Schema Integrity Validation
         List<String> missingTables = new ArrayList<>();
+        String dbProductName = "Database";
         try (Connection conn = dataSource.getConnection()) {
             if (!conn.isValid(3)) {
-                handleStartupFailure("MySQL connection failed validation check (isValid returned false).");
+                handleStartupFailure("Database connection failed validation check (isValid returned false).");
                 return;
             }
 
             DatabaseMetaData metaData = conn.getMetaData();
-            for (String tableName : MANDATORY_TABLES) {
-                try (ResultSet rs = metaData.getTables(conn.getCatalog(), null, tableName, new String[]{"TABLE"})) {
-                    if (!rs.next()) {
-                        missingTables.add(tableName);
+            dbProductName = metaData.getDatabaseProductName();
+            Set<String> existingTables = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+
+            // Fetch tables using current catalog (MySQL database name or H2 catalog)
+            try (ResultSet rs = metaData.getTables(conn.getCatalog(), null, "%", new String[]{"TABLE"})) {
+                while (rs.next()) {
+                    String name = rs.getString("TABLE_NAME");
+                    if (name != null) {
+                        existingTables.add(name);
                     }
                 }
             }
+
+            // Fallback for drivers that expect null catalog / schema
+            if (existingTables.isEmpty()) {
+                try (ResultSet rs = metaData.getTables(null, null, "%", new String[]{"TABLE"})) {
+                    while (rs.next()) {
+                        String name = rs.getString("TABLE_NAME");
+                        if (name != null) {
+                            existingTables.add(name);
+                        }
+                    }
+                }
+            }
+
+            // Verify each mandatory table (checks case-insensitively, with direct probe fallback)
+            for (String tableName : MANDATORY_TABLES) {
+                if (existingTables.contains(tableName)) {
+                    continue;
+                }
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.execute("SELECT 1 FROM " + tableName + " WHERE 1=0");
+                    existingTables.add(tableName);
+                } catch (Exception ex) {
+                    missingTables.add(tableName);
+                }
+            }
         } catch (Exception e) {
-            handleStartupFailure("Unable to connect to MySQL database: " + e.getMessage());
+            handleStartupFailure("Unable to connect to database: " + e.getMessage());
             return;
         }
 
@@ -106,7 +142,7 @@ public class StartupReadinessValidator {
         stateHolder.setStatus(ServerRuntimeStatus.READY);
 
         // 4. Print Operational Readiness Banner
-        printStartupSuccessBanner();
+        printStartupSuccessBanner(dbProductName);
     }
 
     private void handleStartupFailure(String reason) {
@@ -119,16 +155,20 @@ public class StartupReadinessValidator {
         System.err.println(" PORT: Releasing port " + serverPort + " and terminating gracefully.");
         System.err.println("=".repeat(85) + "\n");
 
+        if (ServerLifecycleManager.isTestEnvironment()) {
+            throw new IllegalStateException("Startup readiness validation failed: " + reason);
+        }
+
         serverLifecycleManager.initiateGracefulShutdown("Startup failure: " + reason);
     }
 
-    private void printStartupSuccessBanner() {
+    private void printStartupSuccessBanner(String dbProduct) {
         System.out.println("\n" + "=".repeat(85));
         System.out.println(" [SERVER READY] Integrated Disaster Reporting & Emergency Response Coordination System");
         System.out.println("=".repeat(85));
         System.out.println(" Status:          READY (All critical requirements validated)");
         System.out.println(" Active Port:     " + serverPort + " (HTTP)");
-        System.out.println(" Database:        MySQL 8.0 (disaster_management) - All " + MANDATORY_TABLES.size() + " tables verified");
+        System.out.println(" Database:        " + dbProduct + " - All " + MANDATORY_TABLES.size() + " tables verified");
         System.out.println(" Media Storage:   " + mediaUploadDir + " (Active, writable)");
         System.out.println(" Portals Active:");
         System.out.println("   - Admin Command Center:    http://localhost:" + serverPort + "/admin-dashboard.html");
