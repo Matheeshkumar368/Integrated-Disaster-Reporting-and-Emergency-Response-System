@@ -55,10 +55,20 @@ public class CitizenReportService {
     @Transactional
     public CitizenReport createReport(CitizenReport report) {
         if (report.getMessage() == null || report.getMessage().trim().isEmpty()) {
-            throw new IllegalArgumentException("Report message description is required");
+            if (report.getDescription() != null && !report.getDescription().trim().isEmpty()) {
+                report.setMessage(report.getDescription().trim());
+            } else if (report.getTitle() != null && !report.getTitle().trim().isEmpty()) {
+                report.setMessage(report.getTitle().trim());
+            } else {
+                throw new IllegalArgumentException("Report message description is required");
+            }
         }
         if (report.getLocation() == null || report.getLocation().trim().isEmpty()) {
-            throw new IllegalArgumentException("Report location is required");
+            if (report.getLatitude() != null && report.getLongitude() != null) {
+                report.setLocation("Coordinates: " + report.getLatitude() + ", " + report.getLongitude());
+            } else {
+                report.setLocation("Emergency Incident Location");
+            }
         }
 
         // Duplicate report submission prevention (e.g. rapid double submit within 5 seconds)

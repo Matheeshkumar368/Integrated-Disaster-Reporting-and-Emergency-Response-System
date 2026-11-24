@@ -578,6 +578,7 @@
     <nav class="cc-nav-bar">
         <ul class="cc-nav-links">
             <li><a href="/responder-notifications.html" class="cc-nav-link" style="color:#fb923c;"><i class="fas fa-bell"></i> Notification Center</a></li>
+            <li><a href="/responder-messages.html" class="cc-nav-link" style="color:#fb923c;"><i class="fas fa-comments"></i> Tactical Comms</a></li>
             <li><a href="/responder-dashboard.html" class="cc-nav-link"><i class="fas fa-list-check"></i> Tactical Incident Queue</a></li>
             <li><a href="/responder-rescue.html" class="cc-nav-link"><i class="fas fa-person-falling-burst"></i> Live Rescue Operations</a></li>
             <li><a href="/responder-tasks.html" class="cc-nav-link active"><i class="fas fa-clipboard-check"></i> Assigned Field Tasks</a></li>
@@ -730,13 +731,17 @@
         let zoneResponders = [];
         let selectedTeamEmail = null;
         
+        function getResponderToken() {
+            return (window.AuthHelper && window.AuthHelper.getToken('Responder')) || sessionStorage.getItem('token_Responder') || localStorage.getItem('token_Responder');
+        }
+        
         // Check authentication and load data
         (function() {
             if (window.AuthHelper && window.AuthHelper.initUrlAuth) {
                 window.AuthHelper.initUrlAuth();
             }
-            const token = window.AuthHelper ? window.AuthHelper.getToken() : localStorage.getItem('token');
-            const role = window.AuthHelper ? window.AuthHelper.getRole() : localStorage.getItem('userRole');
+            const token = getResponderToken();
+            const role = (window.AuthHelper && window.AuthHelper.getRole('Responder')) || sessionStorage.getItem('userRole_Responder') || localStorage.getItem('userRole_Responder') || 'Responder';
             
             if (!token) {
                 window.location.href = '/index.html';
@@ -788,7 +793,7 @@
         
         async function loadMyInfo() {
             try {
-                const token = localStorage.getItem('token');
+                const token = getResponderToken();
                 const res = await fetch('/api/auth/profile', {
                     method: 'POST',
                     headers: { 
@@ -811,7 +816,7 @@
         
         async function loadZoneResponders(myZone) {
             try {
-                const token = localStorage.getItem('token');
+                const token = getResponderToken();
                 const res = await fetch('/api/tasks/responders', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
@@ -865,7 +870,7 @@
             }
             
             try {
-                const token = localStorage.getItem('token');
+                const token = getResponderToken();
                 // Load tasks for selected team
                 const res = await fetch('/api/tasks', {
                     headers: { 'Authorization': 'Bearer ' + token }
@@ -914,7 +919,7 @@
         
         async function loadTasks() {
             try {
-                const token = localStorage.getItem('token');
+                const token = getResponderToken();
                 const res = await fetch('/api/tasks/my-tasks', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
@@ -932,7 +937,7 @@
         
         async function loadReports() {
             try {
-                const token = localStorage.getItem('token');
+                const token = getResponderToken();
                 const res = await fetch('/api/reports/my-reports', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
@@ -1107,7 +1112,7 @@
         
         async function updateStatus(taskId, status) {
             try {
-                const token = localStorage.getItem('token');
+                const token = getResponderToken();
                 const res = await fetch(`/api/tasks/${taskId}/status`, {
                     method: 'PUT',
                     headers: {
@@ -1133,7 +1138,7 @@
         
         async function acceptTask(taskId) {
             try {
-                const token = localStorage.getItem('token');
+                const token = getResponderToken();
                 const res = await fetch(`/api/tasks/${taskId}/status`, {
                     method: 'PUT',
                     headers: {
@@ -1166,7 +1171,7 @@
             if (reason === null) return;
             
             try {
-                const token = localStorage.getItem('token');
+                const token = getResponderToken();
                 const res = await fetch(`/api/tasks/${taskId}/status`, {
                     method: 'PUT',
                     headers: {
@@ -1261,7 +1266,7 @@
         async function toggleAvailability() {
             const isAvailable = document.getElementById('availabilityToggle').checked;
             const targetStatus = isAvailable ? 'Available' : 'Unavailable';
-            const token = localStorage.getItem('token');
+            const token = getResponderToken();
             if (!token) return;
 
             try {
@@ -1298,7 +1303,7 @@
         }
         
         async function loadAvailability() {
-            const token = localStorage.getItem('token');
+            const token = getResponderToken();
             if (!token) return;
 
             try {
@@ -1327,7 +1332,7 @@
             }
             
             try {
-                const token = localStorage.getItem('token');
+                const token = getResponderToken();
                 const res = await fetch(`/api/tasks/${taskId}/status`, {
                     method: 'PUT',
                     headers: {
@@ -1367,7 +1372,7 @@
             }
             
             try {
-                const token = localStorage.getItem('token');
+                const token = getResponderToken();
                 const res = await fetch('/api/reports', {
                     method: 'POST',
                     headers: {

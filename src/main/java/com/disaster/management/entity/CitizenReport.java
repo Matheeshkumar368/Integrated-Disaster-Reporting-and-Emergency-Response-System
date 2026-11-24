@@ -123,6 +123,13 @@ public class CitizenReport {
     public String getMessage() { return message; }
     public void setMessage(String message) { this.message = message; }
 
+    public String getDescription() { return message; }
+    public void setDescription(String description) {
+        if (this.message == null || this.message.trim().isEmpty()) {
+            this.message = description;
+        }
+    }
+
     public String getLocation() { return location; }
     public void setLocation(String location) { this.location = location; }
 

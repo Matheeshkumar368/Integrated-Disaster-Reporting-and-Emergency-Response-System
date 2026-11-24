@@ -43,6 +43,10 @@
             </div>
 
             <div class="shade-header-right">
+                <a href="admin-messages.html" class="btn-shade-action" style="text-decoration:none;" title="Open Tactical Messages">
+                    <i class="fa-solid fa-comments" style="color:#00e5ff;"></i>
+                    <span class="btn-label-desktop">Messages</span>
+                </a>
                 <div class="shade-clock-pill">
                     <i class="fa-regular fa-clock"></i>
                     <span id="liveClockDisplay">Live Clock</span>
@@ -85,12 +89,20 @@
                         <i class="fa-solid fa-truck-medical"></i> Responder Ops
                         <span class="filter-count-badge" id="countPill_ASSIGNMENTS">0</span>
                     </button>
+                    <button class="shade-filter-pill" data-category="DIRECT_MESSAGE">
+                        <i class="fa-solid fa-comments"></i> Direct Messages
+                        <span class="filter-count-badge" id="countPill_DIRECT_MESSAGE">0</span>
+                    </button>
+                    <button class="shade-filter-pill" data-category="NDMA_ALERT">
+                        <i class="fa-solid fa-cloud-bolt"></i> NDMA / SACHET
+                        <span class="filter-count-badge" id="countPill_NDMA_ALERT">0</span>
+                    </button>
                     <button class="shade-filter-pill" data-category="BROADCASTS">
-                        <i class="fa-solid fa-tower-broadcast"></i> Broadcasts & NDMA
+                        <i class="fa-solid fa-tower-broadcast"></i> Broadcasts
                         <span class="filter-count-badge" id="countPill_BROADCASTS">0</span>
                     </button>
                     <button class="shade-filter-pill" data-category="SYSTEM">
-                        <i class="fa-solid fa-sliders"></i> System & Personnel
+                        <i class="fa-solid fa-sliders"></i> System Events
                         <span class="filter-count-badge" id="countPill_SYSTEM">0</span>
                     </button>
                 </div>

@@ -47,6 +47,22 @@
     <link rel="stylesheet" href="role-loading.css?v=2" />
     <script src="role-loading.js?v=2"></script>
     <script src="auth-helper.js?v=2"></script>
+    <script src="auth-guard.js?v=2"></script>
+    <script>
+        (function() {
+            try {
+                const tok = (window.AuthHelper && window.AuthHelper.getToken('Responder')) || sessionStorage.getItem('token_Responder') || localStorage.getItem('token_Responder') || sessionStorage.getItem('token') || localStorage.getItem('token');
+                if (!tok) { window.location.replace('/index.html'); return; }
+                if (tok.includes('.')) {
+                    const p = JSON.parse(atob(tok.split('.')[1]));
+                    if (p && p.role && p.role !== 'Responder') {
+                        const target = p.role === 'Admin' ? '/admin-dashboard.html' : '/citizen-dashboard.html';
+                        window.location.replace(target);
+                    }
+                }
+            } catch(e) {}
+        })();
+    </script>
 
     <style>
         .cc-responder-container {
@@ -303,6 +319,7 @@
     <nav class="cc-nav-bar">
         <ul class="cc-nav-links">
             <li><a href="/responder-notifications.html" class="cc-nav-link" style="color:#fb923c;"><i class="fas fa-bell"></i> Notification Center</a></li>
+            <li><a href="/responder-messages.html" class="cc-nav-link" style="color:#fb923c;"><i class="fas fa-comments"></i> Tactical Comms</a></li>
             <li><a href="/responder-dashboard.html" class="cc-nav-link active"><i class="fas fa-list-check"></i> Tactical Incident Queue</a></li>
             <li><a href="/responder-rescue.html" class="cc-nav-link"><i class="fas fa-map-location"></i> Live Rescue Operations</a></li>
             <li><a href="/responder-tasks.html" class="cc-nav-link"><i class="fas fa-clipboard-check"></i> Assigned Field Tasks</a></li>
@@ -544,6 +561,10 @@
             const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
             return String(str).replace(/[&<>"']/g, m => map[m]);
         }
+        function getResponderToken() {
+            return (window.AuthHelper && window.AuthHelper.getToken('Responder')) || sessionStorage.getItem('token_Responder') || localStorage.getItem('token_Responder');
+        }
+
         let cachedTasks = [];
         let cachedCitizenReports = [];
         let cachedAlerts = [];
@@ -555,6 +576,10 @@
 
         // Authentication & Role Check
         (async function() {
+            if (window.AuthGuard) {
+                const authed = await window.AuthGuard.requireAuth('Responder');
+                if (!authed) return;
+            }
             if (window.AuthHelper && window.AuthHelper.initUrlAuth) {
                 window.AuthHelper.initUrlAuth();
             }
@@ -586,6 +611,12 @@
                 }
 
                 const userData = await response.json();
+                if (userData.role && userData.role !== 'Responder') {
+                    console.warn('[ResponderDashboard] Server DB role mismatch:', userData.role);
+                    if (userData.role === 'Admin') window.location.replace('/admin-dashboard.html');
+                    else window.location.replace('/citizen-dashboard.html');
+                    return;
+                }
                 if (userData.assignedZone) {
                     document.getElementById('assignedZoneBadge').innerText = `Zone: ${userData.assignedZone}`;
                 }
@@ -593,12 +624,13 @@
                 console.error('Validation error:', e);
             }
 
-            if (userRole !== 'Responder' && userRole !== 'Admin') {
+            if (userRole !== 'Responder') {
                 if (window.showToast) {
                     window.showToast('Access Denied: Only Responders can access Field Operations', 'error');
                 }
                 setTimeout(() => {
-                    window.location.href = '/citizen-dashboard.html';
+                    if (userRole === 'Admin') window.location.href = '/admin-dashboard.html';
+                    else window.location.href = '/citizen-dashboard.html';
                 }, 800);
                 return;
             }
@@ -674,7 +706,7 @@
 
         // Master Data Loader
         async function loadResponderQueue() {
-            const token = localStorage.getItem('token');
+            const token = getResponderToken();
             if (!token) return;
 
             try {
@@ -928,7 +960,7 @@
 
         // Update Task Status via PUT /api/tasks/{id}/status
         async function updateTaskStatus(taskId, newStatus, notes = '') {
-            const token = localStorage.getItem('token');
+            const token = getResponderToken();
             if (!token) return;
 
             try {
@@ -1016,7 +1048,7 @@
             }
             if (!notes) return;
             
-            const token = localStorage.getItem('token');
+            const token = getResponderToken();
             if (!token) return;
             try {
                 const res = await fetch(`/api/tasks/${taskId}/notes`, {
@@ -1054,7 +1086,7 @@
             }
             if (!reason) return;
 
-            const token = localStorage.getItem('token');
+            const token = getResponderToken();
             if (!token) return;
             try {
                 const res = await fetch(`/api/tasks/${taskId}/request-cancel`, {
@@ -1090,7 +1122,7 @@
 
         // Responder Availability Handlers
         async function loadResponderAvailability() {
-            const token = localStorage.getItem('token');
+            const token = getResponderToken();
             if (!token) return;
             try {
                 const res = await fetch('/api/auth/responder/availability', {
@@ -1130,7 +1162,7 @@
         }
 
         async function changeAvailabilityStatus(newVal) {
-            const token = localStorage.getItem('token');
+            const token = getResponderToken();
             if (!token) return;
             try {
                 const res = await fetch('/api/auth/responder/availability', {
@@ -1202,7 +1234,7 @@
         }
 
         async function checkExistingGpsStatus() {
-            const token = localStorage.getItem('token');
+            const token = getResponderToken();
             if (!token) return;
 
             try {
@@ -1555,7 +1587,7 @@
                 return;
             }
 
-            const token = localStorage.getItem('token');
+            const token = getResponderToken();
             if (!token) {
                 CommandCenter.showToast('Session expired. Please log in again.', 'error');
                 return;
@@ -1690,7 +1722,7 @@
                 dashboardWatchId = null;
             }
 
-            const token = localStorage.getItem('token');
+            const token = getResponderToken();
             if (token) {
                 try {
                     await fetch('/api/responder/location/stop', {
@@ -1840,7 +1872,7 @@
         }
 
         async function acknowledgeCitizenReport(reportId) {
-            const token = localStorage.getItem('token');
+            const token = getResponderToken();
             try {
                 const res = await fetch(`/api/citizen-reports/${reportId}/acknowledge`, {
                     method: 'PUT',

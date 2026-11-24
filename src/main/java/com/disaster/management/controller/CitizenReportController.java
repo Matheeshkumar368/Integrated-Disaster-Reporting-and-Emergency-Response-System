@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.disaster.management.entity.CitizenReport;
+import com.disaster.management.security.RoleUtil;
 import com.disaster.management.service.CitizenReportService;
 
 @RestController
@@ -41,6 +42,11 @@ public class CitizenReportController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || auth.getName().equals("anonymousUser")) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("status", "error", "message", "Authentication required"));
+        }
+
+        if (!RoleUtil.isCitizen(auth)) {
+            log.warn("Non-citizen user [{}] attempted to submit citizen report with authorities {}", auth.getName(), auth.getAuthorities());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("status", "error", "message", "Forbidden: Only citizens can submit disaster reports."));
         }
 
         try {
@@ -65,6 +71,11 @@ public class CitizenReportController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || auth.getName().equals("anonymousUser")) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("status", "error", "message", "Authentication required"));
+        }
+
+        if (!RoleUtil.isCitizen(auth)) {
+            log.warn("Non-citizen user [{}] attempted to submit citizen report with authorities {}", auth.getName(), auth.getAuthorities());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("status", "error", "message", "Forbidden: Only citizens can submit disaster reports."));
         }
 
         List<CitizenReport> myReports = reportService.getReportsByCitizen(auth.getName());

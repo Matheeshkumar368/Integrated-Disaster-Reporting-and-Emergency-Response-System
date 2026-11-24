@@ -49,6 +49,22 @@
     <link rel="stylesheet" href="role-loading.css?v=2" />
     <script src="role-loading.js?v=2"></script>
     <script src="auth-helper.js?v=2"></script>
+    <script src="auth-guard.js?v=2"></script>
+    <script>
+        (function() {
+            try {
+                const tok = (window.AuthHelper && window.AuthHelper.getToken('Admin')) || sessionStorage.getItem('token_Admin') || localStorage.getItem('token_Admin') || sessionStorage.getItem('token') || localStorage.getItem('token');
+                if (!tok) { window.location.replace('/index.html'); return; }
+                if (tok.includes('.')) {
+                    const p = JSON.parse(atob(tok.split('.')[1]));
+                    if (p && p.role && p.role !== 'Admin') {
+                        const target = p.role === 'Responder' ? '/responder-dashboard.html' : '/citizen-dashboard.html';
+                        window.location.replace(target);
+                    }
+                }
+            } catch(e) {}
+        })();
+    </script>
 
     <style>
         .cc-main-container {
@@ -338,6 +354,7 @@
     <nav class="cc-nav-bar">
         <ul class="cc-nav-links">
             <li><a href="/admin-notifications.html" class="cc-nav-link" style="color:var(--cc-cyan);"><i class="fas fa-bell"></i> Notification Center</a></li>
+            <li><a href="/admin-messages.html" class="cc-nav-link" style="color:var(--cc-cyan);"><i class="fas fa-comments"></i> Messages & Comms</a></li>
             <li><a href="/admin-dashboard.html" class="cc-nav-link active"><i class="fas fa-map-location-dot"></i> Mission Control</a></li>
             <li><a href="/admin-alerts.html" class="cc-nav-link"><i class="fas fa-bullhorn"></i> Emergency Broadcasts</a></li>
             <li><a href="/admin-tasks.html" class="cc-nav-link"><i class="fas fa-truck-medical"></i> Responder Tasks</a></li>
@@ -960,6 +977,10 @@
         // Initialize loading screen
         RoleLoadingScreen.initOnLoad('Admin');
 
+        function getAdminToken() {
+            return (window.AuthHelper && window.AuthHelper.getToken('Admin')) || sessionStorage.getItem('token_Admin') || localStorage.getItem('token_Admin');
+        }
+
         // Global Variables
         let map;
         let allDisastersCache = [];
@@ -971,11 +992,15 @@
 
         // Async Auth Check
         (async function() {
+            if (window.AuthGuard) {
+                const authed = await window.AuthGuard.requireAuth('Admin');
+                if (!authed) return;
+            }
             if (window.AuthHelper && window.AuthHelper.initUrlAuth) {
                 window.AuthHelper.initUrlAuth();
             }
-            const token = window.AuthHelper ? window.AuthHelper.getToken() : localStorage.getItem('token');
-            const userRole = window.AuthHelper ? window.AuthHelper.getRole() : localStorage.getItem('userRole');
+            const token = getAdminToken();
+            const userRole = (window.AuthHelper && window.AuthHelper.getRole('Admin')) || sessionStorage.getItem('userRole_Admin') || localStorage.getItem('userRole_Admin') || 'Admin';
 
             if (window.RoleLoadingScreen) RoleLoadingScreen.hide();
 
@@ -1009,6 +1034,14 @@
                         localStorage.removeItem('userRole');
                         window.location.href = '/index.html';
                     }
+                    return;
+                }
+
+                const userData = await response.json();
+                if (userData.role && userData.role !== 'Admin') {
+                    console.warn('[AdminDashboard] Server DB role mismatch:', userData.role);
+                    if (userData.role === 'Responder') window.location.replace('/responder-dashboard.html');
+                    else window.location.replace('/citizen-dashboard.html');
                     return;
                 }
             } catch (e) {
@@ -1090,7 +1123,7 @@
 
         async function loadIncidentsOnMap() {
             if (!map || !incidentsLayerGroup) return;
-            const token = localStorage.getItem('token');
+            const token = getAdminToken();
             if (!token) return;
 
             try {
@@ -1171,7 +1204,7 @@
 
         async function loadActiveRespondersOnMap() {
             if (!map || !respondersLayerGroup) return;
-            const token = localStorage.getItem('token');
+            const token = getAdminToken();
             if (!token) return;
 
             try {
@@ -1627,7 +1660,7 @@
                     pill.innerHTML = '<i class="fas fa-rotate fa-spin" style="color:#38bdf8;"></i> <span style="color:#38bdf8;">NDMA: SYNCHRONIZING...</span>';
                 }
 
-                const token = localStorage.getItem('token');
+                const token = getAdminToken();
                 const res = await fetch('/api/admin/ndma/sync', {
                     method: 'POST',
                     headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
@@ -1878,7 +1911,7 @@
         }
 
         async function loadCitizenReportsFeed() {
-            const token = localStorage.getItem('token');
+            const token = getAdminToken();
             if (!token) return;
             try {
                 const res = await fetch('/api/citizen-reports', {
@@ -2011,7 +2044,7 @@
         }
 
         async function resolveCitizenReportDirect(reportId) {
-            const token = localStorage.getItem('token');
+            const token = getAdminToken();
             if (!token) return;
             try {
                 const res = await fetch(`/api/citizen-reports/${reportId}/resolve`, {
@@ -2032,7 +2065,7 @@
 
         // Load Live Broadcasted Alerts
         function loadLiveAlerts() {
-            const token = localStorage.getItem('token');
+            const token = getAdminToken();
             const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
             fetch('/api/alerts', { headers: headers })
                 .then(res => res.json())
@@ -2197,7 +2230,7 @@
         }
 
         async function loadActiveMissions() {
-            const token = localStorage.getItem('token');
+            const token = getAdminToken();
             const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
             try {
                 const res = await fetch('/api/tasks', { headers: headers });
@@ -2307,7 +2340,7 @@
         }
 
         async function acknowledgeAlert(alertId) {
-            const token = localStorage.getItem('token');
+            const token = getAdminToken();
             const res = await fetch(`/api/alerts/${alertId}/acknowledge`, {
                 method: 'PUT',
                 headers: { 'Authorization': 'Bearer ' + token }
@@ -2319,7 +2352,7 @@
         }
 
         async function resolveAlert(alertId) {
-            const token = localStorage.getItem('token');
+            const token = getAdminToken();
             const res = await fetch(`/api/alerts/${alertId}/resolve`, {
                 method: 'PUT',
                 headers: { 'Authorization': 'Bearer ' + token }
@@ -2374,7 +2407,7 @@
             const severity = document.getElementById('editAlertSeverity').value;
             const region = document.getElementById('editAlertRegion').value;
             const message = document.getElementById('editAlertMessage').value;
-            const token = localStorage.getItem('token');
+            const token = getAdminToken();
             if (!token) return;
 
             try {
@@ -2419,7 +2452,7 @@
             }
             if (reason === null) return;
 
-            const token = localStorage.getItem('token');
+            const token = getAdminToken();
             if (!token) return;
 
             try {
@@ -2460,7 +2493,7 @@
             }
             if (reason === null) return;
 
-            const token = localStorage.getItem('token');
+            const token = getAdminToken();
             if (!token) return;
 
             try {
@@ -2482,7 +2515,7 @@
         }
 
         async function adminRestoreCitizenReport(reportId) {
-            const token = localStorage.getItem('token');
+            const token = getAdminToken();
             if (!token) return;
 
             try {
@@ -2519,7 +2552,7 @@
             }
             if (reason === null) return;
 
-            const token = localStorage.getItem('token');
+            const token = getAdminToken();
             if (!token) return;
 
             try {
@@ -2544,7 +2577,7 @@
         }
 
         async function adminReactivateUser(userId, userName) {
-            const token = localStorage.getItem('token');
+            const token = getAdminToken();
             if (!token) return;
 
             try {
@@ -2579,7 +2612,7 @@
             if (!confirmed) return;
 
             try {
-                const token = localStorage.getItem('token');
+                const token = getAdminToken();
                 const res = await fetch(`/api/alerts/${alertId}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': 'Bearer ' + token }
@@ -2597,7 +2630,7 @@
         }
 
         async function acknowledgeTask(taskId) {
-            const token = localStorage.getItem('token');
+            const token = getAdminToken();
             const res = await fetch(`/api/tasks/${taskId}/acknowledge`, {
                 method: 'PUT',
                 headers: { 'Authorization': 'Bearer ' + token }
@@ -2622,7 +2655,7 @@
             }
             if (summary === null) return;
 
-            const token = localStorage.getItem('token');
+            const token = getAdminToken();
             const res = await fetch(`/api/tasks/${taskId}/resolve?summary=${encodeURIComponent(summary || 'Mission marked completed by admin')}`, {
                 method: 'PUT',
                 headers: { 'Authorization': 'Bearer ' + token }
@@ -2648,7 +2681,7 @@
             }
             if (!confirmed) return;
 
-            const token = localStorage.getItem('token');
+            const token = getAdminToken();
             const res = await fetch(`/api/tasks/${taskId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': 'Bearer ' + token }
@@ -2663,7 +2696,7 @@
         document.getElementById('alertForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const token = localStorage.getItem('token');
+            const token = (window.AuthHelper && window.AuthHelper.getToken('Admin')) || sessionStorage.getItem('token_Admin') || localStorage.getItem('token_Admin');
             if (!token) {
                 window.location.href = '/index.html';
                 return;
@@ -2684,9 +2717,16 @@
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Broadcasting...';
 
             async function executeBroadcast(stepUpToken = null) {
+                const currentToken = (window.AuthHelper && window.AuthHelper.getToken('Admin')) || sessionStorage.getItem('token_Admin') || localStorage.getItem('token_Admin');
+                if (!currentToken) {
+                    CommandCenter.showToast('Authentication error: Administrator session required to broadcast alerts. Please log in as Admin.', 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Broadcast Alert to Citizens';
+                    return;
+                }
                 const headers = {
                     'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + token
+                    'Authorization': 'Bearer ' + currentToken
                 };
                 if (stepUpToken) {
                     headers['X-Admin-Step-Up-Token'] = stepUpToken;
@@ -2727,7 +2767,7 @@
 
         // Check 2FA Recovery Status on Dashboard Load
         async function checkAdminRecoverySetupStatus() {
-            const token = localStorage.getItem('token');
+            const token = getAdminToken();
             if (!token) return;
             try {
                 const res = await fetch('/api/auth/admin/security-pin/status', {
@@ -2779,7 +2819,7 @@
                 const res = await fetch('/api/auth/admin/backup-code/setup', {
                     method: 'POST',
                     headers: {
-                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'Authorization': 'Bearer ' + getAdminToken(),
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ backupCode: code, confirmBackupCode: confirm })
@@ -2856,7 +2896,7 @@
                 const res = await fetch('/api/auth/admin/security-pin/recover-with-backup-code', {
                     method: 'POST',
                     headers: {
-                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'Authorization': 'Bearer ' + getAdminToken(),
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
@@ -2925,7 +2965,7 @@
         async function submitAdminPinVerification() {
             const pin = document.getElementById('adminPinInput').value.trim();
             const errEl = document.getElementById('adminPinError');
-            const token = localStorage.getItem('token');
+            const token = (window.AuthHelper && window.AuthHelper.getToken('Admin')) || sessionStorage.getItem('token_Admin') || localStorage.getItem('token_Admin');
 
             if (!pin || pin.length < 6) {
                 errEl.innerText = 'Please enter your complete 6-digit PIN';
@@ -2968,7 +3008,7 @@
         }
 
         async function loadResponderRosterAndAnalytics() {
-            const token = localStorage.getItem('token');
+            const token = getAdminToken();
             const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
 
             try {
@@ -3084,7 +3124,7 @@
             document.getElementById('hygieneStatsLoading').style.display = 'block';
             document.getElementById('hygieneStatsBody').style.display = 'none';
 
-            const token = localStorage.getItem('token');
+            const token = getAdminToken();
             try {
                 const res = await fetch('/api/admin/data/hygiene-stats', {
                     headers: { 'Authorization': 'Bearer ' + token }
@@ -3122,7 +3162,7 @@
         }
 
         async function triggerCleanDuplicates() {
-            const token = localStorage.getItem('token');
+            const token = getAdminToken();
             const btn = document.getElementById('btnExecuteDeduplication');
             if (btn) btn.disabled = true;
 

@@ -162,7 +162,8 @@
             backdrop-filter: blur(14px);
             border: 1px solid var(--notif-border);
             border-radius: 18px;
-            overflow: hidden;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
         }
 
@@ -471,6 +472,10 @@
                         <i class="fa-solid fa-bell"></i>
                         <span>Notifications</span>
                         <span class="badge-count" id="sidebarUnreadBadge" style="display:none; background:#3b82f6;">0</span>
+                    </a>
+                    <a href="admin-messages.html" class="nav-link">
+                        <i class="fa-solid fa-comments"></i>
+                        <span>Tactical Messages</span>
                     </a>
                     <a href="admin-dashboard.html" class="nav-link">
                         <i class="fa-solid fa-gauge-high"></i>

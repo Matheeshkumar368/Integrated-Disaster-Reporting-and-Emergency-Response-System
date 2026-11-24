@@ -41,15 +41,56 @@
             }
         },
 
-        getToken: function() {
+        getToken: function(preferredRole) {
             try {
+                let reqRole = preferredRole;
+                if (!reqRole && typeof window !== 'undefined' && window.location) {
+                    const p = window.location.pathname.toLowerCase();
+                    if (p.includes('admin')) reqRole = 'Admin';
+                    else if (p.includes('responder')) reqRole = 'Responder';
+                    else if (p.includes('citizen')) reqRole = 'Citizen';
+                }
+
+                // If a specific role is expected, prioritize that role's isolated token
+                if (reqRole) {
+                    const norm = reqRole.charAt(0).toUpperCase() + reqRole.slice(1).toLowerCase();
+                    const sRoleTok = sessionStorage.getItem('token_' + norm) || sessionStorage.getItem(norm.toLowerCase() + '_token');
+                    if (sRoleTok && sRoleTok !== 'null' && sRoleTok !== 'undefined') return sRoleTok;
+
+                    const sTok = sessionStorage.getItem('token');
+                    if (sTok && sTok.includes('.')) {
+                        try {
+                            const p = JSON.parse(atob(sTok.split('.')[1]));
+                            if (p && p.role && p.role.toLowerCase() === norm.toLowerCase()) return sTok;
+                        } catch(e) {}
+                    }
+
+                    const lRoleTok = localStorage.getItem('token_' + norm) || localStorage.getItem(norm.toLowerCase() + '_token');
+                    if (lRoleTok && lRoleTok !== 'null' && lRoleTok !== 'undefined') return lRoleTok;
+
+                    const lTok = localStorage.getItem('token');
+                    if (lTok && lTok.includes('.')) {
+                        try {
+                            const p = JSON.parse(atob(lTok.split('.')[1]));
+                            if (p && p.role && p.role.toLowerCase() === norm.toLowerCase()) return lTok;
+                        } catch(e) {}
+                    }
+
+                    // Strict role isolation: if a specific role is requested, NEVER fall back to another role's token!
+                    return null;
+                }
+
+                // Generic fallback: tab-isolated sessionStorage first, then localStorage
+                const sTok = sessionStorage.getItem('token');
+                if (sTok && sTok !== 'null' && sTok !== 'undefined') return sTok;
+
                 const token = localStorage.getItem('token');
                 if (!token || token === 'null' || token === 'undefined') {
                     return null;
                 }
                 return token;
             } catch (e) {
-                console.error('[AuthHelper] Failed to read token from localStorage:', e);
+                console.error('[AuthHelper] Failed to read token from storage:', e);
                 return null;
             }
         },
@@ -58,22 +99,30 @@
          * Resolves the user's role with cryptographic ground truth.
          * Decodes JWT payload first. If present, synchronizes localStorage.
          */
-        getRole: function() {
+        getRole: function(preferredRole) {
             try {
-                const token = this.getToken();
+                const token = this.getToken(preferredRole);
                 if (token && token.includes('.')) {
                     const payload = JSON.parse(atob(token.split('.')[1]));
                     if (payload && payload.role) {
-                        const verifiedRole = payload.role;
-                        try {
-                            if (localStorage.getItem('userRole') !== verifiedRole) {
-                                localStorage.setItem('userRole', verifiedRole);
-                            }
-                        } catch(e) {}
-                        return verifiedRole;
+                        return payload.role;
                     }
                 }
-                const storedRole = localStorage.getItem('userRole');
+                let reqRole = preferredRole;
+                if (!reqRole && typeof window !== 'undefined' && window.location) {
+                    const p = window.location.pathname.toLowerCase();
+                    if (p.includes('admin')) reqRole = 'Admin';
+                    else if (p.includes('responder')) reqRole = 'Responder';
+                    else if (p.includes('citizen')) reqRole = 'Citizen';
+                }
+                if (reqRole) {
+                    const norm = reqRole.charAt(0).toUpperCase() + reqRole.slice(1).toLowerCase();
+                    const sRole = sessionStorage.getItem('userRole_' + norm) || sessionStorage.getItem('userRole');
+                    if (sRole && sRole !== 'null') return sRole;
+                    const lRole = localStorage.getItem('userRole_' + norm);
+                    if (lRole && lRole !== 'null') return lRole;
+                }
+                const storedRole = sessionStorage.getItem('userRole') || localStorage.getItem('userRole');
                 if (storedRole && storedRole !== 'null' && storedRole !== 'undefined') {
                     return storedRole;
                 }
@@ -134,9 +183,13 @@
             }
         },
 
-        getHeaders: function(extraHeaders = {}) {
+        getHeaders: function(extraHeaders = {}, preferredRole = null) {
+            if (typeof extraHeaders === 'string') {
+                preferredRole = extraHeaders;
+                extraHeaders = {};
+            }
             const headers = { ...extraHeaders };
-            const token = this.getToken();
+            const token = this.getToken(preferredRole);
             if (token) {
                 headers['Authorization'] = 'Bearer ' + token;
             }
@@ -227,12 +280,11 @@
         },
 
         logout: function() {
-            localStorage.removeItem('token');
-            localStorage.removeItem('userRole');
-            localStorage.removeItem('userName');
-            localStorage.removeItem('userEmail');
-            sessionStorage.removeItem('adminStepUpToken');
-            fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+            localStorage.clear();
+            sessionStorage.clear();
+            try {
+                fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+            } catch(e) {}
             window.location.href = '/index.html';
         }
     };

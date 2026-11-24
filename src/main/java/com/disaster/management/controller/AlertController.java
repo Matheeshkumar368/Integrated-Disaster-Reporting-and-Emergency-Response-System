@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.disaster.management.entity.Alert;
+import com.disaster.management.security.RoleUtil;
 import com.disaster.management.service.AdminPinService;
 import com.disaster.management.service.AlertService;
 
@@ -54,9 +55,7 @@ public class AlertController {
                 .body(Map.of("status", "error", "message", "Unauthorized: Authentication required to broadcast alerts"));
         }
 
-        boolean isAdmin = auth.getAuthorities().stream().anyMatch(a ->
-            a.getAuthority().equalsIgnoreCase("ROLE_Admin") || a.getAuthority().equalsIgnoreCase("ROLE_ADMIN")
-        );
+        boolean isAdmin = RoleUtil.isAdmin(auth);
         if (!isAdmin) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(Map.of("status", "error", "message", "Forbidden: Insufficient privileges. Only Central Command Administrators can broadcast emergency alerts."));

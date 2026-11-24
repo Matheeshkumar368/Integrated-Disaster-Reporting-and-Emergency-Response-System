@@ -110,6 +110,7 @@
     <nav class="cc-nav-bar">
         <ul class="cc-nav-links">
             <li><a href="/admin-notifications.html" class="cc-nav-link" style="color:var(--cc-cyan);"><i class="fas fa-bell"></i> Notification Center</a></li>
+            <li><a href="/admin-messages.html" class="cc-nav-link" style="color:var(--cc-cyan);"><i class="fas fa-comments"></i> Messages & Comms</a></li>
             <li><a href="/admin-dashboard.html" class="cc-nav-link"><i class="fas fa-map-location-dot"></i> Mission Control</a></li>
             <li><a href="/admin-alerts.html" class="cc-nav-link active"><i class="fas fa-bullhorn"></i> Emergency Broadcasts</a></li>
             <li><a href="/admin-tasks.html" class="cc-nav-link"><i class="fas fa-truck-medical"></i> Responder Tasks</a></li>
@@ -314,12 +315,16 @@
     <script src="/js/emergency-alert.js?v=4.1"></script>
 
     <script>
+        function getAdminToken() {
+            return (window.AuthHelper && window.AuthHelper.getToken('Admin')) || sessionStorage.getItem('token_Admin') || localStorage.getItem('token_Admin');
+        }
+
         let cachedBroadcastData = null;
 
         // Ensure user is authorized Admin
         document.addEventListener('DOMContentLoaded', () => {
-            const token = window.AuthHelper ? window.AuthHelper.getToken() : localStorage.getItem('token');
-            const role = window.AuthHelper ? window.AuthHelper.getRole() : localStorage.getItem('userRole');
+            const token = getAdminToken();
+            const role = window.AuthHelper ? window.AuthHelper.getRole('Admin') : localStorage.getItem('userRole_Admin');
 
             if (!token || role !== 'Admin') {
                 if (window.showToast) {
@@ -393,7 +398,7 @@
         async function handleBroadcastSubmit(event) {
             event.preventDefault();
 
-            const token = localStorage.getItem('token');
+            const token = getAdminToken();
             if (!token) {
                 window.location.href = '/index.html';
                 return;
@@ -424,7 +429,7 @@
         }
 
         async function executeBroadcastDispatch(alertData, stepUpTokenOverride) {
-            const token = localStorage.getItem('token');
+            const token = getAdminToken();
             const stepUpToken = stepUpTokenOverride || sessionStorage.getItem('adminStepUpToken');
 
             const headers = {
@@ -487,7 +492,7 @@
 
         async function verifyAdminPinAndProceed() {
             const pin = document.getElementById('adminPinInput').value.trim();
-            const token = localStorage.getItem('token');
+            const token = getAdminToken();
 
             if (!pin || pin.length < 4) {
                 showPinStatus('Please enter your valid 6-digit Admin Security PIN.');

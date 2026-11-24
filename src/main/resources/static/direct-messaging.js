@@ -161,8 +161,12 @@
             }, 100);
         }
 
+        getToken() {
+            return (window.AuthHelper && window.AuthHelper.getToken()) || localStorage.getItem('token');
+        }
+
         async loadContacts() {
-            const token = localStorage.getItem('token');
+            const token = this.getToken();
             if (!token) return;
 
             try {
@@ -250,7 +254,7 @@
         }
 
         async loadConversation(email, scrollToBottom = true) {
-            const token = localStorage.getItem('token');
+            const token = this.getToken();
             if (!token || !email) return;
 
             const streamEl = document.getElementById('dm-messages-stream');
@@ -330,7 +334,7 @@
             const text = input.value.trim();
             if (!text) return;
 
-            const token = localStorage.getItem('token');
+            const token = this.getToken();
             if (!token) {
                 alert('Authentication required.');
                 return;

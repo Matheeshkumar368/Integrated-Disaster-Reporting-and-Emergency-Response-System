@@ -17,23 +17,29 @@
          * Initialize auth state from localStorage and verified JWT payload
          * @returns {Promise<{token: string|null, role: string|null}>}
          */
-        async init() {
-            if (this.initialized) {
-                return { token: this.token, role: this.role };
+        async init(expectedRole) {
+            let reqRole = expectedRole;
+            if (!reqRole && typeof window !== 'undefined' && window.location) {
+                const p = window.location.pathname.toLowerCase();
+                if (p.includes('admin')) reqRole = 'Admin';
+                else if (p.includes('responder')) reqRole = 'Responder';
+                else if (p.includes('citizen')) reqRole = 'Citizen';
             }
 
-            this.token = localStorage.getItem('token');
+            this.token = (window.AuthHelper && window.AuthHelper.getToken(reqRole)) || localStorage.getItem('token');
             if (this.token && this.token.includes('.')) {
                 try {
                     const payload = JSON.parse(atob(this.token.split('.')[1]));
                     if (payload && payload.role) {
                         this.role = payload.role;
-                        try { localStorage.setItem('userRole', payload.role); } catch(e) {}
                     }
                 } catch(e) {}
             }
+            if (!this.role && reqRole) {
+                this.role = sessionStorage.getItem('userRole_' + reqRole) || localStorage.getItem('userRole_' + reqRole);
+            }
             if (!this.role) {
-                this.role = localStorage.getItem('userRole');
+                this.role = sessionStorage.getItem('userRole') || localStorage.getItem('userRole');
             }
             this.initialized = true;
             this.isReady = true;
@@ -76,7 +82,7 @@
         },
 
         /**
-         * Validate token with backend API
+         * Validate token with backend API and synchronize server ground truth
          * @returns {Promise<boolean>}
          */
         async validateWithBackend() {
@@ -93,7 +99,27 @@
                     },
                     body: JSON.stringify({})
                 });
-                return response.ok;
+
+                if (!response.ok) {
+                    console.warn('[AuthGuard] Backend validation rejected with HTTP', response.status);
+                    return false;
+                }
+
+                const data = await response.json();
+                if (data && (data.status === 'success' || data.email)) {
+                    if (data.role) {
+                        this.role = data.role;
+                        localStorage.setItem('userRole', data.role);
+                    }
+                    if (data.email) {
+                        localStorage.setItem('userEmail', data.email);
+                    }
+                    if (data.name) {
+                        localStorage.setItem('userName', data.name);
+                    }
+                    return true;
+                }
+                return false;
             } catch (e) {
                 console.error('[AuthGuard] Backend validation failed:', e);
                 return false;
@@ -111,7 +137,7 @@
                 RoleLoadingScreen.hide();
             }
 
-            await this.init();
+            await this.init(expectedRole);
 
             if (!this.isAuthenticated()) {
                 console.log('[AuthGuard] No token, redirecting to login');
@@ -130,14 +156,16 @@
 
             // Check role if expectedRole provided
             if (expectedRole && this.role !== expectedRole) {
-                console.log('[AuthGuard] Wrong role:', this.role, 'expected:', expectedRole);
-                const msg = 'Access Denied: This page is for ' + expectedRole + ' only';
+                console.warn('[AuthGuard] Role mismatch! DB Role:', this.role, 'Expected:', expectedRole);
+                const msg = 'Access Denied: This account is ' + (this.role || 'unauthorized') + ' and cannot access ' + expectedRole + ' resources';
                 if (window.showToast) {
                     window.showToast(msg, 'error');
+                } else {
+                    alert(msg);
                 }
                 setTimeout(() => {
                     this.redirectToDashboard();
-                }, 800);
+                }, 500);
                 return false;
             }
 
@@ -162,15 +190,16 @@
          * Clear auth data (logout)
          */
         logout() {
-            localStorage.removeItem('token');
-            localStorage.removeItem('userRole');
-            localStorage.removeItem('userName');
-            localStorage.removeItem('userEmail');
-            sessionStorage.removeItem('adminStepUpToken');
+            localStorage.clear();
+            sessionStorage.clear();
             this.token = null;
             this.role = null;
             this.initialized = false;
             console.log('[AuthGuard] Logged out');
+            try {
+                fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+            } catch(e) {}
+            window.location.href = '/index.html';
         }
     };
 

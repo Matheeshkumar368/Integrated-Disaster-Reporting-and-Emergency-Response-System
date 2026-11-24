@@ -222,7 +222,8 @@
         async loadNotifications(showFeedback = false) {
             try {
                 const headers = window.AuthHelper ? window.AuthHelper.getHeaders() : {};
-                const res = await fetch('/api/notifications', { headers });
+                const roleSegment = this.role === 'Admin' ? 'admin' : (this.role === 'Responder' ? 'responder' : 'citizen');
+                const res = await fetch(`/api/notifications/${roleSegment}`, { headers });
 
                 if (res.status === 401 || res.status === 403) {
                     if (window.AuthHelper && window.AuthHelper.handleAuthFailure) {
@@ -242,7 +243,7 @@
                 this.totalCount = this.notifications.length;
 
                 // Sync Unread count
-                const countRes = await fetch('/api/notifications/unread-count', { headers });
+                const countRes = await fetch(`/api/notifications/${roleSegment}/unread-count`, { headers });
                 if (countRes.ok) {
                     const countData = await countRes.json();
                     this.unreadCount = countData.unreadCount !== undefined ? countData.unreadCount : 
@@ -284,68 +285,78 @@
             const title = ((item && item.title) || '').toLowerCase();
             const msg = ((item && item.message) || '').toLowerCase();
 
+            // 1. DIRECT MESSAGE: Strictly isolated for private communications between roles
+            if (cat === 'DIRECT_MESSAGE' || cat === 'MESSAGE' || relType === 'MESSAGE' ||
+                title.startsWith('message from') || title.startsWith('admin message:')) {
+                return 'DIRECT_MESSAGE';
+            }
+
+            // 2. NDMA / SACHET OFFICIAL ALERTS: Strictly isolated official weather feeds
+            if (cat === 'NDMA_ALERT' || relType === 'NDMA_ALERT' || relType === 'OFFICIAL_ALERT' ||
+                title.includes('ndma') || title.includes('sachet') || title.includes('official weather')) {
+                return 'NDMA_ALERT';
+            }
+
             if (this.role === 'Admin') {
-                // 1. Citizen Reports
-                if (cat === 'REPORTS' || cat === 'DISASTER' || cat === 'DISASTERS' || relType === 'CITIZEN_REPORT' ||
+                // 3. Citizen Reports
+                if (cat === 'DISASTER_REPORT' || cat === 'REPORTS' || cat === 'DISASTER' || cat === 'DISASTERS' || relType === 'CITIZEN_REPORT' ||
                     title.includes('report') || title.includes('disaster') || title.includes('incident #')) {
                     return 'REPORTS';
                 }
-                // 2. Responder Operations & Progress
-                if (cat === 'ASSIGNMENTS' || cat === 'ASSIGNMENT' || cat === 'TASK' || cat === 'TASKS' || cat === 'RESPONSE' ||
+                // 4. Responder Operations & Progress
+                if (cat === 'RESPONDER_ASSIGNMENT' || cat === 'ASSIGNMENTS' || cat === 'ASSIGNMENT' || cat === 'TASK' || cat === 'TASKS' || cat === 'RESPONSE' ||
                     title.includes('responder') || title.includes('dispatched') || title.includes('en route') || 
                     title.includes('arrived') || title.includes('acknowledged') || title.includes('mission') || title.includes('rescue')) {
                     return 'ASSIGNMENTS';
                 }
-                // 3. Emergency Broadcasts & NDMA Warnings
-                if (cat === 'BROADCASTS' || cat === 'BROADCAST' || cat === 'ALERTS' || cat === 'ALERT' ||
-                    title.includes('broadcast') || title.includes('ndma') || title.includes('warning') || title.includes('alert')) {
+                // 5. Emergency Broadcasts
+                if (cat === 'EMERGENCY_BROADCAST' || cat === 'BROADCASTS' || cat === 'BROADCAST' || cat === 'ALERTS' || cat === 'ALERT' ||
+                    title.includes('broadcast') || title.includes('emergency warning') || title.includes('statewide')) {
                     return 'BROADCASTS';
                 }
-                // 4. System & Personnel
+                // 6. System & Personnel
                 return 'SYSTEM';
             }
 
             if (this.role === 'Citizen') {
-                // 1. My Report Status
-                if (cat === 'REPORTS' || cat === 'REPORT' || relType === 'CITIZEN_REPORT' || 
+                // 3. My Report Status
+                if (cat === 'REPORT_STATUS' || cat === 'DISASTER_REPORT' || cat === 'REPORTS' || cat === 'REPORT' || relType === 'CITIZEN_REPORT' || 
                     title.includes('report submitted') || title.includes('report received') || 
                     title.includes('under review') || title.includes('report verified') || title.includes('report rejected')) {
                     return 'REPORTS';
                 }
-                // 2. Responder & Rescue Operations
-                if (cat === 'RESCUE' || cat === 'RESPONSE' || cat === 'ASSIGNMENT' || 
+                // 4. Responder & Rescue Operations
+                if (cat === 'RESPONDER_ASSIGNMENT' || cat === 'RESCUE' || cat === 'RESPONSE' || cat === 'ASSIGNMENT' || 
                     title.includes('rescue team') || title.includes('responder assigned') || 
                     title.includes('acknowledged assignment') || title.includes('en route') || 
                     title.includes('arrived') || title.includes('mission completed') || title.includes('resolved') || title.includes('assistance in progress')) {
                     return 'RESCUE';
                 }
-                // 3. Disaster Warnings & NDMA Alerts
-                if (cat === 'WARNINGS' || cat === 'ALERTS' || cat === 'ALERT' || 
+                // 5. Disaster Warnings & Broadcasts
+                if (cat === 'EMERGENCY_BROADCAST' || cat === 'WARNINGS' || cat === 'ALERTS' || cat === 'ALERT' || 
                     title.includes('warning') || title.includes('flood') || title.includes('cyclone') || title.includes('evacuation') || title.includes('alert')) {
                     return 'WARNINGS';
                 }
-                // 4. Safety Directives & Advisories
-                return 'MESSAGES';
+                return 'SYSTEM';
             }
 
             if (this.role === 'Responder') {
-                // 1. New Rescue Assignments & Dispatch
-                if (cat === 'DISPATCH' || cat === 'ASSIGNMENT' || cat === 'ASSIGNMENTS' || 
+                // 3. New Rescue Assignments & Dispatch
+                if (cat === 'RESPONDER_ASSIGNMENT' || cat === 'DISPATCH' || cat === 'ASSIGNMENT' || cat === 'ASSIGNMENTS' || 
                     title.includes('assignment') || title.includes('dispatch') || title.includes('coordinates') || title.includes('location & incident')) {
                     return 'DISPATCH';
                 }
-                // 2. Mission Progress & Status
-                if (cat === 'STATUS_LOG' || cat === 'RESPONSE' || 
+                // 4. Mission Progress & Status
+                if (cat === 'REPORT_STATUS' || cat === 'STATUS_LOG' || cat === 'RESPONSE' || 
                     title.includes('acknowledged') || title.includes('en route') || title.includes('arrived') || title.includes('progress') || title.includes('completed')) {
                     return 'STATUS_LOG';
                 }
-                // 3. HQ Orders & Central Command Directives
-                if (cat === 'HQ_UPDATES' || cat === 'MESSAGES' || cat === 'MESSAGE' ||
-                    title.includes('hq') || title.includes('command') || title.includes('instructions') || title.includes('orders') || title.includes('advisory update')) {
-                    return 'HQ_UPDATES';
+                // 5. Severe Hazards & Broadcasts
+                if (cat === 'EMERGENCY_BROADCAST' || cat === 'HAZARDS' || 
+                    title.includes('broadcast') || title.includes('warning') || title.includes('alert')) {
+                    return 'HAZARDS';
                 }
-                // 4. Severe Hazards & Weather Warnings
-                return 'HAZARDS';
+                return 'SYSTEM';
             }
 
             return 'ALL';
@@ -476,12 +487,33 @@
 
         resolveCategoryLabel(item) {
             const cat = this.normalizeCategory(item.category, item);
-            switch (cat) {
-                case 'ALERTS': return 'Alert';
-                case 'RESPONDER': return 'Responder Update';
-                case 'MESSAGES': return 'Message';
-                default: return 'Update';
+            if (cat === 'DIRECT_MESSAGE') return 'Direct Message';
+            if (cat === 'NDMA_ALERT') return 'Official NDMA/SACHET';
+
+            if (this.role === 'Admin') {
+                switch (cat) {
+                    case 'REPORTS': return 'Citizen Report';
+                    case 'ASSIGNMENTS': return 'Responder Ops';
+                    case 'BROADCASTS': return 'Emergency Broadcast';
+                    case 'SYSTEM': return 'System & Security';
+                    default: return 'Command Intel';
+                }
+            } else if (this.role === 'Citizen') {
+                switch (cat) {
+                    case 'REPORTS': return 'My Incident Report';
+                    case 'RESCUE': return 'Rescue Operations';
+                    case 'WARNINGS': return 'Disaster Warning';
+                    default: return 'Citizen Advisory';
+                }
+            } else if (this.role === 'Responder') {
+                switch (cat) {
+                    case 'DISPATCH': return 'Rescue Assignment';
+                    case 'STATUS_LOG': return 'Mission Progress';
+                    case 'HAZARDS': return 'Hazard Warning';
+                    default: return 'Tactical Update';
+                }
             }
+            return 'Update';
         }
 
         resolveVisuals(item) {
@@ -645,7 +677,8 @@
         async markAllAsRead() {
             try {
                 const headers = window.AuthHelper ? window.AuthHelper.getHeaders() : {};
-                const res = await fetch('/api/notifications/read-all', {
+                const roleSegment = this.role === 'Admin' ? 'admin' : (this.role === 'Responder' ? 'responder' : 'citizen');
+                const res = await fetch(`/api/notifications/${roleSegment}/read-all`, {
                     method: 'PUT',
                     headers: headers
                 });

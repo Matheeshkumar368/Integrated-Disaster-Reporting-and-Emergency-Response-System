@@ -47,6 +47,22 @@
     <link rel="stylesheet" href="role-loading.css?v=2" />
     <script src="role-loading.js?v=2"></script>
     <script src="auth-helper.js?v=2"></script>
+    <script src="auth-guard.js?v=2"></script>
+    <script>
+        (function() {
+            try {
+                const tok = (window.AuthHelper && window.AuthHelper.getToken('Citizen')) || sessionStorage.getItem('token_Citizen') || localStorage.getItem('token_Citizen') || sessionStorage.getItem('token') || localStorage.getItem('token');
+                if (!tok) { window.location.replace('/index.html'); return; }
+                if (tok.includes('.')) {
+                    const p = JSON.parse(atob(tok.split('.')[1]));
+                    if (p && p.role && p.role !== 'Citizen') {
+                        const target = p.role === 'Admin' ? '/admin-dashboard.html' : '/responder-dashboard.html';
+                        window.location.replace(target);
+                    }
+                }
+            } catch(e) {}
+        })();
+    </script>
 
     <style>
         @keyframes sosPulse {
@@ -416,6 +432,7 @@
     <nav class="cc-nav-bar">
         <ul class="cc-nav-links">
             <li><a href="/citizen-notifications.html" class="cc-nav-link" style="color:var(--cc-safe-green);"><i class="fas fa-bell"></i> Notification Center</a></li>
+            <li><a href="/citizen-messages.html" class="cc-nav-link" style="color:var(--cc-safe-green);"><i class="fas fa-comments"></i> Messages & Support</a></li>
             <li><a href="/citizen-dashboard.html" class="cc-nav-link active"><i class="fas fa-shield-heart"></i> Dashboard</a></li>
             <li><a href="/citizen-dashboard.html?report" class="cc-nav-link" onclick="switchTab('reportTab'); return false;"><i class="fas fa-camera-retro"></i> Report Disaster</a></li>
             <li><a href="/citizen-dashboard.html?my-reports" class="cc-nav-link" onclick="switchTab('myReportsTab'); return false;"><i class="fas fa-clipboard-list"></i> My Reports</a></li>
@@ -1001,6 +1018,10 @@
         let recInterval = null;
         let recSeconds = 0;
 
+        function getCitizenToken() {
+            return (window.AuthHelper && window.AuthHelper.getToken('Citizen')) || sessionStorage.getItem('token_Citizen') || localStorage.getItem('token_Citizen');
+        }
+
         function escapeHtml(str) {
             if (!str) return '';
             const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
@@ -1012,6 +1033,10 @@
 
         // Authentication & Role Check
         (async function() {
+            if (window.AuthGuard) {
+                const authed = await window.AuthGuard.requireAuth('Citizen');
+                if (!authed) return;
+            }
             if (window.AuthHelper && window.AuthHelper.initUrlAuth) {
                 window.AuthHelper.initUrlAuth();
             }
@@ -1055,6 +1080,13 @@
                 }
 
                 const userData = await response.json();
+                if (userData.role && userData.role !== 'Citizen') {
+                    console.warn('[CitizenDashboard] Server DB role mismatch:', userData.role);
+                    if (userData.role === 'Admin') window.location.replace('/admin-dashboard.html');
+                    else if (userData.role === 'Responder') window.location.replace('/responder-dashboard.html');
+                    else window.location.replace('/index.html');
+                    return;
+                }
                 if (userData.name) {
                     document.getElementById('citizenName').innerText = userData.name;
                 }
@@ -1503,7 +1535,7 @@
         document.getElementById('citizenReportForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const token = localStorage.getItem('token');
+            const token = (window.AuthHelper && window.AuthHelper.getToken('Citizen')) || sessionStorage.getItem('token_Citizen') || localStorage.getItem('token_Citizen');
             if (!token) {
                 window.location.href = '/index.html';
                 return;
@@ -1589,7 +1621,7 @@
         // =========================================================================
         async function loadMyReports() {
             const listEl = document.getElementById('myReportsList');
-            const token = localStorage.getItem('token');
+            const token = getCitizenToken();
             if (!token) return;
 
             try {
@@ -1826,7 +1858,7 @@
             const location = document.getElementById('editLocation').value;
             const message = document.getElementById('editMessage').value;
             const severity = document.getElementById('editSeverity').value;
-            const token = localStorage.getItem('token');
+            const token = getCitizenToken();
             if (!token) return;
 
             const fullMessage = `[${incidentType} | Severity: ${severity}] Incident Report\n\n${message}`;
@@ -1872,7 +1904,7 @@
             if (!confirmed) return;
 
             try {
-                const token = localStorage.getItem('token');
+                const token = getCitizenToken();
                 const res = await fetch(`/api/citizen-reports/${reportId}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': 'Bearer ' + token }
@@ -1902,7 +1934,7 @@
         async function submitReportCancellation() {
             const reportId = document.getElementById('cancelReportTargetId').value;
             const reason = document.getElementById('cancelReasonInput').value;
-            const token = localStorage.getItem('token');
+            const token = getCitizenToken();
             if (!token) return;
 
             try {
@@ -1953,7 +1985,7 @@
             if (!confirmed) return;
 
             try {
-                const token = localStorage.getItem('token');
+                const token = getCitizenToken();
                 const res = await fetch(`/api/citizen-reports/${reportId}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': 'Bearer ' + token }
@@ -2087,7 +2119,7 @@
         }
 
         function getNotificationStore() {
-            const token = localStorage.getItem('token');
+            const token = getCitizenToken();
             let key = 'citizen_notifs_default';
             try {
                 if (token) key = 'citizen_notifs_' + JSON.parse(atob(token.split('.')[1])).sub;
@@ -2271,7 +2303,7 @@
 
         async function loadMyReportsOnMap() {
             if (!citizenMap || !citizenReportsLayerGroup) return;
-            const token = localStorage.getItem('token');
+            const token = getCitizenToken();
             if (!token) return;
 
             try {
@@ -2336,7 +2368,7 @@
                 return;
             }
 
-            const token = localStorage.getItem('token');
+            const token = getCitizenToken();
             try {
                 const res = await fetch(`/api/tracking/latest/${activeCitizenEmergencyReportId}`, {
                     headers: token ? { 'Authorization': 'Bearer ' + token } : {}
@@ -2424,7 +2456,7 @@
         // Toggle Citizen Live Location Sharing ("Share My Live Location During Emergency")
         async function toggleCitizenLiveLocationSharing() {
             const btn = document.getElementById('btnCitizenLiveShare');
-            const token = localStorage.getItem('token');
+            const token = getCitizenToken();
 
             if (!activeCitizenEmergencyReportId) {
                 if (window.showToast) window.showToast('Please submit an incident report first before sharing live location.', 'warning');
@@ -2552,7 +2584,7 @@
 
         async function executeFastSosDispatch() {
             const btn = document.getElementById('confirmSosBtn');
-            const token = localStorage.getItem('token');
+            const token = (window.AuthHelper && window.AuthHelper.getToken('Citizen')) || sessionStorage.getItem('token_Citizen') || localStorage.getItem('token_Citizen');
             if (!token) {
                 window.location.href = '/index.html';
                 return;

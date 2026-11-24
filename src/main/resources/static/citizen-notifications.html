@@ -43,6 +43,10 @@
             </div>
 
             <div class="shade-header-right">
+                <a href="citizen-messages.html" class="btn-shade-action" style="text-decoration:none;" title="Open Citizen Messages">
+                    <i class="fa-solid fa-comments" style="color:#10b981;"></i>
+                    <span class="btn-label-desktop">Messages</span>
+                </a>
                 <div class="shade-clock-pill">
                     <i class="fa-regular fa-clock"></i>
                     <span id="liveClockDisplay">Live Clock</span>
@@ -85,13 +89,17 @@
                         <i class="fa-solid fa-life-ring"></i> Rescue Units
                         <span class="filter-count-badge" id="countPill_RESCUE">0</span>
                     </button>
+                    <button class="shade-filter-pill" data-category="DIRECT_MESSAGE">
+                        <i class="fa-solid fa-comments"></i> Admin Messages
+                        <span class="filter-count-badge" id="countPill_DIRECT_MESSAGE">0</span>
+                    </button>
+                    <button class="shade-filter-pill" data-category="NDMA_ALERT">
+                        <i class="fa-solid fa-cloud-bolt"></i> NDMA Weather Alerts
+                        <span class="filter-count-badge" id="countPill_NDMA_ALERT">0</span>
+                    </button>
                     <button class="shade-filter-pill" data-category="WARNINGS">
                         <i class="fa-solid fa-triangle-exclamation"></i> Disaster Warnings
                         <span class="filter-count-badge" id="countPill_WARNINGS">0</span>
-                    </button>
-                    <button class="shade-filter-pill" data-category="MESSAGES">
-                        <i class="fa-solid fa-bullhorn"></i> Safety Directives
-                        <span class="filter-count-badge" id="countPill_MESSAGES">0</span>
                     </button>
                 </div>
 

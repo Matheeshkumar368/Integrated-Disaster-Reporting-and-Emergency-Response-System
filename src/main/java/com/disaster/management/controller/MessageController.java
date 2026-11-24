@@ -12,15 +12,22 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.disaster.management.security.RoleUtil;
+
 import com.disaster.management.entity.Message;
+import com.disaster.management.entity.User;
+import com.disaster.management.repository.UserRepository;
 import com.disaster.management.service.MessageService;
 
 @RestController
@@ -33,6 +40,9 @@ public class MessageController {
     @Autowired
     private MessageService messageService;
 
+    @Autowired
+    private UserRepository userRepository;
+
     private Authentication getAuthenticatedUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equalsIgnoreCase(auth.getName())) {
@@ -42,13 +52,17 @@ public class MessageController {
     }
 
     private String extractRole(Authentication auth) {
+        String role = RoleUtil.getRole(auth);
+        if (role != null) return role;
         return auth.getAuthorities().stream()
                 .findFirst()
                 .map(a -> a.getAuthority().replace("ROLE_", ""))
                 .orElse("Citizen");
     }
 
-    // Send an authenticated message adhering to role-based communication matrix
+    // ─────────────────────────────────────────────────────────────
+    // 1. POST /api/messages - Send authenticated message
+    // ─────────────────────────────────────────────────────────────
     @PostMapping
     public ResponseEntity<?> sendMessage(@RequestBody Message message) {
         Authentication auth = getAuthenticatedUser();
@@ -76,7 +90,39 @@ public class MessageController {
         }
     }
 
-    // Get conversation history with a target user (query param: ?with=...)
+    // ─────────────────────────────────────────────────────────────
+    // 2. GET /api/messages/inbox - Get received messages
+    // ─────────────────────────────────────────────────────────────
+    @GetMapping({"/inbox", "/received"})
+    public ResponseEntity<?> getInbox() {
+        Authentication auth = getAuthenticatedUser();
+        if (auth == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("status", "error", "message", "Unauthorized: Authentication token is missing or invalid"));
+        }
+
+        List<Message> inbox = messageService.getInbox(auth.getName());
+        return ResponseEntity.ok(inbox);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 3. GET /api/messages/sent - Get sent messages
+    // ─────────────────────────────────────────────────────────────
+    @GetMapping("/sent")
+    public ResponseEntity<?> getSentMessages() {
+        Authentication auth = getAuthenticatedUser();
+        if (auth == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("status", "error", "message", "Unauthorized: Authentication token is missing or invalid"));
+        }
+
+        List<Message> sent = messageService.getSent(auth.getName());
+        return ResponseEntity.ok(sent);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 4. GET /api/messages/conversation?with=... OR /conversation/{target}
+    // ─────────────────────────────────────────────────────────────
     @GetMapping("/conversation")
     public ResponseEntity<?> getConversation(@RequestParam("with") String withEmail) {
         Authentication auth = getAuthenticatedUser();
@@ -104,13 +150,122 @@ public class MessageController {
         }
     }
 
-    // Get conversation history with path variable
-    @GetMapping("/conversation/{otherEmail}")
-    public ResponseEntity<?> getConversationByPath(@PathVariable String otherEmail) {
-        return getConversation(otherEmail);
+    @GetMapping("/conversation/{otherEmailOrId}")
+    public ResponseEntity<?> getConversationByPath(@PathVariable String otherEmailOrId) {
+        String targetEmail = otherEmailOrId;
+        if (otherEmailOrId != null && otherEmailOrId.matches("\\d+")) {
+            try {
+                targetEmail = userRepository.findById(Long.parseLong(otherEmailOrId))
+                        .map(User::getEmail)
+                        .orElse(otherEmailOrId);
+            } catch (Exception ignored) {}
+        }
+        return getConversation(targetEmail);
     }
 
-    // Inspect conversation thread between two users (e.g., user1 and user2)
+    // ─────────────────────────────────────────────────────────────
+    // 5. PATCH & PUT /api/messages/{id}/read - Mark single message read
+    // ─────────────────────────────────────────────────────────────
+    @PatchMapping("/{id}/read")
+    public ResponseEntity<?> markMessageReadPatch(@PathVariable Long id) {
+        return markMessageReadInternal(id);
+    }
+
+    @PutMapping("/{id}/read")
+    public ResponseEntity<?> markMessageReadPut(@PathVariable Long id) {
+        return markMessageReadInternal(id);
+    }
+
+    private ResponseEntity<?> markMessageReadInternal(Long id) {
+        Authentication auth = getAuthenticatedUser();
+        if (auth == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("status", "error", "message", "Unauthorized: Authentication token is missing or invalid"));
+        }
+
+        try {
+            Message updated = messageService.markAsRead(id, auth.getName());
+            return ResponseEntity.ok(updated);
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of("status", "error", "message", "Forbidden: Insufficient privileges for this resource"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("status", "error", "message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("status", "error", "message", "Error updating message: " + e.getMessage()));
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 6. DELETE /api/messages/{id} - Delete message
+    // ─────────────────────────────────────────────────────────────
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteMessage(@PathVariable Long id) {
+        Authentication auth = getAuthenticatedUser();
+        if (auth == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("status", "error", "message", "Unauthorized: Authentication token is missing or invalid"));
+        }
+
+        try {
+            messageService.deleteMessage(id, auth.getName());
+            return ResponseEntity.ok(Map.of("status", "success", "message", "Message deleted successfully."));
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of("status", "error", "message", "Forbidden: Insufficient privileges for this resource"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("status", "error", "message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("status", "error", "message", "Error deleting message: " + e.getMessage()));
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 7. GET /api/messages/unread-count - Unread message counter
+    // ─────────────────────────────────────────────────────────────
+    @GetMapping("/unread-count")
+    public ResponseEntity<?> getUnreadCount() {
+        Authentication auth = getAuthenticatedUser();
+        if (auth == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("status", "error", "message", "Unauthorized: Authentication token is missing or invalid"));
+        }
+
+        long unread = messageService.getUnreadCount(auth.getName());
+        return ResponseEntity.ok(Map.of("unreadCount", unread));
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 8. GET /api/messages/contacts - Permitted communication contacts
+    // ─────────────────────────────────────────────────────────────
+    @GetMapping("/contacts")
+    public ResponseEntity<?> getPermittedContacts() {
+        Authentication auth = getAuthenticatedUser();
+        if (auth == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("status", "error", "message", "Unauthorized: Authentication token is missing or invalid"));
+        }
+
+        String email = auth.getName();
+        String role = extractRole(auth);
+
+        try {
+            List<Map<String, Object>> contacts = messageService.getPermittedContacts(email, role);
+            return ResponseEntity.ok(contacts);
+        } catch (Exception e) {
+            log.error("Failed to get contacts: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("status", "error", "message", "Error retrieving contacts: " + e.getMessage()));
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // 9. GET /api/messages/thread - Thread between two users
+    // ─────────────────────────────────────────────────────────────
     @GetMapping("/thread")
     public ResponseEntity<?> getThread(
             @RequestParam("user1") String user1,
@@ -140,49 +295,9 @@ public class MessageController {
         }
     }
 
-    // Get permitted contacts for authenticated user
-    @GetMapping("/contacts")
-    public ResponseEntity<?> getPermittedContacts() {
-        Authentication auth = getAuthenticatedUser();
-        if (auth == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("status", "error", "message", "Unauthorized: Authentication token is missing or invalid"));
-        }
-
-        String email = auth.getName();
-        String role = extractRole(auth);
-
-        try {
-            List<Map<String, Object>> contacts = messageService.getPermittedContacts(email, role);
-            return ResponseEntity.ok(contacts);
-        } catch (Exception e) {
-            log.error("Failed to get contacts: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("status", "error", "message", "Error retrieving contacts: " + e.getMessage()));
-        }
-    }
-
-    // Get messages sent by authenticated user
-    @GetMapping("/sent")
-    public ResponseEntity<List<Message>> getSentMessages() {
-        Authentication auth = getAuthenticatedUser();
-        if (auth == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-        return ResponseEntity.ok(messageService.getSentMessages(auth.getName()));
-    }
-
-    // Get messages received by authenticated user
-    @GetMapping("/received")
-    public ResponseEntity<List<Message>> getReceivedMessages() {
-        Authentication auth = getAuthenticatedUser();
-        if (auth == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-        return ResponseEntity.ok(messageService.getReceivedMessages(auth.getName()));
-    }
-
-    // Get broadcast messages for Responders
+    // ─────────────────────────────────────────────────────────────
+    // 10. GET /api/messages/responders - Legacy responder broadcasts
+    // ─────────────────────────────────────────────────────────────
     @GetMapping("/responders")
     public ResponseEntity<List<Message>> getMessagesForResponders() {
         Authentication auth = getAuthenticatedUser();
