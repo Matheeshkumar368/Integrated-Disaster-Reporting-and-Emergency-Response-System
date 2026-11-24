@@ -27,10 +27,12 @@ public class ServerLifecycleManager implements ApplicationListener<ContextClosed
     private static final Logger log = LoggerFactory.getLogger(ServerLifecycleManager.class);
 
     private final ApplicationContext applicationContext;
+    private final ServerRuntimeStateHolder stateHolder;
     private final AtomicBoolean shuttingDown = new AtomicBoolean(false);
 
-    public ServerLifecycleManager(ApplicationContext applicationContext) {
+    public ServerLifecycleManager(ApplicationContext applicationContext, ServerRuntimeStateHolder stateHolder) {
         this.applicationContext = applicationContext;
+        this.stateHolder = stateHolder;
     }
 
     @PostConstruct
@@ -88,13 +90,16 @@ public class ServerLifecycleManager implements ApplicationListener<ContextClosed
 
     public void initiateGracefulShutdown(String reason) {
         if (shuttingDown.compareAndSet(false, true)) {
+            stateHolder.setStatus(ServerRuntimeStatus.STOPPING);
             log.info("Graceful shutdown initiated (Reason: {}). Closing Spring ApplicationContext...", reason);
             new Thread(() -> {
                 try {
                     int exitCode = SpringApplication.exit(applicationContext, () -> 0);
+                    stateHolder.setStatus(ServerRuntimeStatus.STOPPED);
                     System.exit(exitCode);
                 } catch (Exception e) {
                     log.warn("Notice during graceful application exit: {}", e.getMessage());
+                    stateHolder.setStatus(ServerRuntimeStatus.STOPPED);
                     System.exit(0);
                 }
             }, "graceful-exit-thread").start();
@@ -103,6 +108,7 @@ public class ServerLifecycleManager implements ApplicationListener<ContextClosed
 
     @Override
     public void onApplicationEvent(ContextClosedEvent event) {
+        stateHolder.setStatus(ServerRuntimeStatus.STOPPED);
         log.info("ContextClosedEvent: ApplicationContext terminated. Port 8080 released and HikariCP pool closed.");
     }
 

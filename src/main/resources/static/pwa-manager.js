@@ -7,6 +7,8 @@
 const PwaManager = (function() {
     let deferredPrompt = null;
     let isOffline = !navigator.onLine;
+    let isBackendConnected = true;
+    let heartbeatTimer = null;
 
     // Initialize on DOM load
     function init() {
@@ -15,6 +17,54 @@ const PwaManager = (function() {
         setupInstallPrompt();
         injectOfflineBanner();
         updateConnectivityState();
+        startBackendHeartbeat();
+    }
+
+    // Backend Health & Connectivity Guardian
+    async function checkBackendHealth() {
+        if (!navigator.onLine) {
+            isOffline = true;
+            updateConnectivityState();
+            return false;
+        }
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 6000);
+            const res = await fetch('/actuator/health', { method: 'GET', signal: controller.signal });
+            clearTimeout(timeoutId);
+            if (res.ok) {
+                notifyBackendSuccess();
+                return true;
+            } else {
+                notifyBackendFailure('Server returned status ' + res.status);
+                return false;
+            }
+        } catch (err) {
+            notifyBackendFailure(err.message || 'Connection refused');
+            return false;
+        }
+    }
+
+    function startBackendHeartbeat() {
+        if (heartbeatTimer) clearInterval(heartbeatTimer);
+        // Periodic check every 30 seconds (avoids rapid polling)
+        heartbeatTimer = setInterval(checkBackendHealth, 30000);
+    }
+
+    function notifyBackendFailure(reason) {
+        if (isBackendConnected) {
+            isBackendConnected = false;
+            console.warn('[PWA] Backend connectivity failed:', reason);
+            updateConnectivityState();
+        }
+    }
+
+    function notifyBackendSuccess() {
+        if (!isBackendConnected) {
+            isBackendConnected = true;
+            console.log('[PWA] Backend connectivity recovered.');
+            updateConnectivityState();
+        }
     }
 
     // 1. Service Worker Registration
@@ -98,6 +148,10 @@ const PwaManager = (function() {
             banner.style.display = 'block';
             banner.style.background = 'linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(185, 28, 28, 0.95))';
             if (text) text.innerHTML = '<i class="fas fa-satellite-dish"></i> OFFLINE MODE // SATELLITE DISCONNECTED — ACTIONS QUEUED FOR RECONNECT';
+        } else if (!isBackendConnected) {
+            banner.style.display = 'block';
+            banner.style.background = 'linear-gradient(135deg, rgba(220, 38, 38, 0.95), rgba(153, 27, 27, 0.95))';
+            if (text) text.innerHTML = '<i class="fas fa-server"></i> SERVER DISCONNECTED // BACKEND OFFLINE — WAITING FOR RECONNECTION...';
         } else {
             // Briefly show restored connection, then hide
             if (banner.style.display === 'block') {
@@ -276,7 +330,11 @@ const PwaManager = (function() {
         promptInstall: promptInstall,
         requestNotificationPermission: requestNotificationPermission,
         formatFreshness: formatFreshness,
-        isOffline: function() { return isOffline; }
+        isOffline: function() { return isOffline; },
+        isBackendConnected: function() { return isBackendConnected; },
+        checkBackendHealth: checkBackendHealth,
+        notifyBackendFailure: notifyBackendFailure,
+        notifyBackendSuccess: notifyBackendSuccess
     };
 })();
 
