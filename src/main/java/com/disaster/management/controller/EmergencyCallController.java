@@ -36,6 +36,7 @@ public class EmergencyCallController {
     public ResponseEntity<?> initiateCall(@RequestBody Map<String, Object> req, Authentication auth) {
         try {
             Long incidentId = req.get("incidentId") != null ? Long.valueOf(req.get("incidentId").toString()) : null;
+            String incidentType = req.get("incidentType") != null ? req.get("incidentType").toString() : null;
             String citizenEmail = req.get("citizenEmail") != null ? req.get("citizenEmail").toString() : null;
             String citizenName = req.get("citizenName") != null ? req.get("citizenName").toString() : null;
             String sdpOffer = req.get("sdpOffer") != null ? req.get("sdpOffer").toString() : "";
@@ -44,6 +45,7 @@ public class EmergencyCallController {
 
             EmergencyCallSession session = emergencyCallService.initiateCall(
                     incidentId,
+                    incidentType,
                     responderEmail,
                     responderName,
                     citizenEmail,

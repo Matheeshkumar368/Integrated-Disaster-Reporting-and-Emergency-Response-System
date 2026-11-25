@@ -374,7 +374,10 @@
             const videoElem = document.getElementById('camera-video-preview');
             try {
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    throw new Error('Camera hardware access is not available on this browser or origin.');
+                    const isLanHttp = !window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+                    throw new Error(isLanHttp
+                        ? `Live camera requires HTTPS on LAN (${window.location.origin}) or chrome://flags/#unsafely-treat-insecure-origin-as-secure. Use Choose File below.`
+                        : 'Camera hardware access is not available on this browser or origin.');
                 }
                 this.stopMediaStream();
                 this.activeStream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -397,7 +400,7 @@
                 if (dropzone) dropzone.style.display = 'block';
                 if (shutterBtn) shutterBtn.style.display = 'none';
                 if (switchBtn) switchBtn.style.display = 'none';
-                this.toast('Camera not accessible: switched to file selection.', 'info');
+                this.toast(err.message || 'Camera not accessible: switched to file selection.', 'warning');
             } finally {
                 this.isInitializingCamera = false;
             }

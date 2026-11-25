@@ -280,6 +280,40 @@
             padding: 0.4rem 0.8rem;
             font-size: 0.8rem;
         }
+
+        .task-tool-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.42rem 0.78rem;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #f8fafc !important;
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            white-space: nowrap;
+            transition: all 0.18s ease;
+        }
+
+        .task-tool-btn:hover {
+            background: rgba(51, 65, 85, 0.98);
+            border-color: rgba(56, 189, 248, 0.65);
+            transform: translateY(-1px);
+        }
+
+        .task-tool-btn.nav-btn {
+            background: rgba(14, 116, 144, 0.25);
+            border-color: rgba(56, 189, 248, 0.45);
+            color: #38bdf8 !important;
+        }
+
+        .task-tool-btn.nav-btn:hover {
+            background: rgba(14, 116, 144, 0.42);
+            color: #e0f2fe !important;
+        }
         
         .notes-section {
             margin-top: 1rem;
@@ -776,10 +810,13 @@
                 window.location.href = '/index.html';
             }
             
-            loadTasks();
-            loadReports();
+            loadTasks().then(() => loadReports());
             loadMyInfo();
             loadAvailability();
+            setInterval(() => {
+                if (document.hidden) return;
+                loadTasks().then(() => loadReports());
+            }, 6000);
             if (window.CommandCenter && CommandCenter.initHudClock) {
                 CommandCenter.initHudClock('hudClockDisplay');
             }
@@ -938,15 +975,46 @@
         async function loadReports() {
             try {
                 const token = getResponderToken();
-                const res = await fetch('/api/reports/my-reports', {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                const data = await res.json();
-                
-                if (data.status === 'success') {
-                    reports = data.reports;
-                    renderReports();
+                const [fieldRes, citRes] = await Promise.all([
+                    fetch('/api/reports/my-reports', { headers: { 'Authorization': 'Bearer ' + token } }),
+                    fetch('/api/citizen-reports', { headers: { 'Authorization': 'Bearer ' + token } })
+                ]);
+
+                const combined = [];
+                if (fieldRes.ok) {
+                    const fieldData = await fieldRes.json();
+                    if (fieldData.status === 'success' && Array.isArray(fieldData.reports)) {
+                        fieldData.reports.forEach(r => combined.push({ ...r, _kind: 'FIELD_REPORT' }));
+                    }
                 }
+                if (citRes.ok) {
+                    const citList = await citRes.json();
+                    const myEmail = (myResponderInfo && myResponderInfo.email ? myResponderInfo.email : '').trim().toLowerCase();
+                    const linkedReportIds = new Set((tasks || []).map(t => t.citizenReportId).filter(Boolean));
+                    if (Array.isArray(citList)) {
+                        citList.forEach(cr => {
+                            const assignedEmail = (cr.assignedResponderEmail || '').trim().toLowerCase();
+                            if ((myEmail && assignedEmail === myEmail) || linkedReportIds.has(cr.reportId)) {
+                                combined.push({
+                                    id: cr.reportId,
+                                    reportId: cr.reportId,
+                                    title: cr.title || `${cr.incidentType || 'Incident'} at ${cr.location || 'Field Zone'}`,
+                                    status: cr.progressStage || cr.status || 'Assigned',
+                                    reportType: cr.incidentType || 'Citizen SOS',
+                                    zone: cr.location || 'Field Zone',
+                                    timestamp: cr.timestamp || cr.assignedAt,
+                                    description: cr.description || cr.message || '',
+                                    latitude: cr.latitude,
+                                    longitude: cr.longitude,
+                                    citizenEmail: cr.citizenEmail,
+                                    _kind: 'CITIZEN_REPORT'
+                                });
+                            }
+                        });
+                    }
+                }
+                reports = combined;
+                renderReports();
             } catch(e) {
                 console.error('Error loading reports:', e);
             }
@@ -1032,19 +1100,19 @@
                     </div>` : ''}
 
                     <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.8rem;padding-bottom:0.8rem;border-bottom:1px solid rgba(255,255,255,0.08);">
-                        <button type="button" class="btn" style="background:rgba(255,255,255,0.08);padding:0.35rem 0.65rem;font-size:0.78rem;" onclick="viewTaskDetails(${task.taskId})">
-                            <i class="fas fa-eye"></i> View Details
+                        <button type="button" class="task-tool-btn" onclick="viewTaskDetails(${task.taskId})">
+                            <i class="fas fa-eye" style="color:#e2e8f0;"></i> View Details
                         </button>
-                        <button type="button" class="btn" style="background:rgba(255,255,255,0.08);padding:0.35rem 0.65rem;font-size:0.78rem;" onclick="window.IncidentRoom.open(${task.taskId}, 'TASK', '${escapeJs(task.locationName || '')}')">
+                        <button type="button" class="task-tool-btn" onclick="window.IncidentRoom.open(${task.taskId}, 'TASK', '${escapeJs(task.locationName || '')}')">
                             <i class="fas fa-comments" style="color:#10b981;"></i> Comms Chat
                         </button>
-                        <button type="button" class="btn" style="background:rgba(255,255,255,0.08);padding:0.35rem 0.65rem;font-size:0.78rem;" onclick="window.MediaCapture.open({ incidentId: ${task.taskId}, incidentType: 'TASK', onSuccess: () => loadTasks() })">
+                        <button type="button" class="task-tool-btn" onclick="window.MediaCapture.open({ incidentId: ${task.taskId}, incidentType: 'TASK', onSuccess: () => loadTasks() })">
                             <i class="fas fa-camera" style="color:#38bdf8;"></i> Evidence
                         </button>
-                        <button type="button" class="btn" style="background:rgba(255,255,255,0.08);padding:0.35rem 0.65rem;font-size:0.78rem;" onclick="window.ResponderTracking.open(${task.taskId})">
+                        <button type="button" class="task-tool-btn" onclick="window.ResponderTracking.open(${task.taskId})">
                             <i class="fas fa-crosshairs" style="color:#a855f7;"></i> Radar
                         </button>
-                        <a href="https://www.google.com/maps/dir/?api=1&destination=${locQuery}" target="_blank" class="btn" style="background:rgba(56,189,248,0.15);border:1px solid rgba(56,189,248,0.3);color:#38bdf8;padding:0.35rem 0.65rem;font-size:0.78rem;text-decoration:none;">
+                        <a href="https://www.google.com/maps/dir/?api=1&destination=${locQuery}" target="_blank" class="task-tool-btn nav-btn">
                             <i class="fas fa-diamond-turn-right"></i> Navigate
                         </a>
                     </div>
@@ -1081,14 +1149,29 @@
             container.innerHTML = reports.map(report => `
                 <div class="report-card">
                     <h3>${report.title}</h3>
-                    <span class="status ${report.status.toLowerCase().replace(' ', '-')}">${report.status}</span>
+                    <span class="status ${(report.status || 'Assigned').toLowerCase().replace(/\s+/g, '-')}">${report.status || 'Assigned'}</span>
                     <div class="meta">
-                        <span>${report.reportType}</span>
-                        <span>${report.zone}</span>
+                        <span>${report.reportType || 'Incident'}</span>
+                        <span>${report.zone || 'Field Zone'}</span>
                         <span>${(window.formatIndianDateTime ? window.formatIndianDateTime(report.timestamp) : new Date(report.timestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }))}</span>
                     </div>
                     <p>${report.description || 'No description'}</p>
                     ${report.latitude && report.longitude ? `<p style="font-size:0.8rem;color:#60a5fa"><i class="fas fa-crosshairs"></i> ${report.latitude}, ${report.longitude}</p>` : ''}
+                    ${report._kind === 'CITIZEN_REPORT' ? `
+                    <div style="display:flex;gap:0.45rem;flex-wrap:wrap;margin-top:0.75rem;padding-top:0.65rem;border-top:1px solid rgba(255,255,255,0.08);">
+                        <button type="button" class="task-tool-btn" onclick="window.IncidentRoom.open(${report.reportId}, 'CITIZEN_REPORT', '${escapeJs(report.zone || '')}')">
+                            <i class="fas fa-comments" style="color:#10b981;"></i> Comms Chat
+                        </button>
+                        <button type="button" class="task-tool-btn" onclick="window.MediaCapture.open({ incidentId: ${report.reportId}, incidentType: 'CITIZEN_REPORT', onSuccess: () => loadReports() })">
+                            <i class="fas fa-camera" style="color:#38bdf8;"></i> Evidence
+                        </button>
+                        <button type="button" class="task-tool-btn" onclick="window.ResponderTracking.open(${report.reportId})">
+                            <i class="fas fa-crosshairs" style="color:#a855f7;"></i> Radar
+                        </button>
+                        <button type="button" class="task-tool-btn" style="border-color:#f59e0b;color:#fbbf24 !important;" onclick="window.EmergencyVideoCall.startCall(${report.reportId}, '${escapeJs(report.citizenEmail || '')}', 'Citizen', 'CITIZEN_REPORT')">
+                            <i class="fas fa-video" style="color:#f59e0b;"></i> Video Call
+                        </button>
+                    </div>` : ''}
                 </div>
             `).join('');
         }

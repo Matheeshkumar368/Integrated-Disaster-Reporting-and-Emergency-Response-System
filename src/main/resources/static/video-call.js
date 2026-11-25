@@ -121,15 +121,19 @@
         },
 
         getAuthHeaders: function() {
+            const roleKey = this.currentUserRole ? (this.currentUserRole.charAt(0).toUpperCase() + this.currentUserRole.slice(1).toLowerCase()) : '';
             let token = '';
             if (window.AuthHelper && typeof window.AuthHelper.getToken === 'function') {
-                token = window.AuthHelper.getToken();
+                token = window.AuthHelper.getToken(roleKey || undefined);
+            }
+            if (!token && roleKey) {
+                token = sessionStorage.getItem('token_' + roleKey) || localStorage.getItem('token_' + roleKey) ||
+                        sessionStorage.getItem(roleKey.toLowerCase() + '_token') || '';
             }
             if (!token) {
                 token = sessionStorage.getItem('token_Citizen') || sessionStorage.getItem('token_Admin') || sessionStorage.getItem('token_Responder') ||
                         localStorage.getItem('token_Citizen') || localStorage.getItem('token_Admin') || localStorage.getItem('token_Responder') ||
-                        sessionStorage.getItem('token') || localStorage.getItem('token') ||
-                        sessionStorage.getItem('citizen_token') || sessionStorage.getItem('admin_token') || sessionStorage.getItem('responder_token') || '';
+                        sessionStorage.getItem('token') || localStorage.getItem('token') || '';
             }
             return {
                 'Content-Type': 'application/json',
@@ -137,10 +141,15 @@
             };
         },
 
+        isLanHttpOrigin: function() {
+            const h = window.location.hostname;
+            return !window.isSecureContext && h !== 'localhost' && h !== '127.0.0.1';
+        },
+
         /**
          * Responder initiates call to Citizen
          */
-        startCall: async function(incidentId, citizenEmail, citizenName) {
+        startCall: async function(incidentId, citizenEmail, citizenName, incidentType) {
             try {
                 this.showCallModal(citizenName || 'Citizen');
                 document.getElementById('callConnectingPlaceholder').style.display = 'flex';
@@ -150,10 +159,12 @@
                 this.peerConnection = new RTCPeerConnection(this.iceConfig);
                 this.setupPeerListeners('RESPONDER');
 
-                // Add local tracks to RTCPeerConnection
-                this.localStream.getTracks().forEach(track => {
-                    this.peerConnection.addTrack(track, this.localStream);
-                });
+                // Add local tracks to RTCPeerConnection if hardware stream is available
+                if (this.localStream) {
+                    this.localStream.getTracks().forEach(track => {
+                        this.peerConnection.addTrack(track, this.localStream);
+                    });
+                }
 
                 // Create SDP Offer
                 const offer = await this.peerConnection.createOffer({
@@ -167,6 +178,7 @@
                     headers: this.getAuthHeaders(),
                     body: JSON.stringify({
                         incidentId: incidentId,
+                        incidentType: incidentType || null,
                         citizenEmail: citizenEmail,
                         citizenName: citizenName,
                         sdpOffer: JSON.stringify(offer)
@@ -228,6 +240,15 @@
         },
 
         initLocalStream: async function() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                const msg = this.isLanHttpOrigin()
+                    ? `Camera/Mic blocked on plain HTTP LAN (${window.location.origin}). Use HTTPS or enable chrome://flags/#unsafely-treat-insecure-origin-as-secure for ${window.location.origin}. Continuing in receive-only mode.`
+                    : 'Camera/Microphone API is unavailable in this browser. Continuing in receive-only mode.';
+                console.warn('[VIDEO-CALL]', msg);
+                if (window.showToast) window.showToast(msg, 'warning');
+                this.localStream = null;
+                return null;
+            }
             try {
                 this.localStream = await navigator.mediaDevices.getUserMedia({
                     audio: true,
@@ -235,9 +256,18 @@
                 });
                 const localVideo = document.getElementById('localVideoFeed');
                 if (localVideo) localVideo.srcObject = this.localStream;
+                return this.localStream;
             } catch (e) {
                 console.warn('[VIDEO-CALL] Camera/mic access denied, attempting audio only:', e);
-                this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                try {
+                    this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                    return this.localStream;
+                } catch (audioErr) {
+                    console.warn('[VIDEO-CALL] Audio-only fallback also unavailable:', audioErr);
+                    if (window.showToast) window.showToast('Camera/Mic permission denied. Connecting in receive-only mode.', 'warning');
+                    this.localStream = null;
+                    return null;
+                }
             }
         },
 
@@ -251,12 +281,12 @@
                 // If already in a call, skip
                 if (this.currentCallId) return;
 
-                const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-                if (!token) return;
+                const headers = this.getAuthHeaders();
+                if (!headers['Authorization']) return;
 
                 try {
                     const res = await fetch('/api/calls/incoming', {
-                        headers: this.getAuthHeaders()
+                        headers: headers
                     });
                     if (!res.ok) return;
 
@@ -313,9 +343,11 @@
                 this.peerConnection = new RTCPeerConnection(this.iceConfig);
                 this.setupPeerListeners('CITIZEN');
 
-                this.localStream.getTracks().forEach(track => {
-                    this.peerConnection.addTrack(track, this.localStream);
-                });
+                if (this.localStream) {
+                    this.localStream.getTracks().forEach(track => {
+                        this.peerConnection.addTrack(track, this.localStream);
+                    });
+                }
 
                 // Parse and set Remote Offer
                 const offerDesc = new RTCSessionDescription(JSON.parse(sdpOfferJson));

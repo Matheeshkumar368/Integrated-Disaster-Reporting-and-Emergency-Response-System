@@ -921,7 +921,7 @@
                         <button type="button" class="cc-btn cc-btn-secondary" style="font-size:0.8rem;padding:0.4rem 0.75rem;" onclick="window.IncidentRoom.open(${task.taskId}, 'TASK', '${escapeJs(task.locationName || '')}')">
                             <i class="fas fa-comments" style="color:#10b981;"></i> Room & Chat
                         </button>
-                        <button type="button" class="cc-btn cc-btn-secondary" style="font-size:0.8rem;padding:0.4rem 0.75rem;background:rgba(245,158,11,0.15);border-color:#f59e0b;color:#fbbf24;" onclick="window.EmergencyVideoCall.startCall(${task.taskId}, null, 'Citizen in Distress')">
+                        <button type="button" class="cc-btn cc-btn-secondary" style="font-size:0.8rem;padding:0.4rem 0.75rem;background:rgba(245,158,11,0.15);border-color:#f59e0b;color:#fbbf24;" onclick="window.EmergencyVideoCall.startCall(${task.taskId}, null, 'Citizen in Distress', 'TASK')">
                             <i class="fas fa-video" style="color:#f59e0b;"></i> Video Call Citizen
                         </button>
                         <button type="button" class="cc-btn cc-btn-secondary" style="font-size:0.8rem;padding:0.4rem 0.75rem;" onclick="window.MediaCapture.open({ incidentId: ${task.taskId}, incidentType: 'TASK', onSuccess: () => loadResponderQueue() })">
@@ -1707,13 +1707,17 @@
                 },
                 (err) => {
                     console.warn('Geolocation error:', err);
+                    const isLanHttp = !window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
                     if (err.code === 1) { // PERMISSION_DENIED
-                        setGpsNotice('GPS permission denied by browser. Please enable location permissions in browser settings.', 'error');
+                        const msg = isLanHttp
+                            ? `GPS blocked on plain HTTP LAN (${window.location.origin}). Connect via HTTPS or add ${window.location.origin} to chrome://flags/#unsafely-treat-insecure-origin-as-secure.`
+                            : 'GPS permission denied by browser. Please enable location permissions in browser settings.';
+                        setGpsNotice(msg, 'error');
                         if (badge) {
                             badge.className = 'cc-badge cc-badge-extreme';
-                            badge.innerText = 'GPS PERMISSION DENIED';
+                            badge.innerText = isLanHttp ? 'HTTP LAN BLOCKED' : 'GPS PERMISSION DENIED';
                         }
-                        CommandCenter.showToast('Location permission denied. Real GPS coordinates cannot be acquired.', 'error');
+                        CommandCenter.showToast(msg, 'error');
                     } else if (err.code === 2) { // POSITION_UNAVAILABLE
                         setGpsNotice('Waiting for device GPS. Hardware position unavailable.', 'error');
                     } else if (err.code === 3) { // TIMEOUT

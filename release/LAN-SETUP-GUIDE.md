@@ -41,6 +41,21 @@ To allow other laptops to communicate with the Spring Boot server on port 8080:
 
 > **Security Note:** This only creates a local inbound rule for TCP port 8080 on private/domain profiles. It does not disable the Windows firewall or expose MySQL port 3306.
 
+### Optional: HTTPS Mode for Live Camera, Mic & GPS on Other LAN Laptops
+Modern browsers (Chrome/Edge) restrict `navigator.mediaDevices.getUserMedia` (camera/mic) and `navigator.geolocation` (GPS) on plain `http://<LAN-IP>:8080` origins. On a friend's laptop, you have two options:
+1. **Quick Chrome Dev Flag (No Certificate Needed):** Open `chrome://flags/#unsafely-treat-insecure-origin-as-secure` on the friend's laptop, add `http://<HOST-LAN-IP>:8080`, set to **Enabled**, and relaunch Chrome.
+2. **Local HTTPS Certificate (Recommended for Demos):** Generate a self-signed PKCS12 keystore once and pass it in `%LOCALAPPDATA%\DisasterResponseSystem\application-local.properties`:
+   ```cmd
+   keytool -genkeypair -alias disaster-lan -keyalg RSA -keysize 2048 -storetype PKCS12 -keystore "%LOCALAPPDATA%\DisasterResponseSystem\lan-keystore.p12" -validity 365 -ext "SAN=IP:<HOST-LAN-IP>,DNS:localhost"
+   ```
+   ```properties
+   server.port=8443
+   server.ssl.enabled=true
+   server.ssl.key-store=file:${LOCALAPPDATA}/DisasterResponseSystem/lan-keystore.p12
+   server.ssl.key-store-password=changeit
+   server.ssl.key-store-type=PKCS12
+   ```
+
 ### Step 3: Identify the LAN Access URL
 - Look at the green **Local Wi-Fi / LAN Access URL** displayed inside the DisasterResponseSystem Console:
   ```

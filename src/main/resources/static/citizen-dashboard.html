@@ -1547,8 +1547,12 @@
                     CommandCenter.showToast(`GPS Coordinates Acquired (&plusmn;${acc}m accuracy)`, 'success');
                 },
                 (err) => {
-                    statusEl.innerHTML = `<span style="color:#ef4444;"><i class="fas fa-triangle-exclamation"></i> GPS Access Denied / Error:</span> ${err.message}`;
-                    CommandCenter.showToast('GPS unavailable. Please enter landmark manually.', 'warning');
+                    const isLanHttp = !window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+                    const lanHint = isLanHttp
+                        ? ` Browser blocks GPS on plain HTTP LAN (${window.location.origin}). Use HTTPS or enable chrome://flags/#unsafely-treat-insecure-origin-as-secure, or enter landmark / Pin on Map.`
+                        : '';
+                    statusEl.innerHTML = `<span style="color:#ef4444;"><i class="fas fa-triangle-exclamation"></i> GPS Access Denied / Error:</span> ${err.message}${lanHint}`;
+                    CommandCenter.showToast(isLanHttp ? 'GPS blocked on HTTP LAN. Enter landmark or Pin on Map.' : 'GPS unavailable. Please enter landmark manually.', 'warning');
                 },
                 { enableHighAccuracy: true, timeout: 9000 }
             );

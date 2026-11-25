@@ -41,17 +41,17 @@ public class EmergencyCallService {
 
     public EmergencyCallSession initiateCall(Long incidentId, String responderEmail, String responderName,
                                              String citizenEmail, String citizenName, String sdpOffer) {
-        // Resolve incident citizen details if not provided
+        return initiateCall(incidentId, null, responderEmail, responderName, citizenEmail, citizenName, sdpOffer);
+    }
+
+    public EmergencyCallSession initiateCall(Long incidentId, String incidentType, String responderEmail, String responderName,
+                                             String citizenEmail, String citizenName, String sdpOffer) {
+        // Resolve incident citizen details strictly scoped to incidentType + incidentId
         if ((citizenEmail == null || citizenEmail.trim().isEmpty()) && incidentId != null) {
-            Optional<CitizenReport> crOpt = citizenReportRepository.findById(incidentId);
-            if (crOpt.isPresent()) {
-                CitizenReport cr = crOpt.get();
-                citizenEmail = cr.getCitizenEmail();
-                if (citizenName == null || citizenName.trim().isEmpty()) {
-                    final String cEmail = citizenEmail;
-                    citizenName = userRepository.findByEmail(citizenEmail).map(User::getName).orElse(cEmail != null ? cEmail.split("@")[0] : "Citizen");
-                }
-            } else {
+            boolean preferTask = incidentType != null &&
+                    ("TASK".equalsIgnoreCase(incidentType.trim()) || "RESCUE_TASK".equalsIgnoreCase(incidentType.trim()));
+
+            if (preferTask) {
                 Optional<RescueTask> taskOpt = rescueTaskRepository.findById(incidentId);
                 if (taskOpt.isPresent() && taskOpt.get().getCitizenReportId() != null) {
                     Optional<CitizenReport> linkedCr = citizenReportRepository.findById(taskOpt.get().getCitizenReportId());
@@ -59,6 +59,28 @@ public class EmergencyCallService {
                         citizenEmail = linkedCr.get().getCitizenEmail();
                         final String cEmail = citizenEmail;
                         citizenName = userRepository.findByEmail(citizenEmail).map(User::getName).orElse(cEmail != null ? cEmail.split("@")[0] : "Citizen");
+                    }
+                }
+            }
+
+            if (citizenEmail == null || citizenEmail.trim().isEmpty()) {
+                Optional<CitizenReport> crOpt = citizenReportRepository.findById(incidentId);
+                if (crOpt.isPresent()) {
+                    CitizenReport cr = crOpt.get();
+                    citizenEmail = cr.getCitizenEmail();
+                    if (citizenName == null || citizenName.trim().isEmpty()) {
+                        final String cEmail = citizenEmail;
+                        citizenName = userRepository.findByEmail(citizenEmail).map(User::getName).orElse(cEmail != null ? cEmail.split("@")[0] : "Citizen");
+                    }
+                } else if (!preferTask) {
+                    Optional<RescueTask> taskOpt = rescueTaskRepository.findById(incidentId);
+                    if (taskOpt.isPresent() && taskOpt.get().getCitizenReportId() != null) {
+                        Optional<CitizenReport> linkedCr = citizenReportRepository.findById(taskOpt.get().getCitizenReportId());
+                        if (linkedCr.isPresent()) {
+                            citizenEmail = linkedCr.get().getCitizenEmail();
+                            final String cEmail = citizenEmail;
+                            citizenName = userRepository.findByEmail(citizenEmail).map(User::getName).orElse(cEmail != null ? cEmail.split("@")[0] : "Citizen");
+                        }
                     }
                 }
             }
@@ -127,6 +149,10 @@ public class EmergencyCallService {
 
         if (!"RINGING".equalsIgnoreCase(session.getStatus())) {
             throw new IllegalStateException("Call is no longer ringing (Current status: " + session.getStatus() + ")");
+        }
+        if (citizenEmail != null && !citizenEmail.trim().isEmpty() && session.getCitizenEmail() != null
+                && !session.getCitizenEmail().trim().equalsIgnoreCase(citizenEmail.trim())) {
+            throw new SecurityException("Unauthorized: This emergency call belongs to another citizen.");
         }
 
         session.setSdpAnswer(sdpAnswer);
