@@ -42,6 +42,8 @@
     <script src="incident-room.js?v=2"></script>
     <link rel="stylesheet" href="direct-messaging.css?v=1" />
     <script src="direct-messaging.js?v=1"></script>
+    <link rel="stylesheet" href="video-call.css?v=1" />
+    <script src="video-call.js?v=1"></script>
     
     <!-- Role Loading & Authentication Helper -->
     <link rel="stylesheet" href="role-loading.css?v=2" />
@@ -1018,8 +1020,47 @@
         let recInterval = null;
         let recSeconds = 0;
 
+        function escapeJs(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/\\/g, '\\\\')
+                .replace(/'/g, "\\'")
+                .replace(/"/g, '\\"')
+                .replace(/\n/g, '\\n')
+                .replace(/\r/g, '\\r');
+        }
+
+        function safeFormatDateTime(val) {
+            if (!val) return 'Recently';
+            if (Array.isArray(val)) {
+                try {
+                    const d = new Date(val[0], val[1] - 1, val[2], val[3] || 0, val[4] || 0, val[5] || 0);
+                    if (!isNaN(d.getTime())) {
+                        return d.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true });
+                    }
+                } catch(e) {}
+            }
+            try {
+                if (window.formatIndianDateTime && typeof window.formatIndianDateTime === 'function') {
+                    const res = window.formatIndianDateTime(val);
+                    if (res && res !== '-') return res;
+                }
+                const d = new Date(val);
+                if (!isNaN(d.getTime())) {
+                    return d.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true });
+                }
+            } catch(e) {}
+            return 'Recently';
+        }
+
         function getCitizenToken() {
-            return (window.AuthHelper && window.AuthHelper.getToken('Citizen')) || sessionStorage.getItem('token_Citizen') || localStorage.getItem('token_Citizen');
+            return (window.AuthHelper && window.AuthHelper.getToken('Citizen')) || 
+                   sessionStorage.getItem('token_Citizen') || 
+                   localStorage.getItem('token_Citizen') ||
+                   sessionStorage.getItem('token') || 
+                   localStorage.getItem('token') ||
+                   sessionStorage.getItem('citizen_token') ||
+                   '';
         }
 
         function escapeHtml(str) {
@@ -1106,7 +1147,9 @@
 
             loadUnifiedAlerts();
             loadMyReports();
+            setInterval(loadMyReports, 5000);
             loadNotifications();
+            setInterval(loadNotifications, 5000);
         })();
 
         // Resolve Active Tab ID from URL query parameters and hash
@@ -1266,6 +1309,10 @@
                 setTimeout(() => {
                     if (citizenMap) citizenMap.invalidateSize();
                 }, 200);
+            } else if (tabId === 'myReportsTab') {
+                loadMyReports(true);
+            } else if (tabId === 'alertsTab') {
+                loadUnifiedAlerts();
             }
         }
 
@@ -1343,8 +1390,8 @@
             // Sector Filter
             if (selectedSector !== 'All') {
                 const secReg = new RegExp(selectedSector, 'i');
-                filteredBroadcast = filteredBroadcast.filter(b => secReg.test(b.region || '') || /All India|Tamil Nadu/i.test(b.region || ''));
-                filteredOfficial = filteredOfficial.filter(o => secReg.test(o.areaDescription || '') || /India|Tamil Nadu/i.test(o.areaDescription || ''));
+                filteredBroadcast = filteredBroadcast.filter(b => secReg.test(b.region || '') || /All India|Tamil Nadu|All|Broadcast|Statewide/i.test(b.region || '') || b.broadcasted);
+                filteredOfficial = filteredOfficial.filter(o => secReg.test(o.areaDescription || '') || /India|Tamil Nadu|Statewide/i.test(o.areaDescription || ''));
             }
 
             displayAlerts(filteredBroadcast, filteredOfficial);
@@ -1619,8 +1666,69 @@
         // =========================================================================
         // MY INCIDENTS & LIVE TRACKING INTERFACE
         // =========================================================================
-        async function loadMyReports() {
-            const listEl = document.getElementById('myReportsList');
+        let lastRenderedReportsHash = '';
+        let lastRenderedReportsFilter = '';
+
+        // Safe Action Handlers for Report Cards to prevent inline string injection / quote corruption
+        window.handleIncidentRoomClick = function(event, reportId) {
+            if (event) event.stopPropagation();
+            const rep = (rawMyReports || []).find(r => String(r.reportId) === String(reportId));
+            const loc = rep ? (rep.location || '') : '';
+            if (window.IncidentRoom && typeof window.IncidentRoom.open === 'function') {
+                window.IncidentRoom.open(reportId, 'CITIZEN_REPORT', loc);
+            } else {
+                console.warn('[IncidentRoom] not yet loaded');
+            }
+        };
+
+        window.handleMediaCaptureClick = function(event, reportId) {
+            if (event) event.stopPropagation();
+            if (window.MediaCapture && typeof window.MediaCapture.open === 'function') {
+                window.MediaCapture.open({
+                    incidentId: reportId,
+                    incidentType: 'CITIZEN_REPORT',
+                    onSuccess: () => loadMyReports(true)
+                });
+            } else {
+                console.warn('[MediaCapture] not yet loaded');
+            }
+        };
+
+        window.handleDirectMessageClick = function(event, reportId) {
+            if (event) event.stopPropagation();
+            const rep = (rawMyReports || []).find(r => String(r.reportId) === String(reportId));
+            if (!rep || !rep.assignedResponderEmail) return;
+            const targetEmail = rep.assignedResponderEmail;
+            const targetName = rep.assignedResponderName || 'Assigned Responder';
+            if (window.DirectMessaging && typeof window.DirectMessaging.open === 'function') {
+                window.DirectMessaging.open(targetEmail, targetName);
+            } else {
+                window.location.href = `/citizen-messages.html?recipient=${encodeURIComponent(targetEmail)}`;
+            }
+        };
+
+        window.handleVideoCallClick = function(event, reportId) {
+            if (event) event.stopPropagation();
+            const rep = (rawMyReports || []).find(r => String(r.reportId) === String(reportId));
+            if (!rep || !rep.assignedResponderEmail) return;
+            const targetEmail = rep.assignedResponderEmail;
+            const targetName = rep.assignedResponderName || 'Assigned Responder';
+            if (window.EmergencyVideoCall && typeof window.EmergencyVideoCall.startCall === 'function') {
+                window.EmergencyVideoCall.startCall(reportId, targetEmail, targetName);
+            }
+        };
+
+        window.handleEvidenceImageClick = function(event, reportId) {
+            if (event) event.stopPropagation();
+            const rep = (rawMyReports || []).find(r => String(r.reportId) === String(reportId));
+            if (!rep || !rep.photoData) return;
+            if (window.openMediaLightbox && typeof window.openMediaLightbox === 'function') {
+                window.openMediaLightbox(rep.photoData, `Incident Evidence (Report #${reportId})`, 'PHOTO');
+            }
+        };
+
+        async function loadMyReports(force = false) {
+            if (!force && document.hidden) return;
             const token = getCitizenToken();
             if (!token) return;
 
@@ -1631,21 +1739,36 @@
 
                 if (res.ok) {
                     rawMyReports = await res.json();
-                    document.getElementById('badgeMyReportCount').innerText = rawMyReports.length;
-                    filterMyReportsList(document.getElementById('filterReportStatus')?.value || 'ALL');
+                    const badge = document.getElementById('badgeMyReportCount');
+                    if (badge) badge.innerText = rawMyReports.length;
+                    const curFilter = document.getElementById('filterReportStatus')?.value || 'ALL';
+                    filterMyReportsList(curFilter, force);
                 }
             } catch (e) {
                 console.error('My reports fetch error:', e);
             }
         }
 
-        function filterMyReportsList(statusFilter) {
+        function filterMyReportsList(statusFilter, forceRender = false) {
             const listEl = document.getElementById('myReportsList');
-            let reports = rawMyReports;
+            if (!listEl) return;
+            let reports = Array.isArray(rawMyReports) ? rawMyReports : [];
 
             if (statusFilter !== 'ALL') {
                 reports = reports.filter(r => (r.status || 'Pending') === statusFilter);
             }
+
+            const currentHash = JSON.stringify(reports.map(r => [
+                r.reportId, r.status, r.progressStage, r.assignedResponderName, r.assignedResponderPhone, r.cancellationRequested
+            ]));
+
+            // Only skip DOM updates if content didn't change AND list is currently populated
+            if (!forceRender && currentHash === lastRenderedReportsHash && statusFilter === lastRenderedReportsFilter && listEl.children.length > 0) {
+                return;
+            }
+
+            lastRenderedReportsHash = currentHash;
+            lastRenderedReportsFilter = statusFilter;
 
             if (!reports || reports.length === 0) {
                 const isFiltered = statusFilter !== 'ALL' && rawMyReports.length > 0;
@@ -1661,167 +1784,178 @@
 
             listEl.innerHTML = '';
             reports.forEach(report => {
-                const card = document.createElement('div');
-                card.className = 'cc-card';
-                card.style.marginBottom = '1.2rem';
+                try {
+                    const card = document.createElement('div');
+                    card.className = 'cc-card';
+                    card.style.marginBottom = '1.2rem';
 
-                // Highlight targeted report if reportId parameter matches
-                const targetReportId = new URLSearchParams(window.location.search).get('reportId');
-                if (targetReportId && String(report.reportId) === String(targetReportId)) {
-                    card.style.border = '2px solid var(--cc-cyan)';
-                    card.style.boxShadow = '0 0 25px rgba(56, 189, 248, 0.45)';
-                    setTimeout(() => {
-                        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }, 200);
+                    // Highlight targeted report if reportId parameter matches
+                    const targetReportId = new URLSearchParams(window.location.search).get('reportId');
+                    if (targetReportId && String(report.reportId) === String(targetReportId)) {
+                        card.style.border = '2px solid var(--cc-cyan)';
+                        card.style.boxShadow = '0 0 25px rgba(56, 189, 248, 0.45)';
+                        setTimeout(() => {
+                            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }, 200);
+                    }
+
+                    const status = report.status || 'Pending';
+                    const isResolved = status === 'Resolved';
+                    const refNum = `#INC-2026-${report.reportId}`;
+
+                    // Parse structured category/severity from message if present
+                    let cat = report.incidentType || 'Rescue';
+                    let sev = report.severity || 'High';
+                    let bodyMsg = report.message || '';
+
+                    const match = report.message ? report.message.match(/^\[(.*?) \| Severity: (.*?)\] (.*?)\n\n([\s\S]*)/) : null;
+                    if (match) {
+                        cat = match[1];
+                        sev = match[2];
+                        bodyMsg = match[4];
+                    }
+
+                    // Lifecycle stage (5 stages):
+                    // 0: Submitted, 1: Assigned, 2: En Route, 3: On Scene, 4: Resolved
+                    const progressStage = (report.progressStage || '').trim().toLowerCase();
+                    const repStatus = (status || '').trim().toLowerCase();
+                    const isResolvedState = isResolved || repStatus.includes('resolve') || repStatus.includes('complete') || progressStage.includes('resolve') || progressStage.includes('complete');
+                    const isOnSceneState = progressStage.includes('arrive') || progressStage.includes('scene') || progressStage.includes('reached') || progressStage.includes('assistance') || repStatus.includes('scene') || (progressStage === 'in progress' && !progressStage.includes('route'));
+                    const isEnRouteState = progressStage.includes('route') || progressStage.includes('way') || repStatus.includes('route');
+                    const isAssignedState = !!(report.assignedResponderName || report.assignedResponderEmail) || repStatus.includes('assign') || repStatus.includes('ack') || repStatus.includes('accept') || progressStage.includes('assign') || progressStage.includes('ack') || progressStage.includes('accept');
+
+                    let stageIdx = 0; // Submitted
+                    if (isResolvedState) {
+                        stageIdx = 4;
+                    } else if (isOnSceneState) {
+                        stageIdx = 3;
+                    } else if (isEnRouteState) {
+                        stageIdx = 2;
+                    } else if (isAssignedState) {
+                        stageIdx = 1;
+                    }
+
+                    const pct = (stageIdx / 4) * 100;
+
+                    const statusBadge = stageIdx === 4 ? 
+                        '<span class="cc-badge severity-low"><i class="fas fa-check-double"></i> Resolved / Cleared</span>' :
+                        (stageIdx === 3 ?
+                            '<span class="cc-badge severity-moderate" style="background:rgba(16,185,129,0.2);color:#34d399;border-color:#059669;"><i class="fas fa-person-digging"></i> Assistance on Scene</span>' :
+                        (stageIdx === 2 ?
+                            '<span class="cc-badge severity-moderate" style="background:rgba(56,189,248,0.2);color:#38bdf8;border-color:#0284c7;"><i class="fas fa-truck-fast"></i> Responder En Route</span>' :
+                        (stageIdx === 1 ?
+                            '<span class="cc-badge severity-moderate" style="background:rgba(245,158,11,0.2);color:#fbbf24;border-color:#d97706;"><i class="fas fa-user-check"></i> Responder Assigned</span>' :
+                            '<span class="cc-badge severity-extreme"><i class="fas fa-clock"></i> Pending Assignment</span>')));
+
+                    const formattedTime = safeFormatDateTime(report.timestamp || report.createdAt);
+
+                    card.innerHTML = `
+                        <div class="cc-card-header" style="padding-bottom:0.5rem;margin-bottom:0.6rem;">
+                            <div style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;">
+                                <span style="font-family:var(--cc-font-mono);color:var(--cc-cyan);font-weight:700;">${refNum}</span>
+                                <span class="cc-badge" style="background:#1e293b;border-color:#475569;color:#94a3b8;">${escapeHtml(cat)}</span>
+                                <span class="cc-badge severity-${escapeHtml(sev).toLowerCase()}">${escapeHtml(sev)} Priority</span>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:0.6rem;">
+                                <span style="color:#64748b;font-size:0.75rem;font-family:var(--cc-font-mono);">${formattedTime}</span>
+                                ${statusBadge}
+                            </div>
+                        </div>
+
+                        <p style="color:#f1f5f9;font-size:0.95rem;margin-bottom:0.6rem;line-height:1.45;">${escapeHtml(bodyMsg)}</p>
+
+                        <div style="font-size:0.85rem;color:#94a3b8;margin-bottom:0.9rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.4rem;">
+                            <span><i class="fas fa-location-dot" style="color:var(--cc-cyan);"></i> ${escapeHtml(report.location || 'Location Not Specified')}</span>
+                            ${report.assignedResponderName ? `
+                            <span style="color:var(--cc-safe-green);font-size:0.82rem;font-weight:600;display:inline-flex;align-items:center;gap:0.4rem;background:rgba(16,185,129,0.12);padding:3px 8px;border-radius:4px;border:1px solid rgba(16,185,129,0.3);">
+                                <i class="fas fa-id-badge"></i> Assigned Unit: <strong>${escapeHtml(report.assignedResponderName)}</strong>
+                                ${report.assignedResponderPhone ? `<a href="tel:${escapeHtml(report.assignedResponderPhone)}" style="color:var(--cc-cyan);margin-left:0.35rem;text-decoration:none;" title="Call Responder"><i class="fas fa-phone"></i> ${escapeHtml(report.assignedResponderPhone)}</a>` : ''}
+                            </span>` : (isAssignedState ? `
+                            <span style="color:var(--cc-safe-green);font-size:0.82rem;font-weight:600;">
+                                <i class="fas fa-id-badge"></i> Assigned Unit: Emergency Response Unit (${escapeHtml(report.location || 'Field Zone')})
+                            </span>` : `
+                            <span style="color:#94a3b8;font-size:0.8rem;font-style:italic;">
+                                <i class="fas fa-hourglass-start"></i> Awaiting Responder Assignment
+                            </span>`)}
+                        </div>
+
+                        ${report.photoData && report.photoData.length > 500 && !report.photoData.includes('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ') ? `
+                        <div style="margin-bottom:0.9rem;cursor:pointer;" onclick="handleEvidenceImageClick(event, ${report.reportId})">
+                            <img src="${report.photoData}" alt="Evidence" style="width:100%;max-height:160px;object-fit:cover;border-radius:6px;border:1px solid var(--cc-border-medium);" onerror="if(window.handleEvidenceImageError) handleEvidenceImageError(this, '${report.photoData}');" />
+                        </div>` : ''}
+
+                        <!-- 5-Stage Operational Progress Timeline -->
+                        <div class="cc-incident-timeline">
+                            <div class="cc-timeline-track-line">
+                                <div class="cc-timeline-track-progress" style="width:${pct}%;"></div>
+                            </div>
+
+                            <div class="cc-timeline-stage completed">
+                                <div class="cc-timeline-bubble"><i class="fas fa-check"></i></div>
+                                <div class="cc-timeline-title">Submitted</div>
+                            </div>
+
+                            <div class="cc-timeline-stage ${stageIdx >= 1 ? (stageIdx === 1 ? 'active' : 'completed') : ''}">
+                                <div class="cc-timeline-bubble">${stageIdx >= 1 ? '<i class="fas fa-check"></i>' : '2'}</div>
+                                <div class="cc-timeline-title">Assigned</div>
+                            </div>
+
+                            <div class="cc-timeline-stage ${stageIdx >= 2 ? (stageIdx === 2 ? 'active' : 'completed') : ''}">
+                                <div class="cc-timeline-bubble">${stageIdx >= 2 ? '<i class="fas fa-check"></i>' : '3'}</div>
+                                <div class="cc-timeline-title">En Route</div>
+                            </div>
+
+                            <div class="cc-timeline-stage ${stageIdx >= 3 ? (stageIdx === 3 ? 'active' : 'completed') : ''}">
+                                <div class="cc-timeline-bubble">${stageIdx >= 3 ? '<i class="fas fa-check"></i>' : '4'}</div>
+                                <div class="cc-timeline-title">On Scene</div>
+                            </div>
+
+                            <div class="cc-timeline-stage ${stageIdx === 4 ? 'completed active' : ''}">
+                                <div class="cc-timeline-bubble">${stageIdx === 4 ? '<i class="fas fa-check"></i>' : '5'}</div>
+                                <div class="cc-timeline-title">Resolved</div>
+                            </div>
+                        </div>
+
+                        <!-- Tactical Operational Action Buttons -->
+                        <div style="display:flex;flex-wrap:wrap;gap:0.6rem;margin-top:0.9rem;padding-top:0.9rem;border-top:1px solid rgba(255,255,255,0.08);">
+                            ${report.assignedResponderEmail ? `
+                            <button type="button" class="cc-btn" style="padding:0.45rem 0.9rem;font-size:0.82rem;background:linear-gradient(135deg, #0284c7, #0369a1);color:#fff;font-weight:600;" onclick="handleDirectMessageClick(event, ${report.reportId})">
+                                <i class="fas fa-paper-plane"></i> Message Responder
+                            </button>
+                            <button type="button" class="cc-btn" style="padding:0.45rem 0.9rem;font-size:0.82rem;background:linear-gradient(135deg, #10b981, #047857);color:#fff;font-weight:600;" onclick="handleVideoCallClick(event, ${report.reportId})">
+                                <i class="fas fa-video"></i> Video Call Responder
+                            </button>` : ''}
+                            <button type="button" class="cc-btn cc-btn-primary" style="padding:0.45rem 0.9rem;font-size:0.82rem;" onclick="handleIncidentRoomClick(event, ${report.reportId})">
+                                <i class="fas fa-comments"></i> Comms Room & Live Chat
+                            </button>
+                            <button type="button" class="cc-btn cc-btn-secondary" style="padding:0.45rem 0.9rem;font-size:0.82rem;" onclick="handleMediaCaptureClick(event, ${report.reportId})">
+                                <i class="fas fa-camera"></i> Attach More Proof
+                            </button>
+                            ${(isAssignedState || stageIdx >= 1) ? `
+                            <button type="button" class="cc-btn" style="padding:0.45rem 0.9rem;font-size:0.82rem;background:linear-gradient(135deg, #00e5ff, #0077ff);color:#030a16;font-weight:700;" onclick="window.ResponderTracking ? window.ResponderTracking.open(${report.reportId}) : alert('Tracking initialized')">
+                                <i class="fas fa-satellite-dish"></i> Track Responders Live (GPS Radar)
+                            </button>` : ''}
+                            ${((report.status === 'Pending' || !report.status) && !report.assignedResponderEmail && !report.cancellationRequested) ? `
+                            <button type="button" class="cc-btn cc-btn-secondary" style="padding:0.45rem 0.9rem;font-size:0.82rem;" onclick="openEditReportModal(${report.reportId})">
+                                <i class="fas fa-pen-to-square"></i> Edit Report
+                            </button>
+                            <button type="button" class="cc-btn cc-btn-danger" style="padding:0.45rem 0.9rem;font-size:0.82rem;" onclick="withdrawMyReport(${report.reportId})">
+                                <i class="fas fa-trash-can"></i> Withdraw Report
+                            </button>` : ''}
+                            ${(!((report.status === 'Pending' || !report.status) && !report.assignedResponderEmail) && !isResolved && report.status !== 'Completed' && report.status !== 'Cancelled' && report.status !== 'Withdrawn' && !report.cancellationRequested) ? `
+                            <button type="button" class="cc-btn" style="padding:0.45rem 0.9rem;font-size:0.82rem;background:#d97706;color:#ffffff;font-weight:600;" onclick="openCancelReportModal(${report.reportId})">
+                                <i class="fas fa-hand"></i> Request Cancellation
+                            </button>` : ''}
+                            ${report.cancellationRequested ? `
+                            <span class="cc-badge" style="background:rgba(239,68,68,0.2);color:#fca5a5;border:1px solid #dc2626;padding:0.45rem 0.8rem;font-size:0.8rem;">
+                                <i class="fas fa-clock"></i> Cancellation Requested: ${escapeHtml(report.cancellationReason || 'Pending Review')}
+                            </span>` : ''}
+                        </div>
+                    `;
+                    listEl.appendChild(card);
+                } catch (cardErr) {
+                    console.error('Error rendering individual report card:', report, cardErr);
                 }
-
-                const status = report.status || 'Pending';
-                const isResolved = status === 'Resolved';
-                const refNum = `#INC-2026-${report.reportId}`;
-
-                // Parse structured category/severity from message if present
-                let cat = 'Rescue';
-                let sev = 'High';
-                let bodyMsg = report.message;
-
-                const match = report.message.match(/^\[(.*?) \| Severity: (.*?)\] (.*?)\n\n([\s\S]*)/);
-                if (match) {
-                    cat = match[1];
-                    sev = match[2];
-                    bodyMsg = match[4];
-                }
-
-                // Lifecycle stage:
-                // 0: Submitted, 1: Assigned / Acknowledged, 2: En Route, 3: On Scene, 4: Resolved
-                const st = (report.progressStage || status || 'Pending').toLowerCase();
-                const isAssigned = !!(report.assignedResponderName || report.assignedResponderEmail || status === 'Assigned');
-                const isAck = isAssigned && (st.includes('ack') || st.includes('accept') || st.includes('route') || st.includes('arrived') || st.includes('progress') || isResolved);
-                const isEnRoute = st.includes('route') || st.includes('on the way');
-                const isInProgress = st.includes('arrived') || st.includes('reached') || st.includes('progress') || st.includes('assistance');
-
-                let stageIdx = 0; // Submitted
-                if (isResolved) stageIdx = 4;
-                else if (isInProgress) stageIdx = 3;
-                else if (isEnRoute) stageIdx = 2;
-                else if (isAck) stageIdx = 1;
-                else if (isAssigned) stageIdx = 1;
-
-                const pct = (stageIdx / 4) * 100;
-
-                const statusBadge = isResolved ? 
-                    '<span class="cc-badge severity-low"><i class="fas fa-check-double"></i> Resolved / Cleared</span>' :
-                    (isInProgress ?
-                        '<span class="cc-badge severity-moderate" style="background:rgba(16,185,129,0.2);color:#34d399;border-color:#059669;"><i class="fas fa-person-digging"></i> Assistance in Progress</span>' :
-                    (isEnRoute ?
-                        '<span class="cc-badge severity-moderate" style="background:rgba(56,189,248,0.2);color:#38bdf8;border-color:#0284c7;"><i class="fas fa-truck-fast"></i> Responder En Route</span>' :
-                    (isAck ? 
-                        '<span class="cc-badge severity-moderate"><i class="fas fa-truck-medical"></i> Acknowledged & Dispatched</span>' : 
-                    (isAssigned ?
-                        '<span class="cc-badge severity-moderate" style="background:rgba(245,158,11,0.2);color:#fbbf24;border-color:#d97706;"><i class="fas fa-user-check"></i> Responder Assigned</span>' :
-                        '<span class="cc-badge severity-extreme"><i class="fas fa-clock"></i> Pending Assignment</span>'))));
-
-                card.innerHTML = `
-                    <div class="cc-card-header" style="padding-bottom:0.5rem;margin-bottom:0.6rem;">
-                        <div style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;">
-                            <span style="font-family:var(--cc-font-mono);color:var(--cc-cyan);font-weight:700;">${refNum}</span>
-                            <span class="cc-badge" style="background:#1e293b;border-color:#475569;color:#94a3b8;">${cat}</span>
-                            <span class="cc-badge severity-${sev.toLowerCase()}">${sev} Priority</span>
-                        </div>
-                        <div style="display:flex;align-items:center;gap:0.6rem;">
-                            <span style="color:#64748b;font-size:0.75rem;font-family:var(--cc-font-mono);">${(window.formatIndianDateTime ? window.formatIndianDateTime(report.timestamp) : new Date(report.timestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true }))}</span>
-                            ${statusBadge}
-                        </div>
-                    </div>
-
-                    <p style="color:#f1f5f9;font-size:0.95rem;margin-bottom:0.6rem;line-height:1.45;">${bodyMsg}</p>
-
-                    <div style="font-size:0.85rem;color:#94a3b8;margin-bottom:0.9rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.4rem;">
-                        <span><i class="fas fa-location-dot" style="color:var(--cc-cyan);"></i> ${report.location || 'Location Not Specified'}</span>
-                        ${report.assignedResponderName ? `
-                        <span style="color:var(--cc-safe-green);font-size:0.82rem;font-weight:600;display:inline-flex;align-items:center;gap:0.4rem;background:rgba(16,185,129,0.12);padding:3px 8px;border-radius:4px;border:1px solid rgba(16,185,129,0.3);">
-                            <i class="fas fa-id-badge"></i> Assigned Unit: <strong>${escapeHtml(report.assignedResponderName)}</strong>
-                            ${report.assignedResponderPhone ? `<a href="tel:${escapeHtml(report.assignedResponderPhone)}" style="color:var(--cc-cyan);margin-left:0.35rem;text-decoration:none;" title="Call Responder"><i class="fas fa-phone"></i> ${escapeHtml(report.assignedResponderPhone)}</a>` : ''}
-                        </span>` : (isAssigned ? `
-                        <span style="color:var(--cc-safe-green);font-size:0.82rem;font-weight:600;">
-                            <i class="fas fa-id-badge"></i> Assigned Unit: Emergency Response Unit (${report.location || 'Field Zone'})
-                        </span>` : `
-                        <span style="color:#94a3b8;font-size:0.8rem;font-style:italic;">
-                            <i class="fas fa-hourglass-start"></i> Awaiting Responder Assignment
-                        </span>`)}
-                    </div>
-
-                    ${report.photoData && report.photoData.length > 500 && !report.photoData.includes('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ') ? `
-                    <div style="margin-bottom:0.9rem;cursor:pointer;" onclick="if(window.openMediaLightbox) openMediaLightbox('${report.photoData}', 'Incident Evidence (Report #${report.reportId})', 'PHOTO')">
-                        <img src="${report.photoData}" alt="Evidence" style="width:100%;max-height:160px;object-fit:cover;border-radius:6px;border:1px solid var(--cc-border-medium);" onerror="if(window.handleEvidenceImageError) handleEvidenceImageError(this, '${report.photoData}');" />
-                    </div>` : ''}
-
-                    <!-- 5-Stage Operational Progress Timeline -->
-                    <div class="cc-incident-timeline">
-                        <div class="cc-timeline-track-line">
-                            <div class="cc-timeline-track-progress" style="width:${pct}%;"></div>
-                        </div>
-
-                        <div class="cc-timeline-stage completed">
-                            <div class="cc-timeline-bubble"><i class="fas fa-check"></i></div>
-                            <div class="cc-timeline-title">Submitted</div>
-                        </div>
-
-                        <div class="cc-timeline-stage ${stageIdx >= 1 ? (stageIdx === 1 ? 'active' : 'completed') : ''}">
-                            <div class="cc-timeline-bubble">${stageIdx >= 1 ? '<i class="fas fa-check"></i>' : '2'}</div>
-                            <div class="cc-timeline-title">Assigned</div>
-                        </div>
-
-                        <div class="cc-timeline-stage ${stageIdx >= 2 ? (stageIdx === 2 ? 'active' : 'completed') : ''}">
-                            <div class="cc-timeline-bubble">${stageIdx >= 2 ? '<i class="fas fa-check"></i>' : '3'}</div>
-                            <div class="cc-timeline-title">En Route</div>
-                        </div>
-
-                        <div class="cc-timeline-stage ${stageIdx >= 3 ? (stageIdx === 3 ? 'active' : 'completed') : ''}">
-                            <div class="cc-timeline-bubble">${stageIdx >= 3 ? '<i class="fas fa-check"></i>' : '4'}</div>
-                            <div class="cc-timeline-title">On Scene</div>
-                        </div>
-
-                        <div class="cc-timeline-stage ${stageIdx === 4 ? 'completed active' : ''}">
-                            <div class="cc-timeline-bubble">${stageIdx === 4 ? '<i class="fas fa-check"></i>' : '5'}</div>
-                            <div class="cc-timeline-title">Resolved</div>
-                        </div>
-                    </div>
-                    </div>
-
-                    <!-- Tactical Operational Action Buttons -->
-                    <div style="display:flex;flex-wrap:wrap;gap:0.6rem;margin-top:0.9rem;padding-top:0.9rem;border-top:1px solid rgba(255,255,255,0.08);">
-                        ${report.assignedResponderEmail ? `
-                        <button type="button" class="cc-btn" style="padding:0.45rem 0.9rem;font-size:0.82rem;background:linear-gradient(135deg, #0284c7, #0369a1);color:#fff;font-weight:600;" onclick="window.DirectMessaging.open('${escapeJs(report.assignedResponderEmail)}', '${escapeJs(report.assignedResponderName || 'Assigned Responder')}')">
-                            <i class="fas fa-paper-plane"></i> Message Responder
-                        </button>` : ''}
-                        <button type="button" class="cc-btn cc-btn-primary" style="padding:0.45rem 0.9rem;font-size:0.82rem;" onclick="window.IncidentRoom.open(${report.reportId}, 'CITIZEN_REPORT', '${escapeJs(report.location || '')}')">
-                            <i class="fas fa-comments"></i> Comms Room & Live Chat
-                        </button>
-                        <button type="button" class="cc-btn cc-btn-secondary" style="padding:0.45rem 0.9rem;font-size:0.82rem;" onclick="window.MediaCapture.open({ incidentId: ${report.reportId}, incidentType: 'CITIZEN_REPORT', onSuccess: () => loadMyReports() })">
-                            <i class="fas fa-camera"></i> Attach More Proof
-                        </button>
-                        ${isAck ? `
-                        <button type="button" class="cc-btn" style="padding:0.45rem 0.9rem;font-size:0.82rem;background:linear-gradient(135deg, #00e5ff, #0077ff);color:#030a16;font-weight:700;" onclick="window.ResponderTracking.open(${report.reportId})">
-                            <i class="fas fa-satellite-dish"></i> Track Responders Live (GPS Radar)
-                        </button>` : ''}
-                        ${((report.status === 'Pending' || !report.status) && !report.assignedResponderEmail && !report.cancellationRequested) ? `
-                        <button type="button" class="cc-btn cc-btn-secondary" style="padding:0.45rem 0.9rem;font-size:0.82rem;" onclick="openEditReportModal(${report.reportId})">
-                            <i class="fas fa-pen-to-square"></i> Edit Report
-                        </button>
-                        <button type="button" class="cc-btn cc-btn-danger" style="padding:0.45rem 0.9rem;font-size:0.82rem;" onclick="withdrawMyReport(${report.reportId})">
-                            <i class="fas fa-trash-can"></i> Withdraw Report
-                        </button>` : ''}
-                        ${(!((report.status === 'Pending' || !report.status) && !report.assignedResponderEmail) && !isResolved && report.status !== 'Completed' && report.status !== 'Cancelled' && report.status !== 'Withdrawn' && !report.cancellationRequested) ? `
-                        <button type="button" class="cc-btn" style="padding:0.45rem 0.9rem;font-size:0.82rem;background:#d97706;color:#ffffff;font-weight:600;" onclick="openCancelReportModal(${report.reportId})">
-                            <i class="fas fa-hand"></i> Request Cancellation
-                        </button>` : ''}
-                        ${report.cancellationRequested ? `
-                        <span class="cc-badge" style="background:rgba(239,68,68,0.2);color:#fca5a5;border:1px solid #dc2626;padding:0.45rem 0.8rem;font-size:0.8rem;">
-                            <i class="fas fa-clock"></i> Cancellation Requested: ${escapeHtml(report.cancellationReason || 'Pending Review')}
-                        </span>` : ''}
-                    </div>
-                `;
-                listEl.appendChild(card);
             });
         }
 
@@ -2128,6 +2262,7 @@
         }
 
         async function loadNotifications() {
+            if (document.hidden) return;
             const listEl = document.getElementById('notificationsList');
             const badgeEl = document.getElementById('notifBadgeCount');
 
@@ -2150,15 +2285,22 @@
                                 dbNotifs.slice(0, 15).forEach(n => {
                                     const item = document.createElement('div');
                                     item.className = 'cc-notif-item';
-                                    if (!n.isRead) item.style.borderLeft = '3px solid var(--cc-cyan)';
+                                    item.style.cursor = 'pointer';
+                                    if (!n.isRead) {
+                                        item.style.borderLeft = '3px solid var(--cc-cyan)';
+                                        item.style.background = 'rgba(56,189,248,0.06)';
+                                    }
+                                    item.onclick = () => markCitizenNotificationAsRead(n.id, item);
                                     item.innerHTML = `
                                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem;">
                                             <strong style="color:#ffffff;font-size:0.88rem;">${escapeHtml(n.title)}</strong>
                                             <div style="display:flex;align-items:center;gap:0.4rem;">
+                                                ${!n.isRead ? '<span class="cc-badge severity-high" style="font-size:0.68rem;padding:2px 6px;">UNREAD</span>' : ''}
                                                 <span style="font-size:0.72rem;color:#94a3b8;font-family:var(--cc-font-mono);">${new Date(n.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
                                             </div>
                                         </div>
-                                        <div style="color:#cbd5e1;line-height:1.4;">${escapeHtml(n.message)}</div>
+                                        <div style="color:#cbd5e1;line-height:1.4;font-size:0.85rem;">${escapeHtml(n.message)}</div>
+                                        ${!n.isRead ? '<div style="margin-top:0.3rem;font-size:0.75rem;color:var(--cc-cyan);"><i class="fas fa-check"></i> Click to mark as read</div>' : ''}
                                     `;
                                     listEl.appendChild(item);
                                 });
@@ -2177,6 +2319,24 @@
             }
             if (listEl) {
                 listEl.innerHTML = '<div style="text-align:center;color:var(--cc-text-muted);padding:2.5rem 1rem;"><i class="fas fa-bell-slash" style="font-size:2rem;margin-bottom:0.75rem;opacity:0.4;display:block;"></i>No new notifications.</div>';
+            }
+        }
+
+        async function markCitizenNotificationAsRead(id, itemEl) {
+            try {
+                const headers = window.AuthHelper ? window.AuthHelper.getHeaders() : {};
+                await fetch(`/api/notifications/${id}/read`, { method: 'PUT', headers });
+                if (itemEl) {
+                    itemEl.style.borderLeft = 'none';
+                    itemEl.style.background = 'transparent';
+                    const unreadBadge = itemEl.querySelector('.severity-high');
+                    if (unreadBadge) unreadBadge.remove();
+                    const clickHint = itemEl.querySelector('.fa-check');
+                    if (clickHint && clickHint.parentElement) clickHint.parentElement.remove();
+                }
+                loadNotifications();
+            } catch(e) {
+                console.warn('[CitizenNotifications] Mark as read failed:', e);
             }
         }
 
@@ -2631,11 +2791,6 @@
             }
         }
 
-        function escapeJs(str) {
-            if (!str) return '';
-            return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
-        }
-
         // Emergency SOS Sound Local Alarm Controls
         function toggleLocalSosAlarm() {
             if (window.EmergencyAlertSystem) {
@@ -2688,6 +2843,35 @@
 
         // Auto refresh alerts every 30s
         setInterval(loadUnifiedAlerts, 30000);
+
+        // Global Keyboard Navigation & Hotkeys
+        document.addEventListener('keydown', function(e) {
+            // Escape closes all open modals
+            if (e.key === 'Escape') {
+                closeFastSosModal();
+                closeEditReportModal();
+                closeCancelReportModal();
+                if (window.closeMediaLightbox) closeMediaLightbox();
+            }
+            // Ctrl+Enter on disaster report inputs submits immediately
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                const form = document.getElementById('citizenReportForm');
+                if (form && (document.activeElement === document.getElementById('reportMessage') || 
+                    document.activeElement === document.getElementById('reportLocation'))) {
+                    e.preventDefault();
+                    if (typeof form.requestSubmit === 'function') {
+                        form.requestSubmit();
+                    } else {
+                        form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                    }
+                }
+            }
+        });
+
+        // Initialize Tactical Emergency Video Calling subsystem
+        if (window.EmergencyVideoCall) {
+            EmergencyVideoCall.init('Citizen');
+        }
     </script>
 </body>
 </html>

@@ -33,6 +33,17 @@
             }
         }
 
+        resolveAuthToken() {
+            if (window.AuthHelper && typeof window.AuthHelper.getToken === 'function') {
+                const t = window.AuthHelper.getToken();
+                if (t) return t;
+            }
+            return sessionStorage.getItem('token_Citizen') || sessionStorage.getItem('token_Admin') || sessionStorage.getItem('token_Responder') ||
+                   localStorage.getItem('token_Citizen') || localStorage.getItem('token_Admin') || localStorage.getItem('token_Responder') ||
+                   sessionStorage.getItem('token') || localStorage.getItem('token') ||
+                   sessionStorage.getItem('citizen_token') || sessionStorage.getItem('admin_token') || sessionStorage.getItem('responder_token') || '';
+        }
+
         injectModal() {
             if (document.getElementById('tracking-modal-backdrop')) return;
             if (!document.body) return;
@@ -168,7 +179,7 @@
         }
 
         async fetchInitialTelemetry(assignmentId) {
-            const token = localStorage.getItem('token');
+            const token = this.resolveAuthToken();
             try {
                 const res = await fetch(`/api/tracking/latest/${assignmentId}`, {
                     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
@@ -185,7 +196,7 @@
         connectRealtimeStream(assignmentId) {
             this.cleanupStream();
 
-            const token = localStorage.getItem('token') || '';
+            const token = this.resolveAuthToken();
             const sseUrl = `/api/tracking/stream/${assignmentId}${token ? '?token=' + encodeURIComponent(token) : ''}`;
 
             try {
@@ -601,7 +612,7 @@
         }
 
         async sendTelemetry(url, payload) {
-            const token = localStorage.getItem('token');
+            const token = this.resolveAuthToken();
             try {
                 const res = await fetch(url, {
                     method: 'POST',

@@ -151,6 +151,7 @@ public class SecurityConfig {
                     "/api/official-alerts/**",
                     "/api/disasters/**",
                     "/api/weather/**",
+                    "/api/system/**",
                     "/actuator/health",
                     "/actuator/info"
                 ).permitAll()
@@ -205,11 +206,12 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/responder/**").hasAnyRole("Responder", "RESPONDER", "Admin", "ADMIN")
                 .requestMatchers("/api/responder/location/**").hasAnyRole("Responder", "RESPONDER", "Admin", "ADMIN")
 
-                // Live Tracking, Incident Room, Media Management & Routing
+                // Live Tracking, Incident Room, Media Management, Emergency Calls & Routing
                 .requestMatchers(HttpMethod.GET, "/api/media/file/**", "/api/media/*/download").permitAll()
                 .requestMatchers("/api/tracking/**").authenticated()
                 .requestMatchers("/api/media/**").authenticated()
                 .requestMatchers("/api/incidents/**").authenticated()
+                .requestMatchers("/api/calls/**").authenticated()
                 .requestMatchers("/api/routing/**").authenticated()
 
                 // General Authenticated Endpoints

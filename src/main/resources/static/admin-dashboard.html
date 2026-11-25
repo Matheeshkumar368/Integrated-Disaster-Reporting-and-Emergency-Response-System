@@ -44,6 +44,8 @@
     <script src="direct-messaging.js?v=1"></script>
     <link rel="stylesheet" href="smart-assignment.css?v=1" />
     <script src="smart-assignment.js?v=2"></script>
+    <link rel="stylesheet" href="video-call.css?v=1" />
+    <script src="video-call.js?v=1"></script>
     
     <!-- Authentication Guard & Role Loading -->
     <link rel="stylesheet" href="role-loading.css?v=2" />
@@ -569,9 +571,19 @@
 
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
                             <div class="cc-form-group">
+                                <label class="cc-label"><i class="fas fa-bullhorn"></i> Delivery Mode</label>
+                                <select id="deliveryMode" class="cc-select" onchange="toggleAlertDeliveryMode(this.value)">
+                                    <option value="BROADCAST" selected>Broadcast (All Registered Citizens)</option>
+                                    <option value="TARGETED">Targeted (Specific Citizen Emails / Region)</option>
+                                    <option value="INCIDENT">Incident-Specific (Linked Citizen Report)</option>
+                                </select>
+                            </div>
+
+                            <div class="cc-form-group">
                                 <label class="cc-label"><i class="fas fa-location-dot"></i> Target Region</label>
                                 <select id="region" class="cc-select" required>
-                                    <option value="">Select Region</option>
+                                    <option value="All Citizens" selected>All Citizens (Statewide Broadcast)</option>
+                                    <option value="Tamil Nadu">Tamil Nadu (Statewide)</option>
                                     <option value="Chennai">Chennai</option>
                                     <option value="Coimbatore">Coimbatore</option>
                                     <option value="Madurai">Madurai</option>
@@ -582,14 +594,23 @@
                                     <option value="Vellore">Vellore</option>
                                     <option value="Erode">Erode</option>
                                     <option value="Thoothukudi">Thoothukudi</option>
-                                    <option value="Tamil Nadu">Tamil Nadu (Statewide)</option>
                                 </select>
                             </div>
+                        </div>
 
-                            <div class="cc-form-group">
-                                <label class="cc-label"><i class="fas fa-link"></i> Media Link (Optional)</label>
-                                <input type="url" id="mediaUrl" class="cc-input" placeholder="https://example.com/map.jpg" />
-                            </div>
+                        <div id="targetRecipientsGroup" class="cc-form-group" style="display:none;">
+                            <label class="cc-label"><i class="fas fa-users"></i> Targeted Citizen Emails or IDs</label>
+                            <input type="text" id="targetRecipients" class="cc-input" placeholder="e.g. citizen@gmail.com, citizen2@gmail.com (comma separated)" />
+                        </div>
+
+                        <div id="relatedIncidentGroup" class="cc-form-group" style="display:none;">
+                            <label class="cc-label"><i class="fas fa-file-circle-exclamation"></i> Linked Incident Report ID</label>
+                            <input type="number" id="relatedIncidentId" class="cc-input" placeholder="e.g. 188" />
+                        </div>
+
+                        <div class="cc-form-group">
+                            <label class="cc-label"><i class="fas fa-link"></i> Media Link (Optional)</label>
+                            <input type="url" id="mediaUrl" class="cc-input" placeholder="https://example.com/map.jpg" />
                         </div>
 
                         <button type="submit" class="cc-btn cc-btn-danger" id="submitBtn" style="width:100%;padding:0.9rem;font-size:1rem;margin-top:0.4rem;">
@@ -978,7 +999,7 @@
         RoleLoadingScreen.initOnLoad('Admin');
 
         function getAdminToken() {
-            return (window.AuthHelper && window.AuthHelper.getToken('Admin')) || sessionStorage.getItem('token_Admin') || localStorage.getItem('token_Admin');
+            return (window.AuthHelper && window.AuthHelper.getToken('Admin')) || sessionStorage.getItem('token_Admin') || localStorage.getItem('token_Admin') || sessionStorage.getItem('token') || localStorage.getItem('token');
         }
 
         // Global Variables
@@ -1203,6 +1224,7 @@
         }
 
         async function loadActiveRespondersOnMap() {
+            if (document.hidden) return;
             if (!map || !respondersLayerGroup) return;
             const token = getAdminToken();
             if (!token) return;
@@ -1911,6 +1933,7 @@
         }
 
         async function loadCitizenReportsFeed() {
+            if (document.hidden) return;
             const token = getAdminToken();
             if (!token) return;
             try {
@@ -2000,6 +2023,11 @@
                             <i class="fas fa-triangle-exclamation"></i> Awaiting Responder Assignment
                         </div>`}
                     </div>
+
+                    ${r.rejectionReason ? `
+                    <div style="margin-bottom:0.6rem;padding:6px 10px;background:rgba(239,68,68,0.15);border:1px solid #ef4444;border-radius:4px;color:#fca5a5;font-size:0.78rem;">
+                        <i class="fas fa-hand"></i> <strong>Assignment Rejected:</strong> ${escapeHtml(r.rejectionReason)} &mdash; <span style="color:#fcd34d;">Needs Reassignment</span>
+                    </div>` : ''}
 
                     ${r.cancellationRequested ? `
                     <div style="margin-bottom:0.6rem;padding:6px 10px;background:rgba(239,68,68,0.15);border:1px solid #ef4444;border-radius:4px;color:#fca5a5;font-size:0.78rem;">
@@ -2692,6 +2720,13 @@
             }
         }
 
+        function toggleAlertDeliveryMode(mode) {
+            const targetGroup = document.getElementById('targetRecipientsGroup');
+            const incidentGroup = document.getElementById('relatedIncidentGroup');
+            if (targetGroup) targetGroup.style.display = (mode === 'TARGETED') ? 'block' : 'none';
+            if (incidentGroup) incidentGroup.style.display = (mode === 'INCIDENT') ? 'block' : 'none';
+        }
+
         // Handle Broadcast Form Submission with Step-Up PIN Guard
         document.getElementById('alertForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -2707,7 +2742,10 @@
                 message: document.getElementById('message').value.trim(),
                 disasterType: document.getElementById('disasterType').value,
                 severity: document.getElementById('severity').value,
-                region: document.getElementById('region').value,
+                region: document.getElementById('region').value || 'All Citizens',
+                deliveryMode: document.getElementById('deliveryMode') ? document.getElementById('deliveryMode').value : 'BROADCAST',
+                targetRecipients: document.getElementById('targetRecipients') ? document.getElementById('targetRecipients').value.trim() : null,
+                relatedIncidentId: document.getElementById('relatedIncidentId') && document.getElementById('relatedIncidentId').value ? parseInt(document.getElementById('relatedIncidentId').value) : null,
                 mediaUrl: document.getElementById('mediaUrl').value.trim() || null,
                 broadcasted: true
             };
@@ -3246,6 +3284,7 @@
             loadResponderRosterAndAnalytics();
             applyAdminUrlRouting();
             setInterval(loadLiveAlerts, 25000);
+            setInterval(loadCitizenReportsFeed, 8000);
             setInterval(loadNdmaFeedStatus, 30000);
             setInterval(loadDisastersOnMap, 60000);
             setInterval(loadResponderRosterAndAnalytics, 30000);
@@ -3257,6 +3296,11 @@
         // Immediate check in case DOM already loaded
         if (document.readyState === 'complete' || document.readyState === 'interactive') {
             applyAdminUrlRouting();
+        }
+
+        // Initialize Tactical Emergency Video Calling subsystem
+        if (window.EmergencyVideoCall) {
+            EmergencyVideoCall.init('Admin');
         }
     </script>
 </body>

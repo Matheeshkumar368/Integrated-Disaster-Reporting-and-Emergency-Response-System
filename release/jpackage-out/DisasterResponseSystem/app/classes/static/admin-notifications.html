@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover"/>
+    <meta name="theme-color" content="#070b14"/>
+    <link rel="icon" type="image/png" href="/icons/icon-192.png"/>
+    <title>Notification Centre — Admin Command | FIREBOY</title>
+    
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    
+    <!-- Design System & Scripts -->
+    <link rel="stylesheet" href="toast-manager.css?v=2" />
+    <script src="toast-manager.js?v=2"></script>
+    <script src="auth-helper.js?v=2"></script>
+    
+    <!-- Dedicated Mobile Notification Shade Stylesheet -->
+    <link rel="stylesheet" href="notifications.css?v=2" />
+</head>
+<body class="theme-admin">
+    <div class="notif-shade-root">
+        <!-- TOP STICKY SHADE HEADER -->
+        <header class="notif-shade-header">
+            <div class="shade-header-left">
+                <a href="admin-dashboard.html" class="btn-shade-dashboard" id="btnGoDashboard" title="Return to Admin Mission Control">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>Dashboard</span>
+                </a>
+                <div class="shade-title-block">
+                    <div class="shade-title-row">
+                        <i class="fa-solid fa-bell shade-bell-icon"></i>
+                        <h1 class="shade-title">Notification Centre</h1>
+                        <span class="shade-role-badge role-admin"><i class="fa-solid fa-shield-halved"></i> Admin Command</span>
+                    </div>
+                    <div class="shade-subtitle" id="shadeSubtitle">
+                        <span id="unreadCountDisplay"><span class="unread-highlight">0 unread</span></span> • <span id="totalCountDisplay">0 total</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="shade-header-right">
+                <a href="admin-messages.html" class="btn-shade-action" style="text-decoration:none;" title="Open Tactical Messages">
+                    <i class="fa-solid fa-comments" style="color:#00e5ff;"></i>
+                    <span class="btn-label-desktop">Messages</span>
+                </a>
+                <div class="shade-clock-pill">
+                    <i class="fa-regular fa-clock"></i>
+                    <span id="liveClockDisplay">Live Clock</span>
+                </div>
+                <button class="btn-shade-action" id="btnRefreshNotifs" title="Refresh Notifications">
+                    <i class="fa-solid fa-rotate"></i>
+                    <span class="btn-label-desktop">Refresh</span>
+                </button>
+                <button class="btn-shade-action" id="btnMarkAllRead" title="Mark All as Read">
+                    <i class="fa-solid fa-check-double"></i>
+                    <span class="btn-label-desktop">Mark All Read</span>
+                </button>
+                <div class="shade-user-pill">
+                    <div class="shade-avatar" id="userAvatarDisplay">A</div>
+                    <div class="shade-user-info">
+                        <span class="shade-user-name" id="userNameDisplay">Admin</span>
+                        <span class="shade-user-role" id="userRoleDisplay">Admin</span>
+                    </div>
+                    <button class="shade-logout-btn action-logout" title="Sign Out">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN NOTIFICATION PANEL BODY -->
+        <main class="notif-shade-main">
+            <!-- CONTROLS & FILTER BAR -->
+            <div class="notif-shade-controls">
+                <div class="notif-filters-scroll">
+                    <button class="shade-filter-pill active" data-category="ALL">
+                        <i class="fa-solid fa-layer-group"></i> All Telemetry
+                        <span class="filter-count-badge" id="countPill_ALL">0</span>
+                    </button>
+                    <button class="shade-filter-pill" data-category="REPORTS">
+                        <i class="fa-solid fa-file-shield"></i> Citizen Reports
+                        <span class="filter-count-badge" id="countPill_REPORTS">0</span>
+                    </button>
+                    <button class="shade-filter-pill" data-category="ASSIGNMENTS">
+                        <i class="fa-solid fa-truck-medical"></i> Responder Ops
+                        <span class="filter-count-badge" id="countPill_ASSIGNMENTS">0</span>
+                    </button>
+                    <button class="shade-filter-pill" data-category="DIRECT_MESSAGE">
+                        <i class="fa-solid fa-comments"></i> Direct Messages
+                        <span class="filter-count-badge" id="countPill_DIRECT_MESSAGE">0</span>
+                    </button>
+                    <button class="shade-filter-pill" data-category="NDMA_ALERT">
+                        <i class="fa-solid fa-cloud-bolt"></i> NDMA / SACHET
+                        <span class="filter-count-badge" id="countPill_NDMA_ALERT">0</span>
+                    </button>
+                    <button class="shade-filter-pill" data-category="BROADCASTS">
+                        <i class="fa-solid fa-tower-broadcast"></i> Broadcasts
+                        <span class="filter-count-badge" id="countPill_BROADCASTS">0</span>
+                    </button>
+                    <button class="shade-filter-pill" data-category="SYSTEM">
+                        <i class="fa-solid fa-sliders"></i> System Events
+                        <span class="filter-count-badge" id="countPill_SYSTEM">0</span>
+                    </button>
+                </div>
+
+                <div class="notif-search-and-status">
+                    <div class="notif-search-wrapper">
+                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                        <input type="text" id="notifSearchInput" class="notif-search-input" placeholder="Search notifications by title or keyword..." />
+                        <button id="btnClearSearch" class="btn-clear-search" style="display:none;"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <div class="status-toggle-group">
+                        <button class="status-btn active" id="btnFilterStatusAll" data-status-filter="all">All</button>
+                        <button class="status-btn" id="btnFilterStatusUnread" data-status-filter="unread">Unread Only</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VERTICALLY SCROLLABLE NOTIFICATION FEED -->
+            <div class="notif-feed-scrollable" id="notifFeedScrollable">
+                <div class="notif-cards-list" id="notificationsContainer">
+                    <div class="notif-empty-state">
+                        <i class="fa-solid fa-circle-notch fa-spin" style="font-size:28px; color:#38bdf8;"></i>
+                        <h3>Synchronizing Notifications...</h3>
+                        <p>Loading real-time command events, official NDMA alerts and incident logs.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- DETAIL MODAL -->
+    <div class="notif-modal-backdrop" id="notifModalBackdrop">
+        <div class="notif-modal-sheet">
+            <div class="notif-modal-header">
+                <h3 id="modalNotifTitle">Notification Details</h3>
+                <button class="btn-close-modal" id="btnCloseModal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="notif-modal-body" id="modalNotifBody"></div>
+            <div class="notif-modal-footer">
+                <button class="btn-shade-action" onclick="document.getElementById('notifModalBackdrop').classList.remove('open')">Close</button>
+                <button class="btn-shade-action btn-accent" id="btnModalAction">
+                    <i class="fa-solid fa-arrow-right"></i> Open Dashboard
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOTIFICATION SCRIPT ENGINE -->
+    <script src="notifications.js?v=2"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            window.__notifCenter = new NotificationCenter({
+                role: 'Admin',
+                defaultCategory: 'ALL'
+            });
+        });
+    </script>
+</body>
+</html>

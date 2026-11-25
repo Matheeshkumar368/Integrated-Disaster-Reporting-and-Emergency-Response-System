@@ -606,6 +606,7 @@ body {
     border-radius: var(--cc-radius-sm);
     border: 1px solid transparent;
     cursor: pointer;
+    white-space: nowrap;
     transition: all var(--cc-duration-fast) var(--cc-ease);
     text-decoration: none;
     line-height: 1.2;

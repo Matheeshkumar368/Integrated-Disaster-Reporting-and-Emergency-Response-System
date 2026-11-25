@@ -591,8 +591,8 @@ const EmergencyAlertSystem = (function() {
 
         const tag = target.tagName ? target.tagName.toUpperCase() : '';
         if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
-        if (target.isContentEditable || target.getAttribute('contenteditable') === 'true') return true;
-        if (target.closest && target.closest('input, textarea, select, [contenteditable="true"]')) return true;
+        if (target.isContentEditable || (typeof target.getAttribute === 'function' && target.getAttribute('contenteditable') === 'true')) return true;
+        if (typeof target.closest === 'function' && target.closest('input, textarea, select, [contenteditable="true"]')) return true;
 
         return false;
     }
@@ -615,16 +615,30 @@ const EmergencyAlertSystem = (function() {
         return combo;
     }
 
+    let lastTabPressTime = 0;
+
     function matchShortcut(event) {
         if (!config.enabled) return false;
 
         const targetKey = (config.shortcut || 'Tab').trim();
         const pressedKey = event.key;
 
-        // 1. Direct exact key match (e.g. "Tab", "F6", "F8", "F12")
-        if (targetKey.toLowerCase() === 'tab' && pressedKey === 'Tab' && !event.ctrlKey && !event.altKey && !event.metaKey) {
-            return true;
+        // 1. Direct exact key match for Tab:
+        // Use double-tap Tab (within 450ms) or Alt+Tab / Ctrl+Tab to prevent hijacking standard browser keyboard accessibility
+        if (targetKey.toLowerCase() === 'tab' && pressedKey === 'Tab') {
+            if (event.altKey || event.ctrlKey) {
+                return true;
+            }
+            const now = Date.now();
+            if (now - lastTabPressTime < 450) {
+                lastTabPressTime = 0;
+                return true; // Rapid double-tap Tab triggers SOS
+            }
+            lastTabPressTime = now;
+            return false; // First tap permits normal browser tab navigation
         }
+
+        // Direct function keys (e.g. "F6", "F8", "F9", "F12")
         if (targetKey.toUpperCase() === pressedKey.toUpperCase() && !event.ctrlKey && !event.altKey && !event.metaKey) {
             return true;
         }

@@ -17,6 +17,7 @@ import com.disaster.management.entity.RescueTask;
 import com.disaster.management.entity.User;
 import com.disaster.management.event.EmergencyBroadcastCreatedEvent;
 import com.disaster.management.repository.AlertRepository;
+import com.disaster.management.repository.CitizenReportRepository;
 import com.disaster.management.repository.UserRepository;
 
 @Service
@@ -29,6 +30,9 @@ public class AlertService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired(required = false)
+    private CitizenReportRepository citizenReportRepository;
 
     @Autowired
     private RescueTaskService rescueTaskService;
@@ -94,31 +98,118 @@ public class AlertService {
 
         if (notificationService != null) {
             try {
-                notificationService.notifyCitizensInRegion(
-                    alert.getRegion(),
-                    "Severe Disaster Alert: " + alert.getRegion(),
-                    alert.getMessage(),
-                    "ALERTS",
-                    alert.getSeverity() != null ? alert.getSeverity() : "High",
-                    savedAlert.getAlertId(),
-                    "ALERT",
-                    "citizen-notifications.html"
-                );
+                String mode = alert.getDeliveryMode();
+                if (mode == null || mode.trim().isEmpty()) {
+                    mode = "BROADCAST";
+                }
+                mode = mode.trim().toUpperCase();
+
+                Set<String> recipientEmails = new java.util.LinkedHashSet<>();
+
+                if ("INCIDENT".equals(mode)) {
+                    // C. Incident-specific alert: Target Citizens associated with the relevant incident
+                    if (alert.getRelatedIncidentId() != null && citizenReportRepository != null) {
+                        citizenReportRepository.findById(alert.getRelatedIncidentId()).ifPresent(report -> {
+                            if (report.getCitizenEmail() != null && !report.getCitizenEmail().isBlank()) {
+                                userRepository.findByEmail(report.getCitizenEmail().trim().toLowerCase()).ifPresent(u -> {
+                                    if ((u.getActive() == null || Boolean.TRUE.equals(u.getActive())) && "Citizen".equalsIgnoreCase(u.getRole())) {
+                                        recipientEmails.add(u.getEmail().trim().toLowerCase());
+                                    }
+                                });
+                            }
+                        });
+                    }
+                    if (recipientEmails.isEmpty() && alert.getTargetRecipients() != null && !alert.getTargetRecipients().isBlank()) {
+                        for (String item : alert.getTargetRecipients().split("[,;\\s]+")) {
+                            String clean = item.trim().toLowerCase();
+                            userRepository.findByEmail(clean).ifPresent(u -> {
+                                if ((u.getActive() == null || Boolean.TRUE.equals(u.getActive())) && "Citizen".equalsIgnoreCase(u.getRole())) {
+                                    recipientEmails.add(clean);
+                                }
+                            });
+                        }
+                    }
+                } else if ("TARGETED".equals(mode)) {
+                    // B. Targeted alert: Target selected Citizens by email/ID or specific sector
+                    if (alert.getTargetRecipients() != null && !alert.getTargetRecipients().isBlank()) {
+                        for (String item : alert.getTargetRecipients().split("[,;\\s]+")) {
+                            String clean = item.trim().toLowerCase();
+                            if (clean.matches("\\d+")) {
+                                try {
+                                    Long uid = Long.parseLong(clean);
+                                    userRepository.findById(uid).ifPresent(u -> {
+                                        if ((u.getActive() == null || Boolean.TRUE.equals(u.getActive())) && "Citizen".equalsIgnoreCase(u.getRole())) {
+                                            recipientEmails.add(u.getEmail().trim().toLowerCase());
+                                        }
+                                    });
+                                } catch (Exception ignored) {}
+                            } else {
+                                userRepository.findByEmail(clean).ifPresent(u -> {
+                                    if ((u.getActive() == null || Boolean.TRUE.equals(u.getActive())) && "Citizen".equalsIgnoreCase(u.getRole())) {
+                                        recipientEmails.add(clean);
+                                    }
+                                });
+                            }
+                        }
+                    } else if (alert.getRegion() != null && !alert.getRegion().isBlank() 
+                               && !"All".equalsIgnoreCase(alert.getRegion()) 
+                               && !"All Citizens".equalsIgnoreCase(alert.getRegion())
+                               && !"All India".equalsIgnoreCase(alert.getRegion())
+                               && !"Tamil Nadu".equalsIgnoreCase(alert.getRegion())) {
+                        List<User> allCitizens = userRepository.findByRole("Citizen");
+                        for (User c : allCitizens) {
+                            if ((c.getActive() == null || Boolean.TRUE.equals(c.getActive())) && c.getEmail() != null) {
+                                boolean match = (c.getLocation() != null && c.getLocation().toLowerCase().contains(alert.getRegion().toLowerCase().trim()))
+                                             || (c.getAssignedZone() != null && c.getAssignedZone().equalsIgnoreCase(alert.getRegion().trim()));
+                                if (match) {
+                                    recipientEmails.add(c.getEmail().trim().toLowerCase());
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // A. Broadcast alert (Default): Send official emergency alert to ALL eligible (active) Citizens
+                    List<User> allCitizens = userRepository.findByRole("Citizen");
+                    for (User c : allCitizens) {
+                        if ((c.getActive() == null || Boolean.TRUE.equals(c.getActive())) && c.getEmail() != null && !c.getEmail().isBlank()) {
+                            recipientEmails.add(c.getEmail().trim().toLowerCase());
+                        }
+                    }
+                }
+
+                String prio = alert.getSeverity() != null ? alert.getSeverity() : "High";
+                for (String recipientEmail : recipientEmails) {
+                    notificationService.createNotification(
+                        recipientEmail,
+                        "Citizen",
+                        alert.getTitle(), // Real Alert Title!
+                        alert.getMessage(), // Real Alert Message!
+                        "WARNINGS", // Matches citizen notification center category
+                        prio,
+                        savedAlert.getAlertId(),
+                        "ALERT",
+                        "citizen-notifications.html"
+                    );
+                }
+                log.info("Disaster alert #{} created and dispatched {} notification records to citizens (Mode: {})", 
+                         savedAlert.getAlertId(), recipientEmails.size(), mode);
+
                 notificationService.notifyRespondersInRegion(
                     alert.getRegion(),
-                    "Emergency Alert Broadcast: " + alert.getRegion(),
+                    "Emergency Alert Broadcast: " + alert.getTitle(),
                     alert.getMessage(),
-                    "ALERTS",
-                    alert.getSeverity() != null ? alert.getSeverity() : "High",
+                    "HAZARDS",
+                    prio,
                     savedAlert.getAlertId(),
                     "ALERT",
                     "responder-notifications.html"
                 );
+
                 notificationService.notifyAdmins(
                     "Emergency Alert Broadcasted: " + alert.getTitle(),
                     "Disaster alert created for region " + alert.getRegion() + ": " + alert.getMessage(),
                     "ALERTS",
-                    alert.getSeverity() != null ? alert.getSeverity() : "High",
+                    prio,
                     savedAlert.getAlertId(),
                     "ALERT",
                     "admin-notifications.html"

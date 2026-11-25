@@ -35,8 +35,11 @@ public class ServerLifecycleManager implements ApplicationListener<ContextClosed
     @Value("${app.server.lifecycle.exit-jvm-on-shutdown:true}")
     private boolean exitJvmOnShutdown;
 
-    @Value("${app.server.lifecycle.stdin-guardian:true}")
+    @Value("${app.server.lifecycle.stdin-guardian:false}")
     private boolean stdinGuardianEnabled;
+
+    @Value("${app.server.lifecycle.parent-guardian:false}")
+    private boolean parentGuardianEnabled;
 
     public ServerLifecycleManager(ApplicationContext applicationContext, ServerRuntimeStateHolder stateHolder) {
         this.applicationContext = applicationContext;
@@ -75,25 +78,27 @@ public class ServerLifecycleManager implements ApplicationListener<ContextClosed
 
         log.info("ServerLifecycleManager active. Monitoring process tree and shutdown signals.");
 
-        // 1. Monitor Parent Process (Maven wrapper or Windows EXE wrapper)
-        try {
-            Optional<ProcessHandle> parentOpt = ProcessHandle.current().parent();
-            if (parentOpt.isPresent()) {
-                ProcessHandle parent = parentOpt.get();
-                long parentPid = parent.pid();
-                log.info("Linked to parent launcher process [PID: {}]. Auto-termination guardian active.", parentPid);
+        // 1. Monitor Parent Process (Maven wrapper or Windows EXE wrapper if enabled)
+        if (parentGuardianEnabled) {
+            try {
+                Optional<ProcessHandle> parentOpt = ProcessHandle.current().parent();
+                if (parentOpt.isPresent()) {
+                    ProcessHandle parent = parentOpt.get();
+                    long parentPid = parent.pid();
+                    log.info("Linked to parent launcher process [PID: {}]. Auto-termination guardian active.", parentPid);
 
-                parent.onExit().thenAccept(ph -> {
-                    if (!shuttingDown.get()) {
-                        log.info("Parent launcher [PID: {}] terminated. Initiating graceful server shutdown...", parentPid);
-                        initiateGracefulShutdown("Parent process exit");
-                    }
-                });
-            } else {
-                log.info("Running as root process. Standard JVM shutdown hooks will manage lifecycle.");
+                    parent.onExit().thenAccept(ph -> {
+                        if (!shuttingDown.get()) {
+                            log.info("Parent launcher [PID: {}] terminated. Initiating graceful server shutdown...", parentPid);
+                            initiateGracefulShutdown("Parent process exit");
+                        }
+                    });
+                } else {
+                    log.info("Running as root process. Standard JVM shutdown hooks will manage lifecycle.");
+                }
+            } catch (Exception e) {
+                log.warn("Notice checking parent process handle: {}", e.getMessage());
             }
-        } catch (Exception e) {
-            log.warn("Notice checking parent process handle: {}", e.getMessage());
         }
 
         // 2. Monitor Standard Input for EOF / Pipe Broken (occurs when terminal closes or detaches)

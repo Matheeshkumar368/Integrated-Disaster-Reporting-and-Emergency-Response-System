@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.disaster.management.service.RescueTaskServiceTest
+-------------------------------------------------------------------------------
+Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.309 s -- in com.disaster.management.service.RescueTaskServiceTest

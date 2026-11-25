@@ -63,6 +63,7 @@
         startPolling() {
             this.stopPolling();
             this.pollTimer = setInterval(() => {
+                if (document.hidden) return;
                 if (this.activeContact && this.modalEl && this.modalEl.style.display === 'flex') {
                     this.loadConversation(this.activeContact.email, false);
                 }
@@ -162,7 +163,14 @@
         }
 
         getToken() {
-            return (window.AuthHelper && window.AuthHelper.getToken()) || localStorage.getItem('token');
+            if (window.AuthHelper && typeof window.AuthHelper.getToken === 'function') {
+                const t = window.AuthHelper.getToken();
+                if (t) return t;
+            }
+            return sessionStorage.getItem('token_Citizen') || sessionStorage.getItem('token_Admin') || sessionStorage.getItem('token_Responder') ||
+                   localStorage.getItem('token_Citizen') || localStorage.getItem('token_Admin') || localStorage.getItem('token_Responder') ||
+                   sessionStorage.getItem('token') || localStorage.getItem('token') ||
+                   sessionStorage.getItem('citizen_token') || sessionStorage.getItem('admin_token') || sessionStorage.getItem('responder_token') || '';
         }
 
         async loadContacts() {

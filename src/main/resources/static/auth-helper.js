@@ -23,6 +23,19 @@
         try { globalThis.escapeHtml = window.escapeHtml; } catch(e) {}
     }
 
+    function safeBase64UrlDecode(str) {
+        try {
+            if (!str) return null;
+            let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
+            while (base64.length % 4) {
+                base64 += '=';
+            }
+            return atob(base64);
+        } catch(e) {
+            return null;
+        }
+    }
+
     const AuthHelper = {
         initUrlAuth: function() {
             try {
@@ -60,7 +73,8 @@
                     const sTok = sessionStorage.getItem('token');
                     if (sTok && sTok.includes('.')) {
                         try {
-                            const p = JSON.parse(atob(sTok.split('.')[1]));
+                            const decoded = safeBase64UrlDecode(sTok.split('.')[1]);
+                            const p = decoded ? JSON.parse(decoded) : null;
                             if (p && p.role && p.role.toLowerCase() === norm.toLowerCase()) return sTok;
                         } catch(e) {}
                     }
@@ -71,7 +85,8 @@
                     const lTok = localStorage.getItem('token');
                     if (lTok && lTok.includes('.')) {
                         try {
-                            const p = JSON.parse(atob(lTok.split('.')[1]));
+                            const decoded = safeBase64UrlDecode(lTok.split('.')[1]);
+                            const p = decoded ? JSON.parse(decoded) : null;
                             if (p && p.role && p.role.toLowerCase() === norm.toLowerCase()) return lTok;
                         } catch(e) {}
                     }
@@ -103,7 +118,8 @@
             try {
                 const token = this.getToken(preferredRole);
                 if (token && token.includes('.')) {
-                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    const decoded = safeBase64UrlDecode(token.split('.')[1]);
+                    const payload = decoded ? JSON.parse(decoded) : null;
                     if (payload && payload.role) {
                         return payload.role;
                     }

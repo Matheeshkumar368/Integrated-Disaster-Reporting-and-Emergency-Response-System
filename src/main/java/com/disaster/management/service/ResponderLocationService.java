@@ -2,6 +2,7 @@ package com.disaster.management.service;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -233,8 +234,14 @@ public class ResponderLocationService {
             throw new IllegalArgumentException("No task ID provided and no active assigned tasks found for " + responderEmail);
         }
 
-        RescueTask task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new IllegalArgumentException("Rescue task #" + taskId + " not found."));
+        Optional<RescueTask> taskOpt = taskRepository.findById(taskId);
+        if (taskOpt.isEmpty()) {
+            List<RescueTask> linked = taskRepository.findByCitizenReportId(taskId);
+            if (!linked.isEmpty()) {
+                taskOpt = Optional.of(linked.get(0));
+            }
+        }
+        RescueTask task = taskOpt.orElseThrow(() -> new IllegalArgumentException("Rescue task or linked report #" + taskId + " not found."));
 
         // Verify responder is assigned to this task (or has Admin override role)
         boolean isAssigned = task.getAssignedTo() != null && task.getAssignedTo().equalsIgnoreCase(responderEmail);

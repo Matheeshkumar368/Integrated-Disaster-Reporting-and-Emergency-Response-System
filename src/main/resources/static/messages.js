@@ -26,11 +26,23 @@
         init() {
             // Guard role & auth
             if (window.AuthHelper) {
-                this.token = window.AuthHelper.getToken();
-                if (!this.token) {
-                    window.location.replace('/index-new-login.html');
-                    return;
-                }
+                this.token = window.AuthHelper.getToken(this.role);
+            }
+            if (!this.token) {
+                const normRole = this.role ? (this.role.charAt(0).toUpperCase() + this.role.slice(1).toLowerCase()) : '';
+                this.token = sessionStorage.getItem('token_' + normRole) ||
+                             localStorage.getItem('token_' + normRole) ||
+                             sessionStorage.getItem('token') ||
+                             localStorage.getItem('token') ||
+                             sessionStorage.getItem(this.role ? this.role.toLowerCase() + '_token' : '') || '';
+            }
+
+            if (!this.token) {
+                window.location.replace('/index.html');
+                return;
+            }
+
+            if (window.AuthHelper) {
                 const verifiedRole = window.AuthHelper.getRole();
                 if (verifiedRole && verifiedRole !== this.role) {
                     const properUrl = verifiedRole === 'Admin' ? '/admin-messages.html' :
@@ -40,12 +52,7 @@
                 }
                 this.myEmail = window.AuthHelper.getEmail();
             } else {
-                this.token = localStorage.getItem('token');
                 this.myEmail = localStorage.getItem('userEmail');
-                if (!this.token) {
-                    window.location.replace('/index-new-login.html');
-                    return;
-                }
             }
 
             this.setupUI();
@@ -96,6 +103,20 @@
                     this.searchQuery = e.target.value.toLowerCase().trim();
                     this.renderMessageList();
                 });
+                searchInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const list = document.querySelectorAll('.msg-card');
+                        if (list && list.length > 0) {
+                            list[0].click();
+                        }
+                    } else if (e.key === 'Escape') {
+                        this.searchQuery = '';
+                        searchInput.value = '';
+                        this.renderMessageList();
+                        searchInput.blur();
+                    }
+                });
             }
 
             // Refresh button
@@ -130,6 +151,27 @@
             if (btnSendModal) {
                 btnSendModal.addEventListener('click', () => this.submitCompose());
             }
+
+            // Keyboard Shortcuts in Modal & Global
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    const modal = document.getElementById('composeModalBackdrop');
+                    if (modal && modal.classList.contains('open')) {
+                        this.closeComposeModal();
+                    } else {
+                        const layout = document.querySelector('.msg-layout');
+                        if (layout && layout.classList.contains('detail-open')) {
+                            this.backToFeed();
+                        }
+                    }
+                } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    const modal = document.getElementById('composeModalBackdrop');
+                    if (modal && modal.classList.contains('open')) {
+                        e.preventDefault();
+                        this.submitCompose();
+                    }
+                }
+            });
 
             // Logout
             const btnLogout = document.getElementById('btnLogout');
@@ -291,7 +333,7 @@
             }
 
             listEl.innerHTML = filtered.map(m => {
-                const isSelected = this.activeMessage && this.activeMessage.id === m.id;
+                const isSelected = this.activeMessage && String(this.activeMessage.id) === String(m.id);
                 const isUnread = this.currentFolder === 'inbox' && (!m.messageStatus || m.messageStatus !== 'Read');
                 const displayName = this.currentFolder === 'sent' ? 
                     ('To: ' + (m.recipientEmail || m.receiverEmail)) : 
@@ -300,7 +342,7 @@
                 const timeStr = formatDateTime(m.createdAt || m.sentAt);
 
                 return `
-                    <div class="msg-card ${isSelected ? 'active' : ''} ${isUnread ? 'unread' : ''}" onclick="window.MessagesApp.selectMessage(${m.id})">
+                    <div class="msg-card ${isSelected ? 'active' : ''} ${isUnread ? 'unread' : ''}" data-id="${m.id}" onclick="window.MessagesApp.selectMessage(${m.id})">
                         <div class="msg-card-top">
                             <div class="msg-sender-info">
                                 <span class="msg-sender-name">${escapeHtml(displayName)}</span>
@@ -314,20 +356,51 @@
                 `;
             }).join('');
 
-            // If active message exists, re-highlight or select first if none selected
+            // If an active message was already selected, make sure its detail is rendered
             if (this.activeMessage) {
-                const refreshed = filtered.find(m => m.id === this.activeMessage.id);
-                if (refreshed) this.selectMessage(refreshed.id, false);
+                const refreshed = filtered.find(m => String(m.id) === String(this.activeMessage.id));
+                if (refreshed) {
+                    this.activeMessage = refreshed;
+                    this.renderMessageDetail(refreshed);
+                } else {
+                    this.activeMessage = null;
+                    this.renderDetailEmpty();
+                }
+            } else if (filtered.length > 0 && window.innerWidth > 820) {
+                // Auto-select the first message on desktop so the right pane is never blank
+                this.selectMessage(filtered[0].id, false);
             }
         }
 
+        backToFeed() {
+            const layout = document.querySelector('.msg-layout');
+            if (layout) layout.classList.remove('detail-open');
+            this.activeMessage = null;
+            this.activeContact = null;
+            this.renderMessageList();
+            this.renderDetailEmpty();
+        }
+
         async selectMessage(messageId, markAsRead = true) {
-            const msg = this.messages.find(m => m.id === messageId);
+            const msg = this.messages.find(m => String(m.id) === String(messageId));
             if (!msg) return;
 
             this.activeMessage = msg;
             this.activeContact = null;
-            this.renderMessageList(); // update card active class
+            
+            const layout = document.querySelector('.msg-layout');
+            if (layout) layout.classList.add('detail-open');
+
+            // Update DOM card classes directly without triggering recursive list renders
+            document.querySelectorAll('.msg-card').forEach(card => {
+                if (card.getAttribute('data-id') === String(messageId)) {
+                    card.classList.add('active');
+                    if (markAsRead) card.classList.remove('unread');
+                } else {
+                    card.classList.remove('active');
+                }
+            });
+
             this.renderMessageDetail(msg);
 
             // Mark as read on server if unread and in inbox
@@ -358,7 +431,12 @@
                 <div class="msg-detail-content">
                     <div class="msg-detail-header">
                         <div class="msg-detail-title-row">
-                            <h2 class="msg-detail-subject">${escapeHtml(msg.subject || 'Direct Communication')}</h2>
+                            <div style="display:flex;align-items:center;gap:0.5rem;flex:1;min-width:0;">
+                                <button type="button" class="btn-back-to-feed" onclick="window.MessagesApp.backToFeed()" title="Back to Message List">
+                                    <i class="fa-solid fa-arrow-left"></i> Back
+                                </button>
+                                <h2 class="msg-detail-subject">${escapeHtml(msg.subject || 'Direct Communication')}</h2>
+                            </div>
                             <div class="msg-detail-actions">
                                 <button type="button" class="btn-icon-action" title="Open Conversation Thread" onclick="window.MessagesApp.startChatWith('${escapeJs(counterpartyEmail)}')">
                                     <i class="fa-solid fa-comments"></i>
@@ -557,6 +635,10 @@
 
             this.activeContact = contact;
             this.activeMessage = null;
+
+            const layout = document.querySelector('.msg-layout');
+            if (layout) layout.classList.add('detail-open');
+
             this.renderContactsList();
 
             const paneEl = document.getElementById('msgDetailPane');
@@ -565,9 +647,14 @@
             paneEl.innerHTML = `
                 <div class="thread-container">
                     <div class="thread-header">
-                        <div>
-                            <div style="font-size:0.95rem;font-weight:700;">${escapeHtml(contact.name)}</div>
-                            <div style="font-size:0.75rem;color:#94a3b8;font-family:monospace;">${escapeHtml(contact.email)} • ${escapeHtml(contact.badge || contact.role)}</div>
+                        <div style="display:flex;align-items:center;gap:0.5rem;flex:1;min-width:0;">
+                            <button type="button" class="btn-back-to-feed" onclick="window.MessagesApp.backToFeed()" title="Back to Message List">
+                                <i class="fa-solid fa-arrow-left"></i> Back
+                            </button>
+                            <div>
+                                <div style="font-size:0.95rem;font-weight:700;">${escapeHtml(contact.name)}</div>
+                                <div style="font-size:0.75rem;color:#94a3b8;font-family:monospace;">${escapeHtml(contact.email)} • ${escapeHtml(contact.badge || contact.role)}</div>
+                            </div>
                         </div>
                         <button type="button" class="btn-feed-action" onclick="window.MessagesApp.openComposeModal('${escapeJs(contact.email)}')">
                             <i class="fa-solid fa-pen-to-square"></i> New Subject
@@ -686,6 +773,7 @@
         startPolling() {
             if (this.pollTimer) clearInterval(this.pollTimer);
             this.pollTimer = setInterval(() => {
+                if (document.hidden) return;
                 if (this.activeContact) {
                     this.loadThreadConversation(this.activeContact.email, false);
                 } else if (this.currentFolder === 'inbox') {
@@ -711,7 +799,13 @@
     function formatDateTime(isoStr) {
         if (!isoStr) return '';
         try {
-            const d = new Date(isoStr);
+            let d;
+            if (Array.isArray(isoStr)) {
+                d = new Date(isoStr[0], isoStr[1] - 1, isoStr[2], isoStr[3] || 0, isoStr[4] || 0, isoStr[5] || 0);
+            } else {
+                d = new Date(isoStr);
+            }
+            if (isNaN(d.getTime())) return '';
             const now = new Date();
             if (d.toDateString() === now.toDateString()) {
                 return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });

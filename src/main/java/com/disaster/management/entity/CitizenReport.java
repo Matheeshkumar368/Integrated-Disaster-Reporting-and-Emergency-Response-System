@@ -94,6 +94,12 @@ public class CitizenReport {
     @Column(name = "resolved_at")
     private LocalDateTime resolvedAt;
 
+    @Column(name = "en_route_at")
+    private LocalDateTime enRouteAt;
+
+    @Column(name = "arrived_at")
+    private LocalDateTime arrivedAt;
+
     @Column(name = "cancellation_requested")
     private Boolean cancellationRequested = false;
 
@@ -218,6 +224,12 @@ public class CitizenReport {
 
     public LocalDateTime getResolvedAt() { return resolvedAt; }
     public void setResolvedAt(LocalDateTime resolvedAt) { this.resolvedAt = resolvedAt; }
+
+    public LocalDateTime getEnRouteAt() { return enRouteAt; }
+    public void setEnRouteAt(LocalDateTime enRouteAt) { this.enRouteAt = enRouteAt; }
+
+    public LocalDateTime getArrivedAt() { return arrivedAt; }
+    public void setArrivedAt(LocalDateTime arrivedAt) { this.arrivedAt = arrivedAt; }
 
     public Boolean getCancellationRequested() { return cancellationRequested; }
     public void setCancellationRequested(Boolean cancellationRequested) { this.cancellationRequested = cancellationRequested; }

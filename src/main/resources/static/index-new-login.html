@@ -926,8 +926,17 @@ function login() {
             sessionStorage.clear();
             
             // Proceed with fresh session
+            sessionStorage.setItem("token", data.token);
+            sessionStorage.setItem("userRole", actualRole);
+            sessionStorage.setItem("token_" + actualRole, data.token);
+            sessionStorage.setItem(actualRole.toLowerCase() + "_token", data.token);
+            sessionStorage.setItem("userRole_" + actualRole, actualRole);
+
             localStorage.setItem("token", data.token);
             localStorage.setItem("userRole", actualRole);
+            localStorage.setItem("token_" + actualRole, data.token);
+            localStorage.setItem(actualRole.toLowerCase() + "_token", data.token);
+            localStorage.setItem("userRole_" + actualRole, actualRole);
             if (data.email) localStorage.setItem("userEmail", data.email);
             if (data.name) localStorage.setItem("userName", data.name);
             if (typeof data.sosShortcutEnabled === 'boolean') {

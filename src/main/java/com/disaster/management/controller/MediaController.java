@@ -49,6 +49,9 @@ public class MediaController {
     @Autowired
     private CitizenReportRepository reportRepository;
 
+    @Autowired
+    private com.disaster.management.repository.RescueTaskRepository taskRepository;
+
     @PostMapping("/upload")
     public ResponseEntity<Map<String, Object>> uploadMedia(
             @RequestParam("file") MultipartFile file,
@@ -78,11 +81,21 @@ public class MediaController {
             userName = userOpt.get().getName();
         }
 
+        Long targetIncidentId = incidentId;
+        String targetIncidentType = incidentType != null ? incidentType.trim().toUpperCase() : "CITIZEN_REPORT";
+        if (("TASK".equals(targetIncidentType) || "RESCUE_TASK".equals(targetIncidentType)) && targetIncidentId != null) {
+            Optional<com.disaster.management.entity.RescueTask> taskOpt = taskRepository.findById(targetIncidentId);
+            if (taskOpt.isPresent() && taskOpt.get().getCitizenReportId() != null) {
+                targetIncidentId = taskOpt.get().getCitizenReportId();
+                targetIncidentType = "CITIZEN_REPORT";
+            }
+        }
+
         try {
             IncidentMedia media = mediaService.storeMedia(
                 file,
-                incidentId,
-                incidentType,
+                targetIncidentId,
+                targetIncidentType,
                 userEmail,
                 userName,
                 role,

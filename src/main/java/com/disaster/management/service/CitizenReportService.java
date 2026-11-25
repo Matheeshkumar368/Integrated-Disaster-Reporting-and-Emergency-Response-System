@@ -660,6 +660,184 @@ public class CitizenReportService {
         return null;
     }
 
+    @Transactional
+    public CitizenReport updateReportStatus(Long reportId, String newStatus, String notes, String actorEmail, boolean isAdmin) {
+        CitizenReport report = reportRepository.findById(reportId)
+            .orElseThrow(() -> new IllegalArgumentException("Report not found with ID: " + reportId));
+
+        if (Boolean.TRUE.equals(report.getIsDeleted())) {
+            throw new IllegalStateException("Cannot update status of a deleted or archived report");
+        }
+
+        if (!isAdmin) {
+            boolean isAssignedResponder = report.getAssignedResponderEmail() != null
+                && report.getAssignedResponderEmail().equalsIgnoreCase(actorEmail);
+            if (!isAssignedResponder) {
+                throw new SecurityException("Unauthorized: Only the assigned responder or Admin can update incident status");
+            }
+        }
+
+        String target = newStatus != null ? newStatus.trim() : "";
+        if (target.isEmpty()) {
+            throw new IllegalArgumentException("Status cannot be empty");
+        }
+
+        String normalizedStatus = target;
+        String normalizedStage = target;
+        LocalDateTime now = LocalDateTime.now();
+
+        if (target.equalsIgnoreCase("En Route") || target.equalsIgnoreCase("On the Way")) {
+            normalizedStatus = "In Progress";
+            normalizedStage = "En Route";
+            if (report.getEnRouteAt() == null) {
+                report.setEnRouteAt(now);
+            }
+        } else if (target.equalsIgnoreCase("Arrived") || target.equalsIgnoreCase("On Scene") || target.equalsIgnoreCase("Reached Location")) {
+            normalizedStatus = "In Progress";
+            normalizedStage = "On Scene";
+            if (report.getArrivedAt() == null) {
+                report.setArrivedAt(now);
+            }
+        } else if (target.equalsIgnoreCase("In Progress") || target.equalsIgnoreCase("Assistance in Progress")) {
+            normalizedStatus = "In Progress";
+            normalizedStage = "On Scene";
+        } else if (target.equalsIgnoreCase("Completed") || target.equalsIgnoreCase("Resolved")) {
+            normalizedStatus = "Resolved";
+            normalizedStage = "Resolved";
+            if (report.getResolvedAt() == null) {
+                report.setResolvedAt(now);
+            }
+        } else if (target.equalsIgnoreCase("Acknowledged") || target.equalsIgnoreCase("Accepted")) {
+            normalizedStatus = "Acknowledged";
+            normalizedStage = "Assigned";
+            if (report.getAcknowledgedAt() == null) {
+                report.setAcknowledgedAt(now);
+            }
+        }
+
+        report.setStatus(normalizedStatus);
+        report.setProgressStage(normalizedStage);
+
+        if (notes != null && !notes.trim().isEmpty()) {
+            String existing = report.getMessage() != null ? report.getMessage() : "";
+            report.setMessage(existing + "\n[Status Update: " + normalizedStage + " by " + actorEmail + " at " + now + "]: " + notes.trim());
+        }
+
+        CitizenReport saved = reportRepository.save(report);
+
+        // Synchronize linked tasks
+        try {
+            List<RescueTask> tasks = taskRepository.findByCitizenReportId(reportId);
+            for (RescueTask t : tasks) {
+                if (normalizedStage.equalsIgnoreCase("En Route")) {
+                    t.setStatus("En Route");
+                    if (t.getEnRouteAt() == null) t.setEnRouteAt(now);
+                } else if (normalizedStage.equalsIgnoreCase("On Scene")) {
+                    t.setStatus("Arrived");
+                    if (t.getArrivedAt() == null) t.setArrivedAt(now);
+                } else if (normalizedStatus.equalsIgnoreCase("Resolved")) {
+                    t.setStatus("Completed");
+                    if (t.getCompletedAt() == null) t.setCompletedAt(now);
+                }
+                taskRepository.save(t);
+            }
+        } catch (Exception e) {
+            log.warn("Task sync warning during updateReportStatus: {}", e.getMessage());
+        }
+
+        // Notify citizen and admins
+        if (notificationService != null) {
+            try {
+                if (saved.getCitizenEmail() != null) {
+                    notificationService.notifyCitizen(
+                        saved.getCitizenEmail(),
+                        "Incident Status: " + normalizedStage,
+                        "Your distress report #" + reportId + " is now: " + normalizedStage + (notes != null && !notes.trim().isEmpty() ? " (" + notes.trim() + ")" : ""),
+                        "RESPONSE",
+                        "Medium",
+                        saved.getReportId(),
+                        "CITIZEN_REPORT",
+                        "citizen-dashboard.html"
+                    );
+                }
+                notificationService.notifyAdmins(
+                    "Report Status Updated",
+                    "Incident #" + reportId + " status updated to " + normalizedStage + " by " + actorEmail,
+                    "UPDATE",
+                    "Medium",
+                    reportId,
+                    "CITIZEN_REPORT",
+                    "admin-dashboard.html"
+                );
+            } catch (Exception e) {
+                log.warn("Notification dispatch warning in updateReportStatus: {}", e.getMessage());
+            }
+        }
+
+        return saved;
+    }
+
+    @Transactional
+    public CitizenReport rejectAssignment(Long reportId, String reason, String responderEmail, boolean isAdmin) {
+        CitizenReport report = reportRepository.findById(reportId)
+            .orElseThrow(() -> new IllegalArgumentException("Report not found with ID: " + reportId));
+
+        if (!isAdmin) {
+            boolean isAssigned = report.getAssignedResponderEmail() != null
+                && report.getAssignedResponderEmail().equalsIgnoreCase(responderEmail);
+            if (!isAssigned) {
+                throw new SecurityException("Unauthorized: Only the assigned responder can reject an assignment");
+            }
+        }
+
+        String assignedUnit = report.getAssignedResponderName() != null ? report.getAssignedResponderName() : responderEmail;
+        String rejReason = (reason != null && !reason.trim().isEmpty()) ? reason.trim() : "Responder unavailable";
+
+        report.setStatus("Pending");
+        report.setProgressStage("Pending");
+        report.setRejectionReason(rejReason);
+        report.setAssignedResponderEmail(null);
+        report.setAssignedResponderName(null);
+        report.setAssignedResponderPhone(null);
+        report.setAcknowledgedAt(null);
+
+        String existing = report.getMessage() != null ? report.getMessage() : "";
+        report.setMessage(existing + "\n[ASSIGNMENT REJECTED by " + assignedUnit + " at " + LocalDateTime.now() + "]: " + rejReason);
+
+        CitizenReport saved = reportRepository.save(report);
+
+        // Cancel/reset linked task
+        try {
+            List<RescueTask> tasks = taskRepository.findByCitizenReportId(reportId);
+            for (RescueTask t : tasks) {
+                t.setStatus("Rejected");
+                t.setNotes((t.getNotes() != null ? t.getNotes() : "") + "\n[Rejected by responder: " + rejReason + "]");
+                taskRepository.save(t);
+            }
+        } catch (Exception e) {
+            log.warn("Task update warning during rejectAssignment: {}", e.getMessage());
+        }
+
+        // Notify Admins for immediate reassignment
+        if (notificationService != null) {
+            try {
+                notificationService.notifyAdmins(
+                    "Assignment Rejected - Action Needed",
+                    "Responder " + assignedUnit + " rejected assignment for Incident #" + reportId + ". Reason: " + rejReason + ". Please reassign immediately.",
+                    "ALERT",
+                    "High",
+                    reportId,
+                    "CITIZEN_REPORT",
+                    "admin-dashboard.html"
+                );
+            } catch (Exception e) {
+                log.warn("Admin notification warning in rejectAssignment: {}", e.getMessage());
+            }
+        }
+
+        return saved;
+    }
+
     public long countPendingReports() {
         return reportRepository.countByStatus("Pending");
     }
