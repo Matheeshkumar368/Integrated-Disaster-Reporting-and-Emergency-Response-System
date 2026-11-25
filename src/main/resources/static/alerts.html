@@ -283,7 +283,7 @@
 <script src="auth-helper.js?v=2"></script>
 <script src="/js/emergency-alert.js?v=4.1"></script>
 <script>
-    const token = localStorage.getItem('token');
+    const token = (window.AuthHelper && window.AuthHelper.getToken()) || localStorage.getItem('token') || sessionStorage.getItem('token');
     let userRole = 'Citizen';
 
     if (token) {

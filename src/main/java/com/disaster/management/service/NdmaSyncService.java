@@ -514,11 +514,11 @@ public class NdmaSyncService {
             notificationService.notifyAdmins(
                 "Official NDMA Alert: " + alert.getHazardType(),
                 "[" + (alert.getSourceAgency() != null ? alert.getSourceAgency() : "NDMA SACHET") + "] " + alert.getHeadline(),
-                "ALERTS",
+                "NDMA_ALERT",
                 prio,
                 alert.getId(),
-                "OFFICIAL_ALERT",
-                "admin-dashboard.html"
+                "NDMA_ALERT",
+                "admin-notifications.html"
             );
 
             // 2. If alert is in Tamil Nadu or mentions local operational districts, notify Citizens & Responders
@@ -526,10 +526,10 @@ public class NdmaSyncService {
                 notificationService.notifyAllCitizens(
                     "Official Weather Warning: " + alert.getHazardType(),
                     alert.getHeadline() != null ? alert.getHeadline() : alert.getDescription(),
-                    "ALERTS",
+                    "NDMA_ALERT",
                     prio,
                     alert.getId(),
-                    "OFFICIAL_ALERT",
+                    "NDMA_ALERT",
                     "citizen-notifications.html"
                 );
             }

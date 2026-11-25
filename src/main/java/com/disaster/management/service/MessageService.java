@@ -3,7 +3,6 @@ package com.disaster.management.service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -116,15 +115,22 @@ public class MessageService {
         if (authEmail == null || authEmail.trim().isEmpty()) {
             throw new AccessDeniedException("Forbidden: Insufficient privileges for this resource");
         }
-        if (messageInput == null || messageInput.getMessage() == null || messageInput.getMessage().trim().isEmpty()) {
+        if (messageInput == null) {
+            throw new IllegalArgumentException("Message payload cannot be empty.");
+        }
+
+        String rawBody = messageInput.getMessageBody() != null ? messageInput.getMessageBody() : messageInput.getMessage();
+        if (rawBody == null || rawBody.trim().isEmpty()) {
             throw new IllegalArgumentException("Message text cannot be empty.");
         }
-        if (messageInput.getReceiverEmail() == null || messageInput.getReceiverEmail().trim().isEmpty()) {
-            throw new IllegalArgumentException("Receiver email is required.");
+
+        String targetRecipient = messageInput.getRecipientEmail() != null ? messageInput.getRecipientEmail() : messageInput.getReceiverEmail();
+        if (targetRecipient == null || targetRecipient.trim().isEmpty()) {
+            throw new IllegalArgumentException("Recipient email is required.");
         }
 
         String senderEmail = authEmail.trim().toLowerCase();
-        String receiverEmail = messageInput.getReceiverEmail().trim().toLowerCase();
+        String receiverEmail = targetRecipient.trim().toLowerCase();
         String senderRole = normalizeRole(authRole);
 
         User receiverUser = userRepository.findByEmail(receiverEmail)
@@ -179,31 +185,42 @@ public class MessageService {
         msg.setSenderEmail(senderEmail);
         msg.setSenderRole(senderRole);
         userRepository.findByEmail(senderEmail).ifPresent(u -> msg.setSenderName(u.getName()));
-        msg.setReceiverEmail(receiverEmail);
-        msg.setReceiverRole(receiverRole);
-        msg.setMessage(messageInput.getMessage().trim());
+        msg.setRecipientEmail(receiverEmail);
+        msg.setRecipientRole(receiverRole);
+
+        String subject = messageInput.getSubject();
+        if (subject == null || subject.trim().isEmpty()) {
+            subject = "Direct Communication";
+        }
+        msg.setSubject(subject.trim());
+        msg.setMessageBody(rawBody.trim());
         msg.setRelatedAlertId(messageInput.getRelatedAlertId());
-        msg.setSentAt(LocalDateTime.now());
-        msg.setStatus("Sent");
+        msg.setCreatedAt(LocalDateTime.now());
+        msg.setMessageStatus("Sent");
+        msg.setIsDeletedBySender(false);
+        msg.setIsDeletedByRecipient(false);
 
         Message saved = messageRepository.save(msg);
-        log.info("Message #{} dispatched successfully from [{}] to [{}]", saved.getMessageId(), senderEmail, receiverEmail);
+        log.info("Message #{} dispatched successfully from [{}] to [{}] with subject [{}]", saved.getId(), senderEmail, receiverEmail, saved.getSubject());
 
         if (notificationService != null) {
             try {
                 String senderDisplayName = msg.getSenderName() != null ? msg.getSenderName() : senderEmail;
-                String targetPage = "admin-notifications.html";
-                if ("Citizen".equalsIgnoreCase(receiverRole)) targetPage = "citizen-notifications.html";
-                else if ("Responder".equalsIgnoreCase(receiverRole)) targetPage = "responder-notifications.html";
+                String targetPage = "admin-messages.html";
+                if ("Citizen".equalsIgnoreCase(receiverRole)) targetPage = "citizen-messages.html";
+                else if ("Responder".equalsIgnoreCase(receiverRole)) targetPage = "responder-messages.html";
+
+                String notifTitle = (senderRole.equalsIgnoreCase("Admin") ? "Admin Message: " : "Message from ") 
+                        + senderDisplayName + " — " + saved.getSubject();
 
                 notificationService.createNotification(
                     receiverEmail,
                     receiverRole,
-                    "New Message from " + senderDisplayName,
-                    msg.getMessage(),
-                    "UPDATE",
+                    notifTitle,
+                    saved.getMessageBody(),
+                    "DIRECT_MESSAGE",
                     "Medium",
-                    saved.getMessageId(),
+                    saved.getId(),
                     "MESSAGE",
                     targetPage
                 );
@@ -213,6 +230,22 @@ public class MessageService {
         }
 
         return saved;
+    }
+
+    /**
+     * Retrieve inbox messages for authenticated user.
+     */
+    public List<Message> getInbox(String authEmail) {
+        if (authEmail == null || authEmail.trim().isEmpty()) return Collections.emptyList();
+        return messageRepository.findInbox(authEmail.trim().toLowerCase());
+    }
+
+    /**
+     * Retrieve sent messages for authenticated user.
+     */
+    public List<Message> getSent(String authEmail) {
+        if (authEmail == null || authEmail.trim().isEmpty()) return Collections.emptyList();
+        return messageRepository.findSent(authEmail.trim().toLowerCase());
     }
 
     /**
@@ -274,6 +307,66 @@ public class MessageService {
     }
 
     /**
+     * Mark a single message as read.
+     */
+    @Transactional
+    public Message markAsRead(Long id, String authEmail) {
+        if (id == null || authEmail == null) {
+            throw new IllegalArgumentException("Message ID and user email required.");
+        }
+        Message msg = messageRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Message not found"));
+
+        if (!authEmail.trim().equalsIgnoreCase(msg.getRecipientEmail())) {
+            throw new AccessDeniedException("Forbidden: Insufficient privileges for this resource");
+        }
+
+        msg.setMessageStatus("Read");
+        msg.setReadAt(LocalDateTime.now());
+        return messageRepository.save(msg);
+    }
+
+    /**
+     * Soft delete a message for sender or recipient.
+     */
+    @Transactional
+    public void deleteMessage(Long id, String authEmail) {
+        if (id == null || authEmail == null) {
+            throw new IllegalArgumentException("Message ID and user email required.");
+        }
+        Message msg = messageRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Message not found"));
+
+        String email = authEmail.trim().toLowerCase();
+        boolean isSender = email.equalsIgnoreCase(msg.getSenderEmail());
+        boolean isRecipient = email.equalsIgnoreCase(msg.getRecipientEmail());
+
+        if (!isSender && !isRecipient && !isAdmin(authEmail)) {
+            throw new AccessDeniedException("Forbidden: Insufficient privileges for this resource");
+        }
+
+        if (isSender) {
+            msg.setIsDeletedBySender(true);
+        }
+        if (isRecipient) {
+            msg.setIsDeletedByRecipient(true);
+        }
+        if (Boolean.TRUE.equals(msg.getIsDeletedBySender()) && Boolean.TRUE.equals(msg.getIsDeletedByRecipient())) {
+            messageRepository.delete(msg);
+        } else {
+            messageRepository.save(msg);
+        }
+    }
+
+    /**
+     * Get count of unread messages for authenticated user.
+     */
+    public long getUnreadCount(String authEmail) {
+        if (authEmail == null || authEmail.trim().isEmpty()) return 0;
+        return messageRepository.countUnreadMessages(authEmail.trim().toLowerCase());
+    }
+
+    /**
      * Retrieve thread between user1 and user2.
      * Prevents any user from viewing third-party conversations unless Admin.
      */
@@ -304,26 +397,24 @@ public class MessageService {
     }
 
     /**
-     * Get sent messages for authenticated user.
+     * Get sent messages for authenticated user (legacy).
      */
     public List<Message> getSentMessages(String authEmail) {
-        if (authEmail == null) return Collections.emptyList();
-        return messageRepository.findBySenderEmailOrderBySentAtDesc(authEmail.trim().toLowerCase());
+        return getSent(authEmail);
     }
 
     /**
-     * Get received messages for authenticated user.
+     * Get received messages for authenticated user (legacy).
      */
     public List<Message> getReceivedMessages(String authEmail) {
-        if (authEmail == null) return Collections.emptyList();
-        return messageRepository.findByReceiverEmailOrderBySentAtDesc(authEmail.trim().toLowerCase());
+        return getInbox(authEmail);
     }
 
     /**
      * Get broadcast messages for Responders.
      */
     public List<Message> getMessagesForResponders() {
-        return messageRepository.findByReceiverRoleOrderBySentAtDesc("Responder");
+        return messageRepository.findByRecipientRoleOrderByCreatedAtDesc("Responder");
     }
 
     /**
@@ -430,4 +521,3 @@ public class MessageService {
         return contacts;
     }
 }
-

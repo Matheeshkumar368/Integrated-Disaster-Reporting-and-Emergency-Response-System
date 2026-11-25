@@ -151,6 +151,7 @@ public class SecurityConfig {
                     "/api/official-alerts/**",
                     "/api/disasters/**",
                     "/api/weather/**",
+                    "/api/system/**",
                     "/actuator/health",
                     "/actuator/info"
                 ).permitAll()
@@ -176,48 +177,53 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/alerts", "/api/alerts/**").hasAnyRole("Admin", "ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/alerts/*", "/api/alerts/**").hasAnyRole("Admin", "ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/alerts/**").hasAnyRole("Admin", "ADMIN")
-                .requestMatchers(HttpMethod.POST, "/api/tasks").hasRole("Admin")
-                .requestMatchers(HttpMethod.POST, "/api/tasks/*/assign").hasRole("Admin")
-                .requestMatchers(HttpMethod.PUT, "/api/tasks/*/assign").hasRole("Admin")
-                .requestMatchers(HttpMethod.DELETE, "/api/tasks/**").hasRole("Admin")
-                .requestMatchers(HttpMethod.POST, "/api/emergency-videos/**").hasRole("Admin")
-                .requestMatchers(HttpMethod.PUT, "/api/emergency-videos/**").hasRole("Admin")
-                .requestMatchers(HttpMethod.DELETE, "/api/emergency-videos/**").hasRole("Admin")
-                .requestMatchers("/api/reports/export/**").hasRole("Admin")
-                .requestMatchers("/api/auth/admin/**").hasRole("Admin")
-                .requestMatchers("/api/auth/users", "/api/auth/users/**").hasRole("Admin")
-                .requestMatchers("/api/admin/**").hasRole("Admin")
-                .requestMatchers("/api/auth/responders/**").hasRole("Admin")
-                .requestMatchers("/api/auth/assign-zone").hasRole("Admin")
+                .requestMatchers(HttpMethod.POST, "/api/tasks").hasAnyRole("Admin", "ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/tasks/*/assign").hasAnyRole("Admin", "ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/tasks/*/assign").hasAnyRole("Admin", "ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/tasks/**").hasAnyRole("Admin", "ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/emergency-videos/**").hasAnyRole("Admin", "ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/emergency-videos/**").hasAnyRole("Admin", "ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/emergency-videos/**").hasAnyRole("Admin", "ADMIN")
+                .requestMatchers("/api/reports/export/**").hasAnyRole("Admin", "ADMIN")
+                .requestMatchers("/api/auth/admin/**").hasAnyRole("Admin", "ADMIN")
+                .requestMatchers("/api/auth/users", "/api/auth/users/**").hasAnyRole("Admin", "ADMIN")
+                .requestMatchers("/api/admin/**").hasAnyRole("Admin", "ADMIN")
+                .requestMatchers("/api/auth/responders/**").hasAnyRole("Admin", "ADMIN")
+                .requestMatchers("/api/auth/assign-zone").hasAnyRole("Admin", "ADMIN")
 
-                // Citizen Reporting
-                .requestMatchers(HttpMethod.POST, "/api/citizen-reports").hasAnyRole("Citizen", "Admin")
-                .requestMatchers("/api/citizen-reports/my-reports").hasAnyRole("Citizen", "Admin")
-                .requestMatchers(HttpMethod.GET, "/api/citizen-reports", "/api/citizen-reports/paged").hasAnyRole("Admin", "Responder")
+                // Citizen Reporting (Strictly Citizen role)
+                .requestMatchers(HttpMethod.POST, "/api/citizen-reports").hasAnyRole("Citizen", "CITIZEN")
+                .requestMatchers("/api/citizen-reports/my-reports").hasAnyRole("Citizen", "CITIZEN")
+                .requestMatchers(HttpMethod.GET, "/api/citizen-reports", "/api/citizen-reports/paged").hasAnyRole("Admin", "ADMIN", "Responder", "RESPONDER")
 
                 // Responder & Admin Rescue Operations
-                .requestMatchers(HttpMethod.PUT, "/api/alerts/*/acknowledge").hasAnyRole("Responder", "Admin")
-                .requestMatchers("/api/citizen-reports/pending").hasAnyRole("Responder", "Admin")
-                .requestMatchers(HttpMethod.PUT, "/api/citizen-reports/*/acknowledge").hasAnyRole("Responder", "Admin")
-                .requestMatchers(HttpMethod.PUT, "/api/citizen-reports/*/resolve").hasAnyRole("Responder", "Admin")
-                .requestMatchers("/api/reports/my-reports").hasAnyRole("Responder", "Admin")
-                .requestMatchers("/api/tasks/my-tasks").hasAnyRole("Responder", "Admin")
-                .requestMatchers("/api/auth/responder/**").hasAnyRole("Responder", "Admin")
-                .requestMatchers("/api/responder/location/**").hasAnyRole("Responder", "Admin")
+                .requestMatchers(HttpMethod.PUT, "/api/alerts/*/acknowledge").hasAnyRole("Responder", "RESPONDER", "Admin", "ADMIN")
+                .requestMatchers("/api/citizen-reports/pending").hasAnyRole("Responder", "RESPONDER", "Admin", "ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/citizen-reports/*/acknowledge").hasAnyRole("Responder", "RESPONDER", "Admin", "ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/citizen-reports/*/resolve").hasAnyRole("Responder", "RESPONDER", "Admin", "ADMIN")
+                .requestMatchers("/api/reports/my-reports").hasAnyRole("Responder", "RESPONDER", "Admin", "ADMIN")
+                .requestMatchers("/api/tasks/my-tasks").hasAnyRole("Responder", "RESPONDER", "Admin", "ADMIN")
+                .requestMatchers("/api/auth/responder/**").hasAnyRole("Responder", "RESPONDER", "Admin", "ADMIN")
+                .requestMatchers("/api/responder/location/**").hasAnyRole("Responder", "RESPONDER", "Admin", "ADMIN")
 
-                // Live Tracking, Incident Room, Media Management & Routing
+                // Live Tracking, Incident Room, Media Management, Emergency Calls & Routing
                 .requestMatchers(HttpMethod.GET, "/api/media/file/**", "/api/media/*/download").permitAll()
                 .requestMatchers("/api/tracking/**").authenticated()
                 .requestMatchers("/api/media/**").authenticated()
                 .requestMatchers("/api/incidents/**").authenticated()
+                .requestMatchers("/api/calls/**").authenticated()
                 .requestMatchers("/api/routing/**").authenticated()
 
                 // General Authenticated Endpoints
                 .requestMatchers("/api/citizen-reports/**").authenticated()
                 .requestMatchers("/api/reports/**").authenticated()
                 .requestMatchers("/api/tasks/**").authenticated()
-                .requestMatchers("/api/messages", "/api/messages/**").hasAnyRole("Citizen", "Responder", "Admin")
-                .requestMatchers("/api/notifications", "/api/notifications/**").hasAnyRole("Citizen", "Responder", "Admin")
+                // Role-Specific Notification Endpoints with Strict Role Isolation
+                .requestMatchers("/api/notifications/admin", "/api/notifications/admin/**").hasAnyRole("Admin", "ADMIN")
+                .requestMatchers("/api/notifications/citizen", "/api/notifications/citizen/**").hasAnyRole("Citizen", "CITIZEN")
+                .requestMatchers("/api/notifications/responder", "/api/notifications/responder/**").hasAnyRole("Responder", "RESPONDER")
+                .requestMatchers("/api/messages", "/api/messages/**").hasAnyRole("Citizen", "CITIZEN", "Responder", "RESPONDER", "Admin", "ADMIN")
+                .requestMatchers("/api/notifications", "/api/notifications/**").hasAnyRole("Citizen", "CITIZEN", "Responder", "RESPONDER", "Admin", "ADMIN")
                 .requestMatchers("/api/auth/profile").authenticated()
                 .requestMatchers("/api/auth/update-profile").authenticated()
                 .requestMatchers("/api/auth/sos-settings/**").authenticated()

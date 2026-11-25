@@ -34,6 +34,7 @@ import com.disaster.management.repository.CitizenReportRepository;
 import com.disaster.management.repository.RescueTaskRepository;
 import com.disaster.management.repository.UserRepository;
 import com.disaster.management.security.JwtUtil;
+import com.disaster.management.security.RoleUtil;
 import com.disaster.management.dto.BackupCodeSetupDto;
 import com.disaster.management.dto.PinRecoveryDto;
 import com.disaster.management.dto.UserRegistrationDto;
@@ -146,17 +147,25 @@ public class AuthController {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
             }
 
+            String canonicalRole = RoleUtil.normalizeRole(user.getRole());
+            if (canonicalRole == null) {
+                response.put("status", "error");
+                response.put("message", "Account role is invalid or not recognized");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+            }
+
             if (passwordEncoder.matches(password, user.getPassword())) {
                 // Reset failed attempts on success
                 loginAttempts.remove(normalizedEmail);
                 user.setLastLoginAt(LocalDateTime.now());
                 userRepository.save(user);
 
-                String token = jwtUtil.generateToken(user.getEmail(), user.getRole(), user.getName());
+                String token = jwtUtil.generateToken(user.getEmail(), canonicalRole, user.getName());
                 response.put("status", "success");
                 response.put("message", "Login successful");
                 response.put("token", token);
-                response.put("role", user.getRole());
+                response.put("role", canonicalRole);
+                response.put("email", user.getEmail());
                 response.put("name", user.getName() != null ? user.getName() : user.getEmail().split("@")[0]);
                 response.put("adminPinEnrolled", user.getAdminPinEnrolled());
                 response.put("sosShortcutEnabled", user.getSosShortcutEnabled());
@@ -209,13 +218,20 @@ public class AuthController {
 
         if (userOptional.isPresent()) {
             User user = userOptional.get();
+            if (Boolean.FALSE.equals(user.getActive())) {
+                response.put("status", "error");
+                response.put("message", "User account deactivated");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+            }
+            String canonicalRole = RoleUtil.normalizeRole(user.getRole());
             response.put("status", "success");
             response.put("id", user.getId());
             response.put("name", user.getName());
             response.put("email", user.getEmail());
             response.put("phone", user.getPhone());
             response.put("location", user.getLocation());
-            response.put("role", user.getRole());
+            response.put("role", canonicalRole != null ? canonicalRole : user.getRole());
+            response.put("active", user.getActive() == null || user.getActive());
             response.put("assignedZone", user.getAssignedZone());
             response.put("availabilityStatus", user.getAvailabilityStatus() != null ? user.getAvailabilityStatus() : "Available");
             response.put("adminPinEnrolled", user.getAdminPinEnrolled());

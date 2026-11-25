@@ -63,6 +63,7 @@
         startPolling() {
             this.stopPolling();
             this.pollTimer = setInterval(() => {
+                if (document.hidden) return;
                 if (this.activeContact && this.modalEl && this.modalEl.style.display === 'flex') {
                     this.loadConversation(this.activeContact.email, false);
                 }
@@ -161,8 +162,19 @@
             }, 100);
         }
 
+        getToken() {
+            if (window.AuthHelper && typeof window.AuthHelper.getToken === 'function') {
+                const t = window.AuthHelper.getToken();
+                if (t) return t;
+            }
+            return sessionStorage.getItem('token_Citizen') || sessionStorage.getItem('token_Admin') || sessionStorage.getItem('token_Responder') ||
+                   localStorage.getItem('token_Citizen') || localStorage.getItem('token_Admin') || localStorage.getItem('token_Responder') ||
+                   sessionStorage.getItem('token') || localStorage.getItem('token') ||
+                   sessionStorage.getItem('citizen_token') || sessionStorage.getItem('admin_token') || sessionStorage.getItem('responder_token') || '';
+        }
+
         async loadContacts() {
-            const token = localStorage.getItem('token');
+            const token = this.getToken();
             if (!token) return;
 
             try {
@@ -250,7 +262,7 @@
         }
 
         async loadConversation(email, scrollToBottom = true) {
-            const token = localStorage.getItem('token');
+            const token = this.getToken();
             if (!token || !email) return;
 
             const streamEl = document.getElementById('dm-messages-stream');
@@ -330,7 +342,7 @@
             const text = input.value.trim();
             if (!text) return;
 
-            const token = localStorage.getItem('token');
+            const token = this.getToken();
             if (!token) {
                 alert('Authentication required.');
                 return;

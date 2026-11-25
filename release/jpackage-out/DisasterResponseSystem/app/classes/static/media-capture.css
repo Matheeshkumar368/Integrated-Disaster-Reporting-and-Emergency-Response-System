@@ -1,0 +1,389 @@
+/* ==============================================================================
+   MEDIA CAPTURE & EVIDENCE PIPELINE STYLES
+   Disaster Management & Alert System - Cinematic Command Center
+   ============================================================================== */
+
+.media-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(4, 8, 16, 0.88);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.media-modal-backdrop.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.media-modal-container {
+    background: linear-gradient(145deg, rgba(16, 26, 46, 0.96), rgba(8, 14, 28, 0.98));
+    border: 1px solid rgba(0, 229, 255, 0.3);
+    border-radius: 14px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 30px rgba(0, 229, 255, 0.15);
+    width: 100%;
+    max-width: 580px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    color: #e2e8f0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    animation: mediaModalSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes mediaModalSlideIn {
+    from {
+        transform: translateY(20px) scale(0.97);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+.media-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    background: rgba(10, 18, 32, 0.85);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.media-modal-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #00e5ff;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.media-modal-close {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.4rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.media-modal-close:hover {
+    color: #ff3366;
+    background: rgba(255, 51, 102, 0.15);
+}
+
+.media-modal-body {
+    padding: 1.25rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Tabs: Photo, Video, Upload File */
+.media-tabs {
+    display: flex;
+    background: rgba(4, 9, 20, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 3px;
+}
+
+.media-tab-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    padding: 0.55rem 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    transition: all 0.2s ease;
+}
+
+.media-tab-btn.active {
+    background: rgba(0, 229, 255, 0.18);
+    color: #00e5ff;
+    border: 1px solid rgba(0, 229, 255, 0.35);
+    box-shadow: 0 0 10px rgba(0, 229, 255, 0.15);
+}
+
+/* Camera Viewport */
+.camera-viewport-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background: #000;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(0, 229, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.camera-preview-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.camera-preview-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #050b14;
+}
+
+/* Recording HUD Indicator */
+.recording-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: rgba(255, 34, 68, 0.85);
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 0 12px rgba(255, 34, 68, 0.6);
+    animation: recordingPulse 1.2s infinite;
+}
+
+@keyframes recordingPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.camera-switch-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(10, 20, 36, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #fff;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.camera-switch-btn:hover {
+    background: rgba(0, 229, 255, 0.3);
+    border-color: #00e5ff;
+}
+
+/* Telemetry pill overlay */
+.telemetry-overlay {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+    background: rgba(5, 10, 22, 0.75);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 0.72rem;
+    color: #cbd5e1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.gps-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981;
+}
+
+.gps-status-dot.searching {
+    background: #f59e0b;
+    box-shadow: 0 0 8px #f59e0b;
+    animation: recordingPulse 1s infinite;
+}
+
+/* Action Controls Bar */
+.capture-controls-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding-top: 0.5rem;
+}
+
+.btn-capture-shutter {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: #fff;
+    border: 4px solid rgba(0, 229, 255, 0.8);
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.btn-capture-shutter:hover {
+    transform: scale(1.06);
+    box-shadow: 0 0 25px rgba(0, 229, 255, 0.7);
+}
+
+.btn-capture-shutter:active {
+    transform: scale(0.94);
+}
+
+.btn-capture-shutter.recording {
+    background: #ff2244;
+    border-color: #fff;
+    box-shadow: 0 0 20px rgba(255, 34, 68, 0.8);
+    border-radius: 12px;
+}
+
+.btn-media-secondary {
+    background: rgba(255, 255, 255, 0.08);
+    color: #cbd5e1;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 0.55rem 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-media-secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+}
+
+/* Metadata Fields (Caption, Category) */
+.media-meta-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.media-input-group label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.media-input-text {
+    width: 100%;
+    background: rgba(4, 9, 20, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 0.6rem 0.8rem;
+    color: #f1f5f9;
+    font-size: 0.9rem;
+    transition: border-color 0.2s;
+}
+
+.media-input-text:focus {
+    outline: none;
+    border-color: #00e5ff;
+    box-shadow: 0 0 8px rgba(0, 229, 255, 0.3);
+}
+
+/* Modal Footer */
+.media-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    background: rgba(10, 18, 32, 0.95);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.btn-media-upload-confirm {
+    background: linear-gradient(135deg, #00e5ff, #0077ff);
+    color: #030a16;
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 0.65rem 1.4rem;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 4px 15px rgba(0, 229, 255, 0.3);
+    transition: all 0.2s;
+}
+
+.btn-media-upload-confirm:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0, 229, 255, 0.5);
+}
+
+.btn-media-upload-confirm:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Upload Dropzone fallback */
+.media-dropzone {
+    border: 2px dashed rgba(0, 229, 255, 0.35);
+    border-radius: 10px;
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    background: rgba(4, 10, 22, 0.5);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.media-dropzone:hover {
+    border-color: #00e5ff;
+    background: rgba(0, 229, 255, 0.05);
+}
+
+.media-dropzone-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+

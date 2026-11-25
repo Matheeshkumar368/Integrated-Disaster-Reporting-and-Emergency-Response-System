@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover"/>
+    <meta name="theme-color" content="#070b14"/>
+    <link rel="icon" type="image/png" href="/icons/icon-192.png"/>
+    <title>Field Communications — Emergency Operations | FIREBOY</title>
+
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+    <!-- Design System & Scripts -->
+    <link rel="stylesheet" href="toast-manager.css?v=2" />
+    <script src="toast-manager.js?v=2"></script>
+    <script src="auth-helper.js?v=2"></script>
+
+    <!-- Dedicated Messaging Stylesheet -->
+    <link rel="stylesheet" href="messages.css?v=1" />
+</head>
+<body class="theme-responder">
+    <!-- Top Sticky Header -->
+    <header class="msg-header">
+        <div class="msg-header-left">
+            <a href="responder-dashboard.html" class="btn-nav-dashboard" id="btnGoDashboard" title="Return to Field Operations Hub">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span>Dashboard</span>
+            </a>
+            <div class="msg-title-block">
+                <div class="msg-title-row">
+                    <i class="fa-solid fa-comments text-accent" style="color:#f97316;"></i>
+                    <h1 class="msg-title">Field Operations Communications</h1>
+                    <span class="msg-role-badge role-responder"><i class="fa-solid fa-truck-medical"></i> Field Responder</span>
+                </div>
+                <div class="msg-subtitle" id="msgSubtitle">
+                    <span class="unread-highlight">0 unread</span> • Tactical dispatch with Central Command and assigned rescued victims
+                </div>
+            </div>
+        </div>
+
+        <div class="msg-header-right">
+            <button type="button" class="btn-compose-main" id="btnComposeMessage" style="background:linear-gradient(135deg, #f97316, #ea580c);color:#fff;">
+                <i class="fa-solid fa-plus"></i> Transmit SitRep
+            </button>
+            <div class="msg-clock-pill">
+                <i class="fa-regular fa-clock"></i>
+                <span id="liveClockDisplay">Live Clock</span>
+            </div>
+            <div class="msg-user-pill">
+                <div class="msg-avatar" id="userAvatarDisplay" style="border-color:#f97316;color:#f97316;">R</div>
+                <button class="msg-logout-btn" id="btnLogout" title="Sign Out">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Layout -->
+    <main class="msg-layout">
+        <!-- Sidebar: Folders & Contacts -->
+        <aside class="msg-sidebar">
+            <div class="nav-folders">
+                <button type="button" class="folder-btn active" data-folder="inbox">
+                    <div class="folder-btn-left">
+                        <i class="fa-solid fa-inbox"></i>
+                        <span>Operational Inbox</span>
+                    </div>
+                    <span class="badge-count" id="inboxUnreadBadge">0</span>
+                </button>
+                <button type="button" class="folder-btn" data-folder="sent">
+                    <div class="folder-btn-left">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <span>Transmitted SitReps</span>
+                    </div>
+                </button>
+            </div>
+
+            <div class="contacts-header">
+                <span>HQ & Assigned Citizens</span>
+            </div>
+
+            <div class="contacts-list-mini" id="sidebarContactsList">
+                <div style="padding:0.75rem;font-size:0.75rem;color:#64748b;">Loading operational links...</div>
+            </div>
+        </aside>
+
+        <!-- Center: Message List Feed -->
+        <section class="msg-feed-pane">
+            <div class="msg-feed-header">
+                <div class="msg-search-box">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="msgSearchInput" class="msg-search-input" placeholder="Search orders, SitReps, or field updates..." />
+                </div>
+                <button type="button" class="btn-feed-action" id="btnRefreshFeed" title="Refresh">
+                    <i class="fa-solid fa-rotate"></i>
+                </button>
+            </div>
+
+            <div class="msg-list-scrollable" id="messagesListContainer">
+                <div style="text-align:center;padding:3rem;color:#64748b;">
+                    <i class="fa-solid fa-circle-notch fa-spin" style="font-size:1.8rem;color:#f97316;"></i>
+                    <p style="margin-top:0.75rem;">Loading tactical orders...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right: Message Detail or Chat Stream -->
+        <section class="msg-detail-pane" id="msgDetailPane">
+            <div class="msg-detail-empty">
+                <i class="fa-regular fa-envelope-open"></i>
+                <h3>No Operational Order Selected</h3>
+                <p>Select a transmission to view orders from Command, or click Transmit SitRep to report field status.</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Compose Message Modal -->
+    <div class="modal-backdrop" id="composeModalBackdrop">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="fa-solid fa-tower-broadcast" style="color:#f97316;"></i> Transmit Field SitRep / Message
+                </div>
+                <button type="button" class="modal-close" id="btnCloseComposeModal">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div id="composeErrorAlert" style="display:none;background:rgba(239,68,68,0.15);border:1px solid #ef4444;color:#fca5a5;padding:0.65rem 0.85rem;border-radius:8px;font-size:0.82rem;"></div>
+
+                <div class="form-group">
+                    <label class="form-label" for="composeRecipientSelect">Destination (HQ Command / Assigned Citizen)</label>
+                    <select id="composeRecipientSelect" class="form-select">
+                        <option value="">-- Choose Destination --</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="composeSubjectInput">SitRep Subject</label>
+                    <input type="text" id="composeSubjectInput" class="form-input" placeholder="e.g., Mission Progress SitRep / Medical Assistance Status" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="composeBodyInput">Transmission Content</label>
+                    <textarea id="composeBodyInput" class="form-textarea" placeholder="Type tactical field transmission or status report..."></textarea>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="btnCancelCompose">Cancel</button>
+                <button type="button" class="btn-primary" id="btnSendCompose" style="background:linear-gradient(135deg, #f97316, #ea580c);color:#fff;">
+                    <i class="fa-solid fa-paper-plane"></i> Transmit
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="messages.js?v=1"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            window.MessagesApp = new window.MessagesApp({ role: 'Responder' });
+        });
+    </script>
+</body>
+</html>

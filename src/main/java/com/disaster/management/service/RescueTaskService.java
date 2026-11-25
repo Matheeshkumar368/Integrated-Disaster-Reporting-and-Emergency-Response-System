@@ -617,6 +617,56 @@ public class RescueTaskService {
             }
         }
 
+        if ("Rejected".equalsIgnoreCase(status)) {
+            task.setStatus("Rejected");
+            if (notes != null && !notes.trim().isEmpty()) {
+                task.setCompletionSummary("Rejected: " + notes.trim());
+            }
+            if (task.getAssignedTo() != null) {
+                try {
+                    userRepository.findByEmail(task.getAssignedTo().trim().toLowerCase()).ifPresent(u -> {
+                        u.setAvailabilityStatus("Available");
+                        userRepository.save(u);
+                        log.info("Responder {} availability status reset to Available upon mission rejection", u.getEmail());
+                    });
+                } catch (Exception ex) {
+                    log.warn("Could not reset responder availability: {}", ex.getMessage());
+                }
+            }
+            if (task.getCitizenReportId() != null) {
+                try {
+                    citizenReportRepository.findById(task.getCitizenReportId()).ifPresent(r -> {
+                        r.setStatus("Pending");
+                        r.setProgressStage("Pending");
+                        r.setRejectionReason(notes != null ? notes.trim() : "Rejected by responder");
+                        r.setAssignedResponderEmail(null);
+                        r.setAssignedResponderName(null);
+                        r.setAssignedResponderPhone(null);
+                        r.setAcknowledgedAt(null);
+                        citizenReportRepository.save(r);
+                        log.info("Linked Citizen Report #{} reset to Pending following task rejection", r.getReportId());
+                    });
+                } catch (Exception ex) {
+                    log.warn("Could not sync citizen report on task rejection: {}", ex.getMessage());
+                }
+            }
+            if (notificationService != null) {
+                try {
+                    notificationService.notifyAdmins(
+                        "Mission Rejected - Action Needed",
+                        "Task #" + taskId + " was rejected by responder " + (task.getAssignedResponderName() != null ? task.getAssignedResponderName() : task.getAssignedTo()) + (notes != null ? ": " + notes : ""),
+                        "ALERT",
+                        "High",
+                        taskId,
+                        "TASK",
+                        "admin-dashboard.html"
+                    );
+                } catch (Exception ex) {
+                    log.warn("Admin notification warning on task rejection: {}", ex.getMessage());
+                }
+            }
+        }
+
         if (notes != null && !notes.isEmpty()) {
             String existingNotes = task.getNotes();
             if (existingNotes == null) existingNotes = "";

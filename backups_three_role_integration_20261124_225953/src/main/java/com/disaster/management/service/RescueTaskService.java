@@ -1,0 +1,926 @@
+package com.disaster.management.service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.disaster.management.entity.CitizenReport;
+import com.disaster.management.entity.RescueTask;
+import com.disaster.management.event.AssignmentAcknowledgedEvent;
+import com.disaster.management.event.MissionStatusChangedEvent;
+import com.disaster.management.event.ResponderAssignedEvent;
+import com.disaster.management.repository.CitizenReportRepository;
+import com.disaster.management.repository.RescueTaskRepository;
+import com.disaster.management.repository.UserRepository;
+
+@Service
+public class RescueTaskService {
+
+    private static final Logger log = LoggerFactory.getLogger(RescueTaskService.class);
+
+    @Autowired
+    private RescueTaskRepository rescueTaskRepository;
+
+    @Autowired
+    private CitizenReportRepository citizenReportRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired(required = false)
+    private NotificationService notificationService;
+
+    @Autowired(required = false)
+    private IncidentTimelineService timelineService;
+
+    @Autowired(required = false)
+    private ResponderTrackingService trackingService;
+
+    @Autowired(required = false)
+    private ApplicationEventPublisher eventPublisher;
+
+    // Create a new rescue task with validation
+    @Transactional
+    public RescueTask createTask(RescueTask task) {
+        // Validate required fields
+        if (task.getTitle() == null || task.getTitle().trim().isEmpty()) {
+            throw new IllegalArgumentException("Task title is required");
+        }
+        if (task.getZone() == null || task.getZone().trim().isEmpty()) {
+            throw new IllegalArgumentException("Task zone is required");
+        }
+        // Normalize priority values
+        String priority = task.getPriority();
+        if (priority == null || priority.trim().isEmpty()) {
+            task.setPriority("Medium");
+        } else {
+            String p = priority.trim();
+            if (p.equalsIgnoreCase("Critical") || p.equalsIgnoreCase("Severe") || p.equalsIgnoreCase("Extreme") || p.equalsIgnoreCase("High")) {
+                task.setPriority("High");
+            } else if (p.equalsIgnoreCase("Moderate") || p.equalsIgnoreCase("Medium")) {
+                task.setPriority("Medium");
+            } else if (p.equalsIgnoreCase("Minor") || p.equalsIgnoreCase("Low")) {
+                task.setPriority("Low");
+            } else {
+                throw new IllegalArgumentException("Invalid priority: " + priority + ". Must be High, Medium, or Low");
+            }
+        }
+        task.setCreatedAt(LocalDateTime.now());
+        if (task.getStatus() == null || task.getStatus().trim().isEmpty()) {
+            task.setStatus("Pending");
+        }
+
+        RescueTask saved = rescueTaskRepository.save(task);
+
+        // If linked to a citizen report, acknowledge the report
+        if (task.getCitizenReportId() != null) {
+            try {
+                Optional<CitizenReport> reportOpt = citizenReportRepository.findById(task.getCitizenReportId());
+                if (reportOpt.isPresent()) {
+                    CitizenReport report = reportOpt.get();
+                    if ("Pending".equalsIgnoreCase(report.getStatus())) {
+                        report.setStatus("Acknowledged");
+                        citizenReportRepository.save(report);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Failed to sync citizen report on task creation: {}", e.getMessage());
+            }
+        }
+
+        return saved;
+    }
+
+    // Get all tasks
+    public List<RescueTask> getAllTasks() {
+        return rescueTaskRepository.findAll();
+    }
+
+    // Get task by ID
+    public Optional<RescueTask> getTaskById(Long id) {
+        if (id == null) {
+            throw new IllegalArgumentException("Task ID cannot be null");
+        }
+        return rescueTaskRepository.findById(id);
+    }
+
+    // Get tasks assigned to a responder
+    public List<RescueTask> getTasksByResponder(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            throw new IllegalArgumentException("Responder email cannot be empty");
+        }
+        return rescueTaskRepository.findByAssignedTo(email.trim().toLowerCase());
+    }
+
+    // Get tasks by zone
+    public List<RescueTask> getTasksByZone(String zone) {
+        if (zone == null || zone.trim().isEmpty()) {
+            throw new IllegalArgumentException("Zone cannot be empty");
+        }
+        return rescueTaskRepository.findByZone(zone);
+    }
+
+    // Get tasks by status
+    public List<RescueTask> getTasksByStatus(String status) {
+        if (status == null || status.trim().isEmpty()) {
+            throw new IllegalArgumentException("Status cannot be empty");
+        }
+        return rescueTaskRepository.findByStatus(status);
+    }
+
+    // Get tasks by priority
+    public List<RescueTask> getTasksByPriority(String priority) {
+        if (priority == null || priority.trim().isEmpty()) {
+            throw new IllegalArgumentException("Priority cannot be empty");
+        }
+        return rescueTaskRepository.findByPriority(priority);
+    }
+
+    // Get tasks ordered by priority and deadline
+    public List<RescueTask> getAllTasksSorted() {
+        return rescueTaskRepository.findAllByOrderByPriorityDescDeadlineAsc();
+    }
+
+    // Acknowledge task explicitly by responder
+    @Transactional
+    public RescueTask acknowledgeTask(Long taskId, String responderEmail) {
+        RescueTask task = rescueTaskRepository.findById(taskId)
+            .orElseThrow(() -> new IllegalArgumentException("Task not found with ID: " + taskId));
+
+        task.setStatus("Acknowledged");
+        task.setAcknowledgedAt(LocalDateTime.now());
+        task.setAcknowledgedBy(responderEmail);
+        RescueTask saved = rescueTaskRepository.save(task);
+
+        if (saved.getCitizenReportId() != null) {
+            try {
+                citizenReportRepository.findById(saved.getCitizenReportId()).ifPresent(r -> {
+                    if ("Pending".equalsIgnoreCase(r.getStatus()) || "Assigned".equalsIgnoreCase(r.getStatus())) {
+                        r.setStatus("Acknowledged");
+                        citizenReportRepository.save(r);
+                        log.info("Cross-role synchronization: Citizen Report #{} marked as Acknowledged", r.getReportId());
+                    }
+                    if (notificationService != null && r.getCitizenEmail() != null) {
+                        try {
+                            notificationService.notifyCitizen(
+                                r.getCitizenEmail(),
+                                "Rescue Team Deployed",
+                                "Responder " + (saved.getAssignedResponderName() != null ? saved.getAssignedResponderName() : responderEmail) + " has accepted task #" + taskId + " and is responding.",
+                                "RESPONSE",
+                                "High",
+                                r.getReportId(),
+                                "CITIZEN_REPORT",
+                                "citizen-notifications.html"
+                            );
+                        } catch (Exception ex) {
+                            log.warn("Notification warning: {}", ex.getMessage());
+                        }
+                    }
+                });
+            } catch (Exception e) {
+                log.warn("Failed to sync citizen report on task acknowledgement: {}", e.getMessage());
+            }
+        }
+
+        if (notificationService != null) {
+            try {
+                notificationService.notifyAdmins(
+                    "Task Acknowledged",
+                    "Responder " + responderEmail + " acknowledged Task #" + taskId,
+                    "UPDATE",
+                    "Medium",
+                    taskId,
+                    "TASK",
+                    "admin-notifications.html"
+                );
+            } catch (Exception e) {
+                log.warn("Admin notification warning: {}", e.getMessage());
+            }
+        }
+
+        if (eventPublisher != null) {
+            try {
+                CitizenReport linkedReport = saved.getCitizenReportId() != null
+                    ? citizenReportRepository.findById(saved.getCitizenReportId()).orElse(null) : null;
+                eventPublisher.publishEvent(new AssignmentAcknowledgedEvent(saved, linkedReport, responderEmail));
+            } catch (Exception e) {
+                log.warn("Event publication warning on acknowledgeTask: {}", e.getMessage());
+            }
+        }
+
+        return saved;
+    }
+
+    // Resolve task explicitly with completion details
+    @Transactional
+    public RescueTask resolveTask(Long taskId, String summary, String responderEmail) {
+        RescueTask task = rescueTaskRepository.findById(taskId)
+            .orElseThrow(() -> new IllegalArgumentException("Task not found with ID: " + taskId));
+
+        task.setStatus("Completed");
+        task.setCompletedAt(LocalDateTime.now());
+        if (summary != null && !summary.trim().isEmpty()) {
+            task.setCompletionSummary(summary.trim());
+            String existingNotes = task.getNotes() != null ? task.getNotes() : "";
+            task.setNotes(existingNotes + "\n[RESOLVED " + LocalDateTime.now() + " by " + responderEmail + "]: " + summary.trim());
+        }
+
+        RescueTask saved = rescueTaskRepository.save(task);
+
+        // Cross-role synchronization: update linked citizen report to Resolved
+        if (saved.getCitizenReportId() != null) {
+            try {
+                Optional<CitizenReport> reportOpt = citizenReportRepository.findById(saved.getCitizenReportId());
+                if (reportOpt.isPresent()) {
+                    CitizenReport report = reportOpt.get();
+                    report.setStatus("Resolved");
+                    citizenReportRepository.save(report);
+                    log.info("Cross-role synchronization: Citizen Report #{} marked as Resolved following completion of Rescue Task #{}",
+                        saved.getCitizenReportId(), saved.getTaskId());
+
+                    if (notificationService != null && report.getCitizenEmail() != null) {
+                        try {
+                            notificationService.notifyCitizen(
+                                report.getCitizenEmail(),
+                                "Mission Completed",
+                                "Rescue operation for your report #" + report.getReportId() + " has completed successfully.",
+                                "RESPONSE",
+                                "Low",
+                                report.getReportId(),
+                                "CITIZEN_REPORT",
+                                "citizen-notifications.html"
+                            );
+                        } catch (Exception ex) {
+                            log.warn("Citizen notification warning: {}", ex.getMessage());
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Failed to update linked citizen report on task resolution: {}", e.getMessage());
+            }
+        }
+
+        if (notificationService != null) {
+            try {
+                notificationService.notifyAdmins(
+                    "Mission Completed",
+                    "Rescue Mission #" + taskId + " marked completed by " + responderEmail,
+                    "UPDATE",
+                    "Medium",
+                    taskId,
+                    "TASK",
+                    "admin-notifications.html"
+                );
+            } catch (Exception ex) {
+                log.warn("Admin notification warning: {}", ex.getMessage());
+            }
+        }
+
+        if (eventPublisher != null) {
+            try {
+                CitizenReport linkedReport = saved.getCitizenReportId() != null
+                    ? citizenReportRepository.findById(saved.getCitizenReportId()).orElse(null) : null;
+                eventPublisher.publishEvent(new MissionStatusChangedEvent(saved, linkedReport, "Completed", summary, responderEmail));
+            } catch (Exception e) {
+                log.warn("Event publication warning on resolveTask: {}", e.getMessage());
+            }
+        }
+
+        return saved;
+    }
+
+    // Validate 5-Stage Mission Workflow transitions
+    public boolean isAllowedTransition(String currentStatus, String targetStatus, boolean isAdmin) {
+        if (isAdmin) return true; // Central Command admin can override or reassign
+
+        if (currentStatus == null) currentStatus = "Pending";
+        currentStatus = currentStatus.trim();
+        targetStatus = targetStatus.trim();
+
+        // Same status allowed (e.g. adding a SitRep progress note without changing status)
+        if (currentStatus.equalsIgnoreCase(targetStatus)) return true;
+
+        // Terminal state: completed task cannot be altered by responder
+        if ("Completed".equalsIgnoreCase(currentStatus) || "Resolved".equalsIgnoreCase(currentStatus)) {
+            return false;
+        }
+
+        switch (currentStatus.toLowerCase()) {
+            case "pending":
+            case "assigned":
+                return targetStatus.equalsIgnoreCase("Acknowledged") 
+                    || targetStatus.equalsIgnoreCase("Accepted") 
+                    || targetStatus.equalsIgnoreCase("Rejected");
+            case "acknowledged":
+            case "accepted":
+                return targetStatus.equalsIgnoreCase("En Route")
+                    || targetStatus.equalsIgnoreCase("On the Way");
+            case "en route":
+            case "on the way":
+                return targetStatus.equalsIgnoreCase("Arrived") 
+                    || targetStatus.equalsIgnoreCase("Reached Location")
+                    || targetStatus.equalsIgnoreCase("In Progress")
+                    || targetStatus.equalsIgnoreCase("Assistance in Progress");
+            case "arrived":
+            case "reached location":
+                return targetStatus.equalsIgnoreCase("In Progress")
+                    || targetStatus.equalsIgnoreCase("Assistance in Progress")
+                    || targetStatus.equalsIgnoreCase("Completed") 
+                    || targetStatus.equalsIgnoreCase("Resolved");
+            case "in progress":
+            case "assistance in progress":
+                return targetStatus.equalsIgnoreCase("Completed") 
+                    || targetStatus.equalsIgnoreCase("Resolved");
+            default:
+                return true;
+        }
+    }
+
+    // Update task status with validation
+    @Transactional
+    public RescueTask updateTaskStatus(Long taskId, String status, String notes) {
+        if (taskId == null) {
+            throw new IllegalArgumentException("Task ID cannot be null");
+        }
+        if (status == null || status.trim().isEmpty()) {
+            throw new IllegalArgumentException("Status cannot be empty");
+        }
+
+        String[] validStatuses = {
+            "Assigned", "Acknowledged", "En Route", "On the Way", "Arrived", "Reached Location",
+            "Completed", "Resolved", "Pending", "In Progress", "Assistance in Progress", "Accepted", "Rejected"
+        };
+        boolean isValid = false;
+        for (String validStatus : validStatuses) {
+            if (validStatus.equalsIgnoreCase(status)) {
+                isValid = true;
+                break;
+            }
+        }
+        if (!isValid) {
+            throw new IllegalArgumentException("Invalid status value. Must be: Pending, Assigned, Acknowledged, Accepted, En Route, On the Way, Arrived, Reached Location, In Progress, Assistance in Progress, Completed, or Resolved");
+        }
+        
+        RescueTask task = rescueTaskRepository.findById(taskId)
+            .orElseThrow(() -> new IllegalArgumentException("Task not found with ID: " + taskId));
+
+        task.setStatus(status);
+
+        if (("Acknowledged".equalsIgnoreCase(status) || "Accepted".equalsIgnoreCase(status)) && task.getAcknowledgedAt() == null) {
+            task.setAcknowledgedAt(LocalDateTime.now());
+            if (task.getCitizenReportId() != null) {
+                try {
+                    citizenReportRepository.findById(task.getCitizenReportId()).ifPresent(r -> {
+                        r.setStatus("Acknowledged");
+                        r.setProgressStage(status);
+                        if (r.getAcknowledgedAt() == null) {
+                            r.setAcknowledgedAt(LocalDateTime.now());
+                        }
+                        citizenReportRepository.save(r);
+                        if (notificationService != null && r.getCitizenEmail() != null) {
+                            notificationService.notifyCitizen(
+                                r.getCitizenEmail(),
+                                "Rescue Team Deployed",
+                                "Responder " + (task.getAssignedResponderName() != null ? task.getAssignedResponderName() : "Rescue Unit") + " has accepted task #" + taskId + " and is responding.",
+                                "RESPONSE",
+                                "High",
+                                r.getReportId(),
+                                "CITIZEN_REPORT",
+                                "citizen-notifications.html"
+                            );
+                        }
+                    });
+                } catch (Exception e) {
+                    log.warn("Could not sync citizen report on Acknowledged/Accepted: {}", e.getMessage());
+                }
+            }
+            if (notificationService != null) {
+                try {
+                    notificationService.notifyAdmins(
+                        "Task Acknowledged",
+                        "Responder " + (task.getAssignedResponderName() != null ? task.getAssignedResponderName() : task.getAssignedTo()) + " acknowledged Task #" + taskId,
+                        "UPDATE",
+                        "Medium",
+                        taskId,
+                        "TASK",
+                        "admin-notifications.html"
+                    );
+                } catch (Exception e) {
+                    log.warn("Admin notification warning: {}", e.getMessage());
+                }
+            }
+        }
+
+        if (("En Route".equalsIgnoreCase(status) || "On the Way".equalsIgnoreCase(status)) && task.getEnRouteAt() == null) {
+            task.setEnRouteAt(LocalDateTime.now());
+            if (task.getCitizenReportId() != null) {
+                try {
+                    citizenReportRepository.findById(task.getCitizenReportId()).ifPresent(r -> {
+                        r.setStatus("In Progress");
+                        r.setProgressStage(status);
+                        citizenReportRepository.save(r);
+                        if (notificationService != null && r.getCitizenEmail() != null) {
+                            notificationService.notifyCitizen(
+                                r.getCitizenEmail(),
+                                "Rescue Unit En Route",
+                                "Rescue unit " + (task.getAssignedResponderName() != null ? task.getAssignedResponderName() : "Rescue Team") + " is on the way to your location for Report #" + r.getReportId() + ".",
+                                "RESPONSE",
+                                "High",
+                                r.getReportId(),
+                                "CITIZEN_REPORT",
+                                "citizen-notifications.html"
+                            );
+                        }
+                    });
+                } catch (Exception e) {
+                    log.warn("Could not sync citizen report on En Route: {}", e.getMessage());
+                }
+            }
+            if (notificationService != null) {
+                try {
+                    notificationService.notifyAdmins(
+                        "Unit En Route",
+                        "Responder " + (task.getAssignedResponderName() != null ? task.getAssignedResponderName() : task.getAssignedTo()) + " is en route to Task #" + taskId,
+                        "UPDATE",
+                        "Medium",
+                        taskId,
+                        "TASK",
+                        "admin-notifications.html"
+                    );
+                } catch (Exception e) {
+                    log.warn("Admin notification warning: {}", e.getMessage());
+                }
+            }
+        }
+
+        if (("Arrived".equalsIgnoreCase(status) || "Reached Location".equalsIgnoreCase(status)) && task.getArrivedAt() == null) {
+            task.setArrivedAt(LocalDateTime.now());
+            if (task.getCitizenReportId() != null) {
+                try {
+                    citizenReportRepository.findById(task.getCitizenReportId()).ifPresent(r -> {
+                        r.setStatus("In Progress");
+                        r.setProgressStage(status);
+                        citizenReportRepository.save(r);
+                        if (notificationService != null && r.getCitizenEmail() != null) {
+                            notificationService.notifyCitizen(
+                                r.getCitizenEmail(),
+                                "Rescue Unit Arrived",
+                                "Rescue unit " + (task.getAssignedResponderName() != null ? task.getAssignedResponderName() : "Rescue Team") + " has arrived at your location for Report #" + r.getReportId() + ".",
+                                "RESPONSE",
+                                "High",
+                                r.getReportId(),
+                                "CITIZEN_REPORT",
+                                "citizen-notifications.html"
+                            );
+                        }
+                    });
+                } catch (Exception e) {
+                    log.warn("Could not sync citizen report on Arrived: {}", e.getMessage());
+                }
+            }
+            if (notificationService != null) {
+                try {
+                    notificationService.notifyAdmins(
+                        "Unit Arrived On Scene",
+                        "Responder " + (task.getAssignedResponderName() != null ? task.getAssignedResponderName() : task.getAssignedTo()) + " has arrived on scene for Task #" + taskId,
+                        "UPDATE",
+                        "Medium",
+                        taskId,
+                        "TASK",
+                        "admin-notifications.html"
+                    );
+                } catch (Exception e) {
+                    log.warn("Admin notification warning: {}", e.getMessage());
+                }
+            }
+        }
+
+        if ("In Progress".equalsIgnoreCase(status) || "Assistance in Progress".equalsIgnoreCase(status)) {
+            if (task.getCitizenReportId() != null) {
+                try {
+                    citizenReportRepository.findById(task.getCitizenReportId()).ifPresent(r -> {
+                        r.setStatus("In Progress");
+                        r.setProgressStage(status);
+                        citizenReportRepository.save(r);
+                        if (notificationService != null && r.getCitizenEmail() != null) {
+                            notificationService.notifyCitizen(
+                                r.getCitizenEmail(),
+                                "Operation Update",
+                                "Rescue operation is in progress at your reported location for Report #" + r.getReportId() + ".",
+                                "RESPONSE",
+                                "Medium",
+                                r.getReportId(),
+                                "CITIZEN_REPORT",
+                                "citizen-notifications.html"
+                            );
+                        }
+                    });
+                } catch (Exception e) {
+                    log.warn("Could not sync citizen report on In Progress: {}", e.getMessage());
+                }
+            }
+            if (notificationService != null) {
+                try {
+                    notificationService.notifyAdmins(
+                        "Task in Progress",
+                        "Rescue operation is actively in progress for Task #" + taskId,
+                        "UPDATE",
+                        "Medium",
+                        taskId,
+                        "TASK",
+                        "admin-notifications.html"
+                    );
+                } catch (Exception e) {
+                    log.warn("Admin notification warning: {}", e.getMessage());
+                }
+            }
+        }
+
+        if (("Completed".equalsIgnoreCase(status) || "Resolved".equalsIgnoreCase(status)) && task.getCompletedAt() == null) {
+            task.setCompletedAt(LocalDateTime.now());
+            if (notes != null && !notes.trim().isEmpty()) {
+                task.setCompletionSummary(notes.trim());
+            }
+
+            // Conclude any active GPS tracking session for this assignment
+            if (trackingService != null) {
+                try {
+                    trackingService.stopTracking(taskId, task.getAssignedTo() != null ? task.getAssignedTo() : "system");
+                    log.info("GPS tracking session concluded automatically for completed task #{}", taskId);
+                } catch (Exception e) {
+                    log.warn("Automatic GPS tracking stop note for task #{}: {}", taskId, e.getMessage());
+                }
+            }
+
+            // Sync linked citizen report to Resolved
+            if (task.getCitizenReportId() != null) {
+                try {
+                    citizenReportRepository.findById(task.getCitizenReportId()).ifPresent(r -> {
+                        r.setStatus("Resolved");
+                        r.setProgressStage(status);
+                        if (r.getResolvedAt() == null) {
+                            r.setResolvedAt(LocalDateTime.now());
+                        }
+                        citizenReportRepository.save(r);
+                        log.info("Cross-role synchronization: Citizen Report #{} marked as Resolved following completion of Rescue Task #{}",
+                            r.getReportId(), taskId);
+                        if (notificationService != null && r.getCitizenEmail() != null) {
+                            notificationService.notifyCitizen(
+                                r.getCitizenEmail(),
+                                "Mission Completed",
+                                "Rescue operation for your report #" + r.getReportId() + " has completed successfully.",
+                                "RESPONSE",
+                                "Low",
+                                r.getReportId(),
+                                "CITIZEN_REPORT",
+                                "citizen-notifications.html"
+                            );
+                        }
+                    });
+                } catch (Exception e) {
+                    log.warn("Could not sync citizen report on task completion: {}", e.getMessage());
+                }
+            }
+            if (notificationService != null) {
+                try {
+                    notificationService.notifyAdmins(
+                        "Mission Completed",
+                        "Rescue Mission #" + taskId + " marked completed by " + (task.getAssignedResponderName() != null ? task.getAssignedResponderName() : task.getAssignedTo()),
+                        "UPDATE",
+                        "Medium",
+                        taskId,
+                        "TASK",
+                        "admin-notifications.html"
+                    );
+                } catch (Exception ex) {
+                    log.warn("Admin notification warning: {}", ex.getMessage());
+                }
+            }
+            // Reset responder availability back to Available
+            if (task.getAssignedTo() != null) {
+                try {
+                    userRepository.findByEmail(task.getAssignedTo().trim().toLowerCase()).ifPresent(u -> {
+                        u.setAvailabilityStatus("Available");
+                        userRepository.save(u);
+                        log.info("Responder {} availability status reset to Available upon mission completion", u.getEmail());
+                    });
+                } catch (Exception ex) {
+                    log.warn("Could not reset responder availability: {}", ex.getMessage());
+                }
+            }
+        }
+
+        if ("Rejected".equalsIgnoreCase(status)) {
+            task.setStatus("Rejected");
+            if (notes != null && !notes.trim().isEmpty()) {
+                task.setCompletionSummary("Rejected: " + notes.trim());
+            }
+            if (task.getAssignedTo() != null) {
+                try {
+                    userRepository.findByEmail(task.getAssignedTo().trim().toLowerCase()).ifPresent(u -> {
+                        u.setAvailabilityStatus("Available");
+                        userRepository.save(u);
+                        log.info("Responder {} availability status reset to Available upon mission rejection", u.getEmail());
+                    });
+                } catch (Exception ex) {
+                    log.warn("Could not reset responder availability: {}", ex.getMessage());
+                }
+            }
+            if (task.getCitizenReportId() != null) {
+                try {
+                    citizenReportRepository.findById(task.getCitizenReportId()).ifPresent(r -> {
+                        r.setStatus("Pending");
+                        r.setProgressStage("Pending");
+                        r.setRejectionReason(notes != null ? notes.trim() : "Rejected by responder");
+                        r.setAssignedResponderEmail(null);
+                        r.setAssignedResponderName(null);
+                        r.setAssignedResponderPhone(null);
+                        r.setAcknowledgedAt(null);
+                        citizenReportRepository.save(r);
+                        log.info("Linked Citizen Report #{} reset to Pending following task rejection", r.getReportId());
+                    });
+                } catch (Exception ex) {
+                    log.warn("Could not sync citizen report on task rejection: {}", ex.getMessage());
+                }
+            }
+            if (notificationService != null) {
+                try {
+                    notificationService.notifyAdmins(
+                        "Mission Rejected - Action Needed",
+                        "Task #" + taskId + " was rejected by responder " + (task.getAssignedResponderName() != null ? task.getAssignedResponderName() : task.getAssignedTo()) + (notes != null ? ": " + notes : ""),
+                        "ALERT",
+                        "High",
+                        taskId,
+                        "TASK",
+                        "admin-dashboard.html"
+                    );
+                } catch (Exception ex) {
+                    log.warn("Admin notification warning on task rejection: {}", ex.getMessage());
+                }
+            }
+        }
+
+        if (notes != null && !notes.isEmpty()) {
+            String existingNotes = task.getNotes();
+            if (existingNotes == null) existingNotes = "";
+            task.setNotes(existingNotes + "\n[" + LocalDateTime.now() + "] " + notes);
+        }
+
+        RescueTask saved = rescueTaskRepository.save(task);
+
+        if (eventPublisher != null) {
+            try {
+                CitizenReport linkedReport = saved.getCitizenReportId() != null
+                    ? citizenReportRepository.findById(saved.getCitizenReportId()).orElse(null) : null;
+                eventPublisher.publishEvent(new MissionStatusChangedEvent(saved, linkedReport, status, notes, "system"));
+            } catch (Exception e) {
+                log.warn("Event publication warning on updateTaskStatus: {}", e.getMessage());
+            }
+        }
+
+        return saved;
+    }
+
+    // Assign task to responder with validation
+    @Transactional
+    public RescueTask assignTask(Long taskId, String responderEmail, String responderName) {
+        if (taskId == null) {
+            throw new IllegalArgumentException("Task ID cannot be null");
+        }
+        if (responderEmail == null || responderEmail.trim().isEmpty()) {
+            throw new IllegalArgumentException("Responder email cannot be empty");
+        }
+        if (responderName == null || responderName.trim().isEmpty()) {
+            throw new IllegalArgumentException("Responder name cannot be empty");
+        }
+        
+        RescueTask task = rescueTaskRepository.findById(taskId)
+            .orElseThrow(() -> new IllegalArgumentException("Task not found with ID: " + taskId));
+
+        task.setAssignedTo(responderEmail.trim().toLowerCase());
+        task.setAssignedResponderName(responderName.trim());
+        if ("Pending".equalsIgnoreCase(task.getStatus())) {
+            task.setStatus("Assigned");
+        }
+        RescueTask savedTask = rescueTaskRepository.save(task);
+
+        if (task.getCitizenReportId() != null) {
+            try {
+                citizenReportRepository.findById(task.getCitizenReportId()).ifPresent(r -> {
+                    r.setAssignedResponderEmail(responderEmail.trim().toLowerCase());
+                    r.setAssignedResponderName(responderName.trim());
+                    userRepository.findByEmail(responderEmail.trim().toLowerCase()).ifPresent(u -> {
+                        if (u.getPhone() != null && !u.getPhone().isEmpty()) {
+                            r.setAssignedResponderPhone(u.getPhone());
+                        }
+                    });
+                    r.setStatus("Assigned");
+                    r.setProgressStage("Assigned");
+                    r.setRescueTaskId(task.getTaskId());
+                    if (r.getAssignedAt() == null) {
+                        r.setAssignedAt(LocalDateTime.now());
+                    }
+                    citizenReportRepository.save(r);
+                    log.info("Synchronized CitizenReport #{} with assigned responder {}", r.getReportId(), responderEmail);
+
+                    if (notificationService != null && r.getCitizenEmail() != null) {
+                        try {
+                            notificationService.notifyCitizen(
+                                r.getCitizenEmail(),
+                                "Rescue Team Assigned",
+                                "Responder " + responderName + " has been assigned to your report.",
+                                "RESPONSE",
+                                "High",
+                                r.getReportId(),
+                                "CITIZEN_REPORT",
+                                "citizen-notifications.html"
+                            );
+                        } catch (Exception ex) {
+                            log.warn("Citizen notification warning: {}", ex.getMessage());
+                        }
+                    }
+                });
+            } catch (Exception e) {
+                log.warn("Could not sync citizen report on task assignment: {}", e.getMessage());
+            }
+        }
+
+        if (timelineService != null) {
+            try {
+                timelineService.logEvent(
+                    taskId,
+                    "RESCUE_TASK",
+                    "TASK_ASSIGNED",
+                    task.getCreatedBy() != null ? task.getCreatedBy() : "admin@disaster.gov.in",
+                    "Admin",
+                    responderName,
+                    "Task assigned to " + responderName + " (" + responderEmail + ")",
+                    null,
+                    null
+                );
+            } catch (Exception e) {
+                log.warn("Timeline log warning on assignTask: {}", e.getMessage());
+            }
+        }
+
+        if (notificationService != null) {
+            try {
+                notificationService.notifyResponder(
+                    responderEmail,
+                    "New Rescue Assignment",
+                    "Task #" + taskId + " (" + task.getTitle() + ") assigned in " + task.getZone(),
+                    "ASSIGNMENT",
+                    task.getPriority() != null ? task.getPriority() : "High",
+                    taskId,
+                    "TASK",
+                    "responder-notifications.html"
+                );
+            } catch (Exception e) {
+                log.warn("Responder notification warning: {}", e.getMessage());
+            }
+        }
+
+        if (eventPublisher != null) {
+            try {
+                CitizenReport linkedReport = savedTask.getCitizenReportId() != null
+                    ? citizenReportRepository.findById(savedTask.getCitizenReportId()).orElse(null) : null;
+                eventPublisher.publishEvent(new ResponderAssignedEvent(linkedReport, savedTask, responderEmail, responderName, task.getCreatedBy()));
+            } catch (Exception e) {
+                log.warn("Event publication warning on assignTask: {}", e.getMessage());
+            }
+        }
+
+        return savedTask;
+    }
+
+    // Update task with validation
+    @Transactional
+    public RescueTask updateTask(RescueTask task) {
+        if (task == null) {
+            throw new IllegalArgumentException("Task cannot be null");
+        }
+        if (task.getTaskId() == null) {
+            throw new IllegalArgumentException("Task ID cannot be null for update");
+        }
+        if (!rescueTaskRepository.existsById(task.getTaskId())) {
+            throw new IllegalArgumentException("Task not found with ID: " + task.getTaskId());
+        }
+        return rescueTaskRepository.save(task);
+    }
+
+    // Delete task
+    @Transactional
+    public void deleteTask(Long id) {
+        if (id == null) {
+            throw new IllegalArgumentException("Task ID cannot be null");
+        }
+        if (!rescueTaskRepository.existsById(id)) {
+            throw new IllegalArgumentException("Task not found with ID: " + id);
+        }
+        rescueTaskRepository.deleteById(id);
+    }
+
+    // Get responder tasks by status
+    public List<RescueTask> getResponderTasksByStatus(String email, String status) {
+        if (email == null || email.trim().isEmpty()) {
+            throw new IllegalArgumentException("Responder email cannot be empty");
+        }
+        if (status == null || status.trim().isEmpty()) {
+            throw new IllegalArgumentException("Status cannot be empty");
+        }
+        return rescueTaskRepository.findByAssignedToAndStatus(email.trim().toLowerCase(), status);
+    }
+
+    // Get tasks by zone and status
+    public List<RescueTask> getTasksByZoneAndStatus(String zone, String status) {
+        if (zone == null || zone.trim().isEmpty()) {
+            throw new IllegalArgumentException("Zone cannot be empty");
+        }
+        if (status == null || status.trim().isEmpty()) {
+            throw new IllegalArgumentException("Status cannot be empty");
+        }
+        return rescueTaskRepository.findByZoneAndStatus(zone, status);
+    }
+
+    // Responder updates SitRep notes on their assigned task
+    @Transactional
+    public RescueTask updateTaskNotes(Long taskId, String notes, String callerEmail, boolean isAdmin) {
+        if (taskId == null) {
+            throw new IllegalArgumentException("Task ID cannot be null");
+        }
+        RescueTask task = rescueTaskRepository.findById(taskId)
+            .orElseThrow(() -> new IllegalArgumentException("Task not found with ID: " + taskId));
+
+        if (!isAdmin) {
+            String assignedTo = task.getAssignedTo();
+            if (assignedTo == null || !assignedTo.trim().equalsIgnoreCase(callerEmail.trim())) {
+                throw new SecurityException("Forbidden: You are not authorized to edit notes for task #" + taskId + " assigned to another unit.");
+            }
+        }
+
+        if (notes != null && !notes.trim().isEmpty()) {
+            String timestamp = LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+            String noteEntry = "[" + timestamp + " - " + callerEmail + "] " + notes.trim();
+            String existingNotes = task.getNotes();
+            if (existingNotes == null || existingNotes.trim().isEmpty()) {
+                task.setNotes(noteEntry);
+            } else {
+                task.setNotes(existingNotes + "\n" + noteEntry);
+            }
+        }
+
+        return rescueTaskRepository.save(task);
+    }
+
+    // Responder or Admin requests cancellation / reassignment of task
+    @Transactional
+    public RescueTask requestCancellation(Long taskId, String reason, String callerEmail, boolean isAdmin) {
+        if (taskId == null) {
+            throw new IllegalArgumentException("Task ID cannot be null");
+        }
+        RescueTask task = rescueTaskRepository.findById(taskId)
+            .orElseThrow(() -> new IllegalArgumentException("Task not found with ID: " + taskId));
+
+        if (!isAdmin) {
+            String assignedTo = task.getAssignedTo();
+            if (assignedTo == null || !assignedTo.trim().equalsIgnoreCase(callerEmail.trim())) {
+                throw new SecurityException("Forbidden: You are not authorized to request cancellation for task #" + taskId + " assigned to another unit.");
+            }
+        }
+
+        task.setCancellationRequested(true);
+        task.setCancellationReason(reason != null ? reason.trim() : "Responder requested cancellation / reassignment.");
+        task.setStatus("Cancellation Requested");
+
+        String timestamp = LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+        String cancellationLog = "[" + timestamp + " CANCEL_REQUESTED by " + callerEmail + "] " + (reason != null ? reason : "No reason specified");
+        String existingNotes = task.getNotes();
+        task.setNotes(existingNotes == null ? cancellationLog : existingNotes + "\n" + cancellationLog);
+
+        RescueTask savedTask = rescueTaskRepository.save(task);
+
+        // Synchronize linked citizen report if applicable
+        if (task.getCitizenReportId() != null) {
+            try {
+                citizenReportRepository.findById(task.getCitizenReportId()).ifPresent(report -> {
+                    report.setCancellationRequested(true);
+                    report.setCancellationReason("Responder " + callerEmail + " requested reassignment: " + (reason != null ? reason : ""));
+                    report.setStatus("Cancellation Requested");
+                    citizenReportRepository.save(report);
+                    log.info("Synchronized CitizenReport #{} status to Cancellation Requested", report.getReportId());
+                });
+            } catch (Exception e) {
+                log.warn("Failed to synchronize citizen report cancellation: {}", e.getMessage());
+            }
+        }
+
+        return savedTask;
+    }
+}

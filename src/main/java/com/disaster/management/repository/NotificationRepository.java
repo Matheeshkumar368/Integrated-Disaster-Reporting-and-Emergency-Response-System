@@ -35,10 +35,23 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     long countByRecipientEmailAndIsDeletedByRecipientFalse(String recipientEmail);
 
+    List<Notification> findByRecipientEmailAndRecipientRoleIgnoreCaseAndIsDeletedByRecipientFalseOrderByCreatedAtDesc(String recipientEmail, String recipientRole);
+
+    List<Notification> findByRecipientEmailAndRecipientRoleIgnoreCaseAndIsReadAndIsDeletedByRecipientFalseOrderByCreatedAtDesc(String recipientEmail, String recipientRole, Boolean isRead);
+
+    long countByRecipientEmailAndRecipientRoleIgnoreCaseAndIsReadFalseAndIsDeletedByRecipientFalse(String recipientEmail, String recipientRole);
+
+    long countByRecipientEmailAndRecipientRoleIgnoreCaseAndIsDeletedByRecipientFalse(String recipientEmail, String recipientRole);
+
     @Modifying
     @Transactional
     @Query("UPDATE Notification n SET n.isRead = true, n.readAt = CURRENT_TIMESTAMP WHERE LOWER(n.recipientEmail) = LOWER(:email) AND (n.isRead = false OR n.isRead IS NULL) AND n.isDeletedByRecipient = false")
     int markAllAsReadForRecipient(@Param("email") String email);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE Notification n SET n.isRead = true, n.readAt = CURRENT_TIMESTAMP WHERE LOWER(n.recipientEmail) = LOWER(:email) AND LOWER(n.recipientRole) = LOWER(:role) AND (n.isRead = false OR n.isRead IS NULL) AND n.isDeletedByRecipient = false")
+    int markAllAsReadForRecipientAndRole(@Param("email") String email, @Param("role") String role);
 
     @Modifying
     @Transactional

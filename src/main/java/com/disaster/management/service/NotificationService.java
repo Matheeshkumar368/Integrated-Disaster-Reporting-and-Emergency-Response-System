@@ -178,6 +178,162 @@ public class NotificationService {
         return created;
     }
 
+    public List<Notification> getAdminNotifications(String adminEmail, String category, String status) {
+        if (adminEmail == null || adminEmail.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        String email = adminEmail.trim().toLowerCase();
+        String normStatus = status != null ? status.trim().toLowerCase() : "all";
+        List<Notification> list;
+
+        if ("unread".equals(normStatus)) {
+            list = notificationRepository.findByRecipientEmailAndRecipientRoleIgnoreCaseAndIsReadAndIsDeletedByRecipientFalseOrderByCreatedAtDesc(email, "Admin", false);
+        } else if ("read".equals(normStatus)) {
+            list = notificationRepository.findByRecipientEmailAndRecipientRoleIgnoreCaseAndIsReadAndIsDeletedByRecipientFalseOrderByCreatedAtDesc(email, "Admin", true);
+        } else {
+            list = notificationRepository.findByRecipientEmailAndRecipientRoleIgnoreCaseAndIsDeletedByRecipientFalseOrderByCreatedAtDesc(email, "Admin");
+        }
+
+        if (category == null || category.trim().isEmpty() || "ALL".equalsIgnoreCase(category.trim())) {
+            return list;
+        }
+
+        String filterCat = category.trim().toUpperCase();
+        return list.stream().filter(n -> {
+            String c = (n.getCategory() != null ? n.getCategory() : "").toUpperCase().trim();
+            String rel = (n.getRelatedIncidentType() != null ? n.getRelatedIncidentType() : "").toUpperCase().trim();
+            String title = (n.getTitle() != null ? n.getTitle() : "").toUpperCase();
+
+            if ("REPORTS".equals(filterCat) || "DISASTER_REPORT".equals(filterCat) || "REPORT_STATUS".equals(filterCat)) {
+                return "CITIZEN_REPORT".equals(rel) || c.contains("DISASTER") || c.contains("REPORT") || title.contains("REPORT") || title.contains("DISASTER");
+            } else if ("ASSIGNMENTS".equals(filterCat) || "RESPONDER_ASSIGNMENT".equals(filterCat)) {
+                return "TASK".equals(rel) || c.contains("ASSIGNMENT") || c.contains("RESPONSE") || title.contains("TASK") || title.contains("EN ROUTE") || title.contains("ARRIVED") || title.contains("RESPONDER") || title.contains("MISSION");
+            } else if ("BROADCASTS".equals(filterCat) || "EMERGENCY_BROADCAST".equals(filterCat)) {
+                return "ALERT".equals(rel) || c.contains("ALERT") || c.contains("BROADCAST") || title.contains("BROADCAST") || title.contains("ALERT") || title.contains("WARNING");
+            } else if ("NDMA".equals(filterCat) || "NDMA_ALERT".equals(filterCat)) {
+                return "OFFICIAL_ALERT".equals(rel) || title.contains("NDMA") || title.contains("OFFICIAL");
+            } else if ("SYSTEM".equals(filterCat) || "SYSTEM_EVENT".equals(filterCat)) {
+                return c.contains("SYSTEM") || c.contains("USER") || title.contains("SECURITY") || title.contains("PIN") || title.contains("AUDIT");
+            } else if ("DIRECT_MESSAGE".equals(filterCat) || "MESSAGE".equals(filterCat) || "MESSAGES".equals(filterCat)) {
+                return "MESSAGE".equals(rel) || c.contains("MESSAGE") || title.contains("MESSAGE");
+            }
+            return c.equals(filterCat);
+        }).toList();
+    }
+
+    public List<Notification> getCitizenNotifications(String citizenEmail, String category, String status) {
+        if (citizenEmail == null || citizenEmail.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        String email = citizenEmail.trim().toLowerCase();
+        String normStatus = status != null ? status.trim().toLowerCase() : "all";
+        List<Notification> list;
+
+        if ("unread".equals(normStatus)) {
+            list = notificationRepository.findByRecipientEmailAndRecipientRoleIgnoreCaseAndIsReadAndIsDeletedByRecipientFalseOrderByCreatedAtDesc(email, "Citizen", false);
+        } else if ("read".equals(normStatus)) {
+            list = notificationRepository.findByRecipientEmailAndRecipientRoleIgnoreCaseAndIsReadAndIsDeletedByRecipientFalseOrderByCreatedAtDesc(email, "Citizen", true);
+        } else {
+            list = notificationRepository.findByRecipientEmailAndRecipientRoleIgnoreCaseAndIsDeletedByRecipientFalseOrderByCreatedAtDesc(email, "Citizen");
+        }
+
+        if (category == null || category.trim().isEmpty() || "ALL".equalsIgnoreCase(category.trim())) {
+            return list;
+        }
+
+        String filterCat = category.trim().toUpperCase();
+        return list.stream().filter(n -> {
+            String c = (n.getCategory() != null ? n.getCategory() : "").toUpperCase().trim();
+            String rel = (n.getRelatedIncidentType() != null ? n.getRelatedIncidentType() : "").toUpperCase().trim();
+            String title = (n.getTitle() != null ? n.getTitle() : "").toUpperCase();
+
+            if ("REPORTS".equals(filterCat) || "DISASTER_REPORT".equals(filterCat) || "REPORT_STATUS".equals(filterCat)) {
+                return "CITIZEN_REPORT".equals(rel) || c.contains("REPORT") || title.contains("REPORT") || title.contains("DISASTER");
+            } else if ("RESCUE".equals(filterCat) || "RESPONDER_ASSIGNMENT".equals(filterCat)) {
+                return "TASK".equals(rel) || c.contains("RESPONSE") || c.contains("ASSIGNMENT") || title.contains("RESCUE") || title.contains("DEPLOYED") || title.contains("EN ROUTE") || title.contains("ARRIVED") || title.contains("COMPLETED");
+            } else if ("WARNINGS".equals(filterCat) || "EMERGENCY_BROADCAST".equals(filterCat)) {
+                return "ALERT".equals(rel) || c.contains("ALERT") || c.contains("BROADCAST") || title.contains("ALERT") || title.contains("WARNING") || title.contains("EVACUATION");
+            } else if ("MESSAGES".equals(filterCat) || "DIRECT_MESSAGE".equals(filterCat)) {
+                return "MESSAGE".equals(rel) || c.contains("MESSAGE") || title.contains("SAFETY") || title.contains("DIRECTIVE") || title.contains("INSTRUCTION") || title.contains("MESSAGE");
+            } else if ("NDMA".equals(filterCat) || "NDMA_ALERT".equals(filterCat)) {
+                return "OFFICIAL_ALERT".equals(rel) || title.contains("NDMA") || title.contains("OFFICIAL");
+            } else if ("SYSTEM".equals(filterCat) || "SYSTEM_EVENT".equals(filterCat)) {
+                return c.contains("SYSTEM") || c.contains("USER");
+            }
+            return c.equals(filterCat);
+        }).toList();
+    }
+
+    public List<Notification> getResponderNotifications(String responderEmail, String category, String status) {
+        if (responderEmail == null || responderEmail.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        String email = responderEmail.trim().toLowerCase();
+        String normStatus = status != null ? status.trim().toLowerCase() : "all";
+        List<Notification> list;
+
+        if ("unread".equals(normStatus)) {
+            list = notificationRepository.findByRecipientEmailAndRecipientRoleIgnoreCaseAndIsReadAndIsDeletedByRecipientFalseOrderByCreatedAtDesc(email, "Responder", false);
+        } else if ("read".equals(normStatus)) {
+            list = notificationRepository.findByRecipientEmailAndRecipientRoleIgnoreCaseAndIsReadAndIsDeletedByRecipientFalseOrderByCreatedAtDesc(email, "Responder", true);
+        } else {
+            list = notificationRepository.findByRecipientEmailAndRecipientRoleIgnoreCaseAndIsDeletedByRecipientFalseOrderByCreatedAtDesc(email, "Responder");
+        }
+
+        if (category == null || category.trim().isEmpty() || "ALL".equalsIgnoreCase(category.trim())) {
+            return list;
+        }
+
+        String filterCat = category.trim().toUpperCase();
+        return list.stream().filter(n -> {
+            String c = (n.getCategory() != null ? n.getCategory() : "").toUpperCase().trim();
+            String rel = (n.getRelatedIncidentType() != null ? n.getRelatedIncidentType() : "").toUpperCase().trim();
+            String title = (n.getTitle() != null ? n.getTitle() : "").toUpperCase();
+
+            if ("DISPATCH".equals(filterCat) || "RESPONDER_ASSIGNMENT".equals(filterCat)) {
+                return "TASK".equals(rel) || c.contains("ASSIGNMENT") || c.contains("DISPATCH") || title.contains("ASSIGNMENT") || title.contains("DISPATCH") || title.contains("MISSION");
+            } else if ("STATUS_LOG".equals(filterCat) || "REPORT_STATUS".equals(filterCat)) {
+                return c.contains("RESPONSE") || title.contains("ACKNOWLEDGED") || title.contains("STATUS") || title.contains("EN ROUTE") || title.contains("ARRIVED") || title.contains("COMPLETED");
+            } else if ("HQ_UPDATES".equals(filterCat) || "DIRECT_MESSAGE".equals(filterCat) || "MESSAGES".equals(filterCat)) {
+                return "MESSAGE".equals(rel) || c.contains("MESSAGE") || title.contains("HQ") || title.contains("COMMAND") || title.contains("ORDER") || title.contains("INSTRUCTION");
+            } else if ("HAZARDS".equals(filterCat) || "EMERGENCY_BROADCAST".equals(filterCat)) {
+                return "ALERT".equals(rel) || c.contains("ALERT") || c.contains("BROADCAST") || title.contains("ALERT") || title.contains("WARNING") || title.contains("HAZARD");
+            } else if ("NDMA".equals(filterCat) || "NDMA_ALERT".equals(filterCat)) {
+                return "OFFICIAL_ALERT".equals(rel) || title.contains("NDMA") || title.contains("OFFICIAL");
+            } else if ("SYSTEM".equals(filterCat) || "SYSTEM_EVENT".equals(filterCat)) {
+                return c.contains("SYSTEM");
+            }
+            return c.equals(filterCat);
+        }).toList();
+    }
+
+    public Map<String, Object> getRoleNotificationSummary(String callerEmail, String role) {
+        if (callerEmail == null || callerEmail.trim().isEmpty()) {
+            return Map.of("total", 0L, "unread", 0L, "unreadCount", 0L);
+        }
+
+        String email = callerEmail.trim().toLowerCase();
+        long unread = notificationRepository.countByRecipientEmailAndRecipientRoleIgnoreCaseAndIsReadFalseAndIsDeletedByRecipientFalse(email, role);
+        long total = notificationRepository.countByRecipientEmailAndRecipientRoleIgnoreCaseAndIsDeletedByRecipientFalse(email, role);
+
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("total", total);
+        summary.put("unread", unread);
+        summary.put("unreadCount", unread);
+        return summary;
+    }
+
+    @Transactional
+    public int markAllAsReadForRole(String callerEmail, String role) {
+        if (callerEmail == null || callerEmail.trim().isEmpty()) {
+            return 0;
+        }
+        return notificationRepository.markAllAsReadForRecipientAndRole(callerEmail.trim().toLowerCase(), role);
+    }
+
     public List<Notification> getNotificationsForUser(String callerEmail, String category, String status) {
         if (callerEmail == null || callerEmail.trim().isEmpty()) {
             return Collections.emptyList();

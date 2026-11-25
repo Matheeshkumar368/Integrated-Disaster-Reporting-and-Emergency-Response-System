@@ -245,6 +245,7 @@
     <nav class="cc-nav-bar">
         <ul class="cc-nav-links">
             <li><a href="/citizen-notifications.html" class="cc-nav-link" style="color:var(--cc-safe-green);"><i class="fas fa-bell"></i> Notification Center</a></li>
+            <li><a href="/citizen-messages.html" class="cc-nav-link" style="color:var(--cc-safe-green);"><i class="fas fa-comments"></i> Messages & Support</a></li>
             <li><a href="/citizen-dashboard.html" class="cc-nav-link"><i class="fas fa-shield-heart"></i> Dashboard</a></li>
             <li><a href="/citizen-dashboard.html?report" class="cc-nav-link"><i class="fas fa-camera-retro"></i> Report Disaster</a></li>
             <li><a href="/citizen-dashboard.html?my-reports" class="cc-nav-link"><i class="fas fa-clipboard-list"></i> My Reports</a></li>
@@ -371,7 +372,10 @@
 
 <script src="/js/emergency-alert.js?v=4.1"></script>
 <script>
-    const token = window.AuthHelper ? window.AuthHelper.getToken() : localStorage.getItem('token');
+    function getCitizenToken() {
+        return (window.AuthHelper && window.AuthHelper.getToken('Citizen')) || sessionStorage.getItem('token_Citizen') || localStorage.getItem('token_Citizen') || (window.AuthHelper && window.AuthHelper.getToken());
+    }
+    const token = getCitizenToken();
     let currentUser = null;
 
     if (!token) {
@@ -397,8 +401,8 @@
 
     // Role-based dashboard redirect
     function goToDashboard() {
-        const token = localStorage.getItem('token');
-        const storedRole = localStorage.getItem('userRole');
+        const token = getCitizenToken();
+        const storedRole = (window.AuthHelper && window.AuthHelper.getRole('Citizen')) || sessionStorage.getItem('userRole_Citizen') || localStorage.getItem('userRole_Citizen') || localStorage.getItem('userRole');
         if (!token) {
             window.location.href = '/index.html';
             return;

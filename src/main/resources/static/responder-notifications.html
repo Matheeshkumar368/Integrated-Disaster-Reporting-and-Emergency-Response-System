@@ -43,6 +43,10 @@
             </div>
 
             <div class="shade-header-right">
+                <a href="responder-messages.html" class="btn-shade-action" style="text-decoration:none;" title="Open Tactical Messages">
+                    <i class="fa-solid fa-comments" style="color:#f97316;"></i>
+                    <span class="btn-label-desktop">Messages</span>
+                </a>
                 <div class="shade-clock-pill">
                     <i class="fa-regular fa-clock"></i>
                     <span id="liveClockDisplay">Live Clock</span>
@@ -85,9 +89,13 @@
                         <i class="fa-solid fa-clock-rotate-left"></i> Mission Progress
                         <span class="filter-count-badge" id="countPill_STATUS_LOG">0</span>
                     </button>
-                    <button class="shade-filter-pill" data-category="HQ_UPDATES">
-                        <i class="fa-solid fa-tower-broadcast"></i> HQ Orders
-                        <span class="filter-count-badge" id="countPill_HQ_UPDATES">0</span>
+                    <button class="shade-filter-pill" data-category="DIRECT_MESSAGE">
+                        <i class="fa-solid fa-comments"></i> HQ Messages
+                        <span class="filter-count-badge" id="countPill_DIRECT_MESSAGE">0</span>
+                    </button>
+                    <button class="shade-filter-pill" data-category="NDMA_ALERT">
+                        <i class="fa-solid fa-cloud-bolt"></i> NDMA Weather Alerts
+                        <span class="filter-count-badge" id="countPill_NDMA_ALERT">0</span>
                     </button>
                     <button class="shade-filter-pill" data-category="HAZARDS">
                         <i class="fa-solid fa-biohazard"></i> Severe Hazards

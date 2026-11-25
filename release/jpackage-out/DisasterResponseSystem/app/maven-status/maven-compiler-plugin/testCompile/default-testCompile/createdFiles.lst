@@ -1,0 +1,9 @@
+com\disaster\management\service\NdmaSyncServiceTest.class
+com\disaster\management\security\JwtUtilTest.class
+com\disaster\management\service\CitizenReportServiceTest.class
+com\disaster\management\service\RescueTaskServiceTest.class
+com\disaster\management\service\AdminPinServiceTest.class
+com\disaster\management\service\TrackingAndMediaServiceTest.class
+com\disaster\management\DisasterManagementApplicationTests.class
+com\disaster\management\SecurityIntegrationTest.class
+com\disaster\management\service\UserServiceTest.class

@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover"/>
+    <meta name="theme-color" content="#070b14"/>
+    <link rel="icon" type="image/png" href="/icons/icon-192.png"/>
+    <title>Manage Users — Strategic Personnel Directory | FIREBOY</title>
+    
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    
+    <!-- Design System & Scripts -->
+    <link rel="stylesheet" href="toast-manager.css?v=2" />
+    <link rel="stylesheet" href="direct-messaging.css?v=1" />
+    <link rel="stylesheet" href="notifications.css?v=1" />
+    <script src="toast-manager.js?v=2"></script>
+    <script src="auth-helper.js?v=2"></script>
+    <script src="direct-messaging.js?v=1"></script>
+
+    <style>
+        /* Dedicated Admin Users Directory Styles */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .kpi-card {
+            background: var(--notif-surface-card);
+            backdrop-filter: blur(14px);
+            border: 1px solid var(--notif-border);
+            border-radius: 18px;
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.2s ease;
+        }
+
+        .kpi-card:hover {
+            border-color: rgba(56, 189, 248, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+        }
+
+        .kpi-data h4 {
+            font-size: 13px;
+            color: var(--notif-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .kpi-data .kpi-num {
+            font-size: 28px;
+            font-weight: 700;
+            color: #ffffff;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .kpi-icon-badge {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+
+        .kpi-icon-badge.blue {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .kpi-icon-badge.orange {
+            background: rgba(249, 115, 22, 0.15);
+            color: #fb923c;
+            border: 1px solid rgba(249, 115, 22, 0.3);
+        }
+
+        .kpi-icon-badge.green {
+            background: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .kpi-icon-badge.purple {
+            background: rgba(168, 85, 247, 0.15);
+            color: #c084fc;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+        }
+
+        /* Search & Controls */
+        .search-control-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .search-input-wrap {
+            position: relative;
+            flex: 1;
+            min-width: 280px;
+        }
+
+        .search-input-wrap i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--notif-text-dim);
+            font-size: 15px;
+        }
+
+        .search-input-wrap input {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--notif-border);
+            border-radius: 12px;
+            padding: 12px 16px 12px 44px;
+            color: #ffffff;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .search-input-wrap input:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+        }
+
+        .status-select {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--notif-border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: #ffffff;
+            font-size: 14px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .status-select option {
+            background: #0f172a;
+            color: #ffffff;
+        }
+
+        /* User Table Container */
+        .table-glass-card {
+            background: var(--notif-surface-card);
+            backdrop-filter: blur(14px);
+            border: 1px solid var(--notif-border);
+            border-radius: 18px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .user-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        .user-table th {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 16px 20px;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--notif-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            border-bottom: 1px solid var(--notif-border);
+        }
+
+        .user-table td {
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 14px;
+            vertical-align: middle;
+        }
+
+        .user-table tr:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .user-col-flex {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .user-col-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 15px;
+            flex-shrink: 0;
+            background: #1e293b;
+            color: #cbd5e1;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .user-col-avatar.role-Admin { border-color: #3b82f6; color: #60a5fa; }
+        .user-col-avatar.role-Responder { border-color: #ea580c; color: #fb923c; }
+        .user-col-avatar.role-Citizen { border-color: #22c55e; color: #4ade80; }
+
+        .user-name-title {
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 2px;
+        }
+
+        .user-subtext {
+            font-size: 12px;
+            color: var(--notif-text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Role Badge */
+        .role-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            border-radius: 9999px;
+            font-size: 11.5px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+        }
+
+        .role-tag.Admin {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.35);
+        }
+
+        .role-tag.Responder {
+            background: rgba(234, 88, 12, 0.15);
+            color: #fb923c;
+            border: 1px solid rgba(234, 88, 12, 0.35);
+        }
+
+        .role-tag.Citizen {
+            background: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+            border: 1px solid rgba(34, 197, 94, 0.35);
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 11.5px;
+            font-weight: 600;
+        }
+
+        .status-badge.available {
+            background: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+        }
+
+        .status-badge.onduty {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+        }
+
+        .status-badge.assigned {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+        }
+
+        .status-badge.deactivated {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+        }
+
+        /* Action Buttons */
+        .action-btn-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-table-action {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--notif-border);
+            color: #cbd5e1;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-table-action:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .btn-table-action.msg-btn:hover {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            border-color: rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-table-action.deact-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            border-color: rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-table-action.react-btn:hover {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+            border-color: rgba(34, 197, 94, 0.4);
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal-box {
+            background: #0d1527;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            width: 90%;
+            max-width: 520px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+            animation: modalFadeIn 0.25s ease;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.96); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--notif-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-header h3 {
+            font-size: 18px;
+            color: #ffffff;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--notif-text-muted);
+            margin-bottom: 6px;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid var(--notif-border);
+            border-radius: 10px;
+            padding: 10px 14px;
+            color: #ffffff;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+        }
+
+        .form-group select option {
+            background: #0f172a;
+            color: #ffffff;
+        }
+
+        .modal-footer {
+            padding: 18px 24px;
+            border-top: 1px solid var(--notif-border);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 12px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body class="theme-admin">
+    <div class="app-container">
+        <!-- TACTICAL SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-top">
+                <div class="brand-section">
+                    <div class="brand-icon-shield" style="background: linear-gradient(135deg, #3b82f6, #06b6d4);">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div class="brand-meta">
+                        <h2>FIREBOY</h2>
+                        <span>Disaster Management</span>
+                    </div>
+                </div>
+
+                <!-- Admin Profile Badge -->
+                <div class="user-profile-badge">
+                    <div class="user-profile-left">
+                        <div class="avatar-circle" id="userAvatarDisplay" style="border-color: rgba(56, 189, 248, 0.4);">A</div>
+                        <div>
+                            <div class="user-meta-name" id="userNameDisplay">Admin</div>
+                            <div class="user-meta-role" id="userRoleDisplay">Administrator <i class="fa-solid fa-chevron-down"></i></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation Links -->
+                <nav class="sidebar-nav">
+                    <a href="admin-notifications.html" class="nav-link">
+                        <i class="fa-solid fa-bell"></i>
+                        <span>Notifications</span>
+                        <span class="badge-count" id="sidebarUnreadBadge" style="display:none; background:#3b82f6;">0</span>
+                    </a>
+                    <a href="admin-messages.html" class="nav-link">
+                        <i class="fa-solid fa-comments"></i>
+                        <span>Tactical Messages</span>
+                    </a>
+                    <a href="admin-dashboard.html" class="nav-link">
+                        <i class="fa-solid fa-gauge-high"></i>
+                        <span>Command Center</span>
+                    </a>
+                    <a href="admin-users.html" class="nav-link active">
+                        <i class="fa-solid fa-users"></i>
+                        <span>Manage Users</span>
+                    </a>
+                    <a href="admin-dashboard.html?disasters" class="nav-link">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>Manage Disasters</span>
+                    </a>
+                    <a href="admin-alerts.html" class="nav-link">
+                        <i class="fa-solid fa-bullhorn"></i>
+                        <span>Emergency Broadcasts</span>
+                    </a>
+                    <a href="admin-tasks.html" class="nav-link">
+                        <i class="fa-solid fa-truck-medical"></i>
+                        <span>Responder Tasks</span>
+                    </a>
+                    <a href="reports.html" class="nav-link">
+                        <i class="fa-solid fa-chart-line"></i>
+                        <span>Reports & Analytics</span>
+                    </a>
+                    <a href="emergency-videos.html" class="nav-link">
+                        <i class="fa-solid fa-film"></i>
+                        <span>Survival Videos</span>
+                    </a>
+                    <a href="admin-profile.html" class="nav-link">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <span>Security & Settings</span>
+                    </a>
+                    <a href="#" class="nav-link action-logout">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                        <span>Logout</span>
+                    </a>
+                </nav>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="motto-banner">
+                    <i class="fa-solid fa-tower-broadcast"></i>
+                    <span>Control. Coordinate. Ensure.</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="main-content">
+            <!-- HERO BANNER -->
+            <section class="hero-banner admin-hero">
+                <div class="hero-left">
+                    <div class="hero-icon-bubble cyan">
+                        <i class="fa-solid fa-users-gear"></i>
+                    </div>
+                    <div class="hero-text">
+                        <h1>User & Personnel Management</h1>
+                        <p>Tactical Personnel Registry, Responder Field Deployment & Access Controls</p>
+                    </div>
+                </div>
+
+                <div class="hero-right">
+                    <div class="time-pill">
+                        <i class="fa-regular fa-clock"></i>
+                        <span id="liveClockDisplay">Loading clock...</span>
+                    </div>
+                    <div class="hero-actions">
+                        <button class="btn-hero btn-hero-glass" id="btnRefreshUsers" title="Refresh">
+                            <i class="fa-solid fa-rotate"></i> Refresh
+                        </button>
+                        <button class="btn-hero btn-hero-primary" id="btnOpenRegisterModal" style="background:#2563eb;">
+                            <i class="fa-solid fa-user-plus"></i> + Register Responder
+                        </button>
+                        <a href="admin-dashboard.html" class="btn-hero btn-hero-glass" id="btnGoDashboard">
+                            <i class="fa-solid fa-arrow-right"></i> Command Center
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- KPI STATS CARDS -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-data">
+                        <h4>Total Registered Users</h4>
+                        <div class="kpi-num" id="kpiTotalUsers">--</div>
+                    </div>
+                    <div class="kpi-icon-badge blue">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-data">
+                        <h4>Field Responders</h4>
+                        <div class="kpi-num" id="kpiResponders">--</div>
+                    </div>
+                    <div class="kpi-icon-badge orange">
+                        <i class="fa-solid fa-helmet-safety"></i>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-data">
+                        <h4>Registered Citizens</h4>
+                        <div class="kpi-num" id="kpiCitizens">--</div>
+                    </div>
+                    <div class="kpi-icon-badge green">
+                        <i class="fa-solid fa-person-shelter"></i>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-data">
+                        <h4>Active Accounts</h4>
+                        <div class="kpi-num" id="kpiActiveUsers">--</div>
+                    </div>
+                    <div class="kpi-icon-badge purple">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEARCH, FILTERS & CONTROLS -->
+            <div class="search-control-bar">
+                <div class="search-input-wrap">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="userSearchInput" placeholder="Search users by name, email, phone, or zone..." />
+                </div>
+                <div class="filters-group">
+                    <button class="filter-pill active" data-role="ALL">
+                        <i class="fa-solid fa-table-cells-large"></i> All Users
+                    </button>
+                    <button class="filter-pill" data-role="Responder">
+                        <i class="fa-solid fa-helmet-safety"></i> Responders
+                    </button>
+                    <button class="filter-pill" data-role="Citizen">
+                        <i class="fa-solid fa-person"></i> Citizens
+                    </button>
+                    <button class="filter-pill" data-role="Admin">
+                        <i class="fa-solid fa-shield"></i> Admins
+                    </button>
+                </div>
+                <select class="status-select" id="statusFilterSelect">
+                    <option value="ALL">All Account Status</option>
+                    <option value="ACTIVE">Active Only</option>
+                    <option value="DEACTIVATED">Deactivated Only</option>
+                    <option value="AVAILABLE">Available Responders</option>
+                </select>
+            </div>
+
+            <!-- TABLE OF USERS -->
+            <div class="table-glass-card">
+                <table class="user-table">
+                    <thead>
+                        <tr>
+                            <th>User Details</th>
+                            <th>Role</th>
+                            <th>Assigned Zone</th>
+                            <th>Status & Duty</th>
+                            <th>Account Created</th>
+                            <th style="text-align: right;">Operational Controls</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTableBody">
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 40px; color: var(--notif-text-muted);">
+                                <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 24px; margin-bottom: 10px;"></i>
+                                <p>Loading user database...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL: REGISTER RESPONDER -->
+    <div class="modal-overlay" id="registerResponderModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-user-plus" style="color:#fb923c;"></i> Register Field Responder</h3>
+                <button class="btn-card-action" onclick="closeModal('registerResponderModal')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="registerResponderForm">
+                    <div class="form-group">
+                        <label>Full Name *</label>
+                        <input type="text" id="regName" required placeholder="e.g. Vikram R" />
+                    </div>
+                    <div class="form-group">
+                        <label>Email Address *</label>
+                        <input type="email" id="regEmail" required placeholder="e.g. responder.vikram@disaster.gov.in" />
+                    </div>
+                    <div class="form-group">
+                        <label>Contact Phone *</label>
+                        <input type="tel" id="regPhone" required placeholder="e.g. +91 9876543210" />
+                    </div>
+                    <div class="form-group">
+                        <label>Temporary Password *</label>
+                        <input type="password" id="regPassword" required placeholder="At least 6 characters" />
+                    </div>
+                    <div class="form-group">
+                        <label>Initial Assigned Operational Zone *</label>
+                        <select id="regZone" required>
+                            <option value="">Select Zone</option>
+                            <option value="Chennai">Chennai</option>
+                            <option value="Karur">Karur</option>
+                            <option value="Coimbatore">Coimbatore</option>
+                            <option value="Madurai">Madurai</option>
+                            <option value="Salem">Salem</option>
+                            <option value="Trichy">Trichy</option>
+                            <option value="Tirunelveli">Tirunelveli</option>
+                            <option value="Vellore">Vellore</option>
+                            <option value="Nilgiris">Nilgiris</option>
+                            <option value="Cuddalore">Cuddalore</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Classification</label>
+                        <select id="regClassification">
+                            <option value="Rescuer">Rescuer</option>
+                            <option value="Leader">Team Leader</option>
+                            <option value="Helper">Medical / Support Helper</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-hero btn-hero-glass" onclick="closeModal('registerResponderModal')">Cancel</button>
+                <button class="btn-hero btn-hero-primary" id="btnSubmitRegister" style="background:#ea580c;">Register Responder</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ASSIGN ZONE -->
+    <div class="modal-overlay" id="assignZoneModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-map-location-dot" style="color:#38bdf8;"></i> Assign Operational Zone</h3>
+                <button class="btn-card-action" onclick="closeModal('assignZoneModal')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="assignTargetEmail" />
+                <p id="assignTargetDesc" style="color:var(--notif-text-muted); font-size:14px; margin-bottom:16px;"></p>
+                <div class="form-group">
+                    <label>Select Deployment Zone *</label>
+                    <select id="targetZoneSelect" required>
+                        <option value="Chennai">Chennai</option>
+                        <option value="Karur">Karur</option>
+                        <option value="Coimbatore">Coimbatore</option>
+                        <option value="Madurai">Madurai</option>
+                        <option value="Salem">Salem</option>
+                        <option value="Trichy">Trichy</option>
+                        <option value="Tirunelveli">Tirunelveli</option>
+                        <option value="Vellore">Vellore</option>
+                        <option value="Nilgiris">Nilgiris</option>
+                        <option value="Cuddalore">Cuddalore</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-hero btn-hero-glass" onclick="closeModal('assignZoneModal')">Cancel</button>
+                <button class="btn-hero btn-hero-primary" id="btnSubmitAssignZone">Save Deployment Zone</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: DEACTIVATE USER -->
+    <div class="modal-overlay" id="deactivateUserModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-user-lock" style="color:#ef4444;"></i> Deactivate User Account</h3>
+                <button class="btn-card-action" onclick="closeModal('deactivateUserModal')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="deactTargetId" />
+                <p id="deactTargetDesc" style="color:#f87171; font-size:14px; margin-bottom:16px;"></p>
+                <div class="form-group">
+                    <label>Deactivation Reason *</label>
+                    <input type="text" id="deactReasonInput" placeholder="e.g. Account suspended per administrative review" required />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-hero btn-hero-glass" onclick="closeModal('deactivateUserModal')">Cancel</button>
+                <button class="btn-hero btn-hero-primary" id="btnConfirmDeactivate" style="background:#ef4444;">Deactivate Account</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global Modal Helpers
+        function openModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('open');
+        }
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('open');
+        }
+
+        // Main User Directory Engine
+        document.addEventListener('DOMContentLoaded', () => {
+            // Role Auth Guard
+            if (window.AuthHelper) {
+                const ok = window.AuthHelper.requireAuth('Admin');
+                if (!ok) return;
+            }
+
+            // Setup Admin Profile Card
+            const userName = localStorage.getItem('userName') || 'Administrator';
+            const nameEl = document.getElementById('userNameDisplay');
+            if (nameEl) nameEl.textContent = userName;
+            const avatarEl = document.getElementById('userAvatarDisplay');
+            if (avatarEl) {
+                const initials = userName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                avatarEl.textContent = initials || 'A';
+            }
+
+            // Live Clock
+            const clockEl = document.getElementById('liveClockDisplay');
+            const updateClock = () => {
+                const now = new Date();
+                const optionsDate = { month: 'short', day: 'numeric', year: 'numeric' };
+                const dateStr = now.toLocaleDateString('en-US', optionsDate);
+                let hours = now.getHours();
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12;
+                hours = hours ? hours : 12;
+                const hoursStr = String(hours).padStart(2, '0');
+                if (clockEl) clockEl.textContent = `${dateStr} • ${hoursStr}:${minutes} ${ampm}`;
+            };
+            updateClock();
+            setInterval(updateClock, 1000);
+
+            // Logout Link
+            document.querySelectorAll('.action-logout').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (window.AuthHelper) window.AuthHelper.logout();
+                    else window.location.href = '/index.html';
+                });
+            });
+
+            // State
+            let allUsers = [];
+            let activeRoleFilter = 'ALL';
+            let activeStatusFilter = 'ALL';
+            let searchQuery = '';
+
+            // Load Users from Backend
+            async function loadUsers() {
+                try {
+                    const headers = window.AuthHelper ? window.AuthHelper.getHeaders() : {};
+                    let res = await fetch('/api/auth/admin/users', { headers });
+                    if (!res.ok) {
+                        res = await fetch('/api/auth/users', { headers });
+                    }
+                    if (!res.ok) {
+                        // Fallback: load responders
+                        const rRes = await fetch('/api/auth/responders/all', { headers });
+                        if (rRes.ok) {
+                            const rData = await rRes.json();
+                            allUsers = rData.responders || [];
+                            updateKPIs(allUsers.length, allUsers.length, 0, allUsers.length);
+                            renderTable();
+                            return;
+                        }
+                        throw new Error(`HTTP ${res.status}`);
+                    }
+
+                    const data = await res.json();
+                    allUsers = data.users || [];
+                    updateKPIs(data.totalUsers || allUsers.length, data.responderCount || 0, data.citizenCount || 0, data.activeUsers || allUsers.length);
+                    renderTable();
+                } catch (err) {
+                    console.error('Failed to load users:', err);
+                    if (window.showToast) window.showToast('Failed to load user database.', 'error');
+                }
+            }
+
+            function updateKPIs(total, responders, citizens, active) {
+                document.getElementById('kpiTotalUsers').textContent = total;
+                document.getElementById('kpiResponders').textContent = responders;
+                document.getElementById('kpiCitizens').textContent = citizens;
+                document.getElementById('kpiActiveUsers').textContent = active;
+            }
+
+            // Filtering
+            function filterUsers() {
+                return allUsers.filter(u => {
+                    // Role filter
+                    if (activeRoleFilter !== 'ALL' && (u.role || '').toLowerCase() !== activeRoleFilter.toLowerCase()) {
+                        return false;
+                    }
+                    // Status filter
+                    if (activeStatusFilter === 'ACTIVE' && u.active === false) return false;
+                    if (activeStatusFilter === 'DEACTIVATED' && u.active !== false) return false;
+                    if (activeStatusFilter === 'AVAILABLE' && (u.availabilityStatus || '').toLowerCase() !== 'available') return false;
+
+                    // Search query
+                    if (searchQuery) {
+                        const q = searchQuery.toLowerCase();
+                        const matchName = (u.name || '').toLowerCase().includes(q);
+                        const matchEmail = (u.email || '').toLowerCase().includes(q);
+                        const matchPhone = (u.phone || '').toLowerCase().includes(q);
+                        const matchZone = (u.assignedZone || '').toLowerCase().includes(q);
+                        if (!matchName && !matchEmail && !matchPhone && !matchZone) return false;
+                    }
+                    return true;
+                });
+            }
+
+            // Render Table Rows
+            function renderTable() {
+                const tbody = document.getElementById('userTableBody');
+                if (!tbody) return;
+                const filtered = filterUsers();
+
+                if (filtered.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 40px; color: var(--notif-text-muted);">
+                                <i class="fa-solid fa-users-slash" style="font-size: 28px; margin-bottom: 10px; opacity: 0.5;"></i>
+                                <p>No users found matching current criteria.</p>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                let html = '';
+                filtered.forEach(u => {
+                    const initials = (u.name || 'User').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                    const role = u.role || 'Citizen';
+                    const isActive = u.active !== false;
+                    const zone = u.assignedZone && u.assignedZone !== 'null' ? u.assignedZone : 'Unassigned';
+                    const status = u.availabilityStatus || 'Available';
+                    
+                    let statusBadge = '';
+                    if (!isActive) {
+                        statusBadge = `<span class="status-badge deactivated"><i class="fa-solid fa-ban"></i> Deactivated</span>`;
+                    } else if (status.toLowerCase() === 'available') {
+                        statusBadge = `<span class="status-badge available"><i class="fa-solid fa-circle-check"></i> Available</span>`;
+                    } else if (status.toLowerCase().includes('duty')) {
+                        statusBadge = `<span class="status-badge onduty"><i class="fa-solid fa-person-running"></i> On Duty</span>`;
+                    } else {
+                        statusBadge = `<span class="status-badge assigned"><i class="fa-solid fa-spinner"></i> ${escapeHtml(status)}</span>`;
+                    }
+
+                    const createdDate = u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'N/A';
+
+                    html += `
+                        <tr>
+                            <td>
+                                <div class="user-col-flex">
+                                    <div class="user-col-avatar role-${role}">${initials}</div>
+                                    <div>
+                                        <div class="user-name-title">${escapeHtml(u.name || 'Unnamed')}</div>
+                                        <div class="user-subtext">${escapeHtml(u.email)}</div>
+                                        <div class="user-subtext" style="color:var(--notif-text-dim);"><i class="fa-solid fa-phone" style="font-size:10px;"></i> ${escapeHtml(u.phone || 'No phone')}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="role-tag ${role}">
+                                    <i class="fa-solid ${role === 'Admin' ? 'fa-shield' : (role === 'Responder' ? 'fa-helmet-safety' : 'fa-person')}"></i>
+                                    ${role}
+                                </span>
+                            </td>
+                            <td>
+                                <span style="font-weight:600; color: #e2e8f0;">
+                                    <i class="fa-solid fa-location-dot" style="color:#38bdf8; margin-right:4px;"></i>
+                                    ${escapeHtml(zone)}
+                                </span>
+                            </td>
+                            <td>${statusBadge}</td>
+                            <td>
+                                <div style="font-size:13px; color:#cbd5e1;">${createdDate}</div>
+                            </td>
+                            <td style="text-align: right;">
+                                <div class="action-btn-group" style="justify-content: flex-end;">
+                                    <button class="btn-table-action msg-btn" title="Send Tactical Message" onclick="openDirectMessage('${escapeHtml(u.email)}', '${escapeHtml(u.name || u.email)}')">
+                                        <i class="fa-solid fa-message"></i> Message
+                                    </button>
+                                    ${role === 'Responder' ? `
+                                        <button class="btn-table-action" title="Reassign Zone" onclick="promptAssignZone('${escapeHtml(u.email)}', '${escapeHtml(u.name || u.email)}', '${escapeHtml(zone)}')">
+                                            <i class="fa-solid fa-map-pin"></i> Zone
+                                        </button>
+                                    ` : ''}
+                                    ${role !== 'Admin' ? (
+                                        isActive ? `
+                                            <button class="btn-table-action deact-btn" title="Deactivate User" onclick="promptDeactivate(${u.id}, '${escapeHtml(u.email)}')">
+                                                <i class="fa-solid fa-user-xmark"></i> Deactivate
+                                            </button>
+                                        ` : `
+                                            <button class="btn-table-action react-btn" title="Reactivate User" onclick="reactivateUser(${u.id}, '${escapeHtml(u.email)}')">
+                                                <i class="fa-solid fa-user-check"></i> Reactivate
+                                            </button>
+                                        `
+                                    ) : ''}
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                tbody.innerHTML = html;
+            }
+
+            function escapeHtml(str) {
+                if (!str) return '';
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+
+            // Bind Filter and Search events
+            document.querySelectorAll('.filter-pill').forEach(pill => {
+                pill.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+                    pill.classList.add('active');
+                    activeRoleFilter = pill.getAttribute('data-role') || 'ALL';
+                    renderTable();
+                });
+            });
+
+            const statusSelect = document.getElementById('statusFilterSelect');
+            if (statusSelect) {
+                statusSelect.addEventListener('change', () => {
+                    activeStatusFilter = statusSelect.value;
+                    renderTable();
+                });
+            }
+
+            const searchInput = document.getElementById('userSearchInput');
+            if (searchInput) {
+                searchInput.addEventListener('input', () => {
+                    searchQuery = searchInput.value.trim();
+                    renderTable();
+                });
+            }
+
+            const refreshBtn = document.getElementById('btnRefreshUsers');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', () => {
+                    loadUsers();
+                    if (window.showToast) window.showToast('Personnel directory refreshed.', 'info');
+                });
+            }
+
+            // Register Responder Modal Actions
+            const openRegBtn = document.getElementById('btnOpenRegisterModal');
+            if (openRegBtn) {
+                openRegBtn.addEventListener('click', () => openModal('registerResponderModal'));
+            }
+
+            const submitRegBtn = document.getElementById('btnSubmitRegister');
+            if (submitRegBtn) {
+                submitRegBtn.addEventListener('click', async () => {
+                    const name = document.getElementById('regName').value.trim();
+                    const email = document.getElementById('regEmail').value.trim();
+                    const phone = document.getElementById('regPhone').value.trim();
+                    const password = document.getElementById('regPassword').value;
+                    const zone = document.getElementById('regZone').value;
+                    const classification = document.getElementById('regClassification').value;
+
+                    if (!name || !email || !phone || !password || !zone) {
+                        if (window.showToast) window.showToast('Please fill in all required fields.', 'warning');
+                        return;
+                    }
+
+                    try {
+                        submitRegBtn.disabled = true;
+                        submitRegBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Registering...';
+
+                        const headers = window.AuthHelper ? window.AuthHelper.getHeaders() : { 'Content-Type': 'application/json' };
+                        const res = await fetch('/api/auth/register-responder', {
+                            method: 'POST',
+                            headers: { ...headers, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                name, email, phone, password, assignedZone: zone, groupClassification: classification
+                            })
+                        });
+
+                        const data = await res.json();
+                        if (res.ok) {
+                            if (window.showToast) window.showToast('Responder registered successfully!', 'success');
+                            closeModal('registerResponderModal');
+                            document.getElementById('registerResponderForm').reset();
+                            loadUsers();
+                        } else {
+                            if (window.showToast) window.showToast(data.message || 'Registration failed.', 'error');
+                        }
+                    } catch (err) {
+                        console.error('Registration error:', err);
+                        if (window.showToast) window.showToast('Network error during registration.', 'error');
+                    } finally {
+                        submitRegBtn.disabled = false;
+                        submitRegBtn.innerHTML = 'Register Responder';
+                    }
+                });
+            }
+
+            // Assign Zone Modal Actions
+            window.promptAssignZone = function(email, name, currentZone) {
+                document.getElementById('assignTargetEmail').value = email;
+                document.getElementById('assignTargetDesc').textContent = `Reassigning deployment zone for ${name} (${email}). Current zone: ${currentZone}`;
+                const selectEl = document.getElementById('targetZoneSelect');
+                if (selectEl) selectEl.value = currentZone !== 'Unassigned' ? currentZone : 'Chennai';
+                openModal('assignZoneModal');
+            };
+
+            const submitAssignBtn = document.getElementById('btnSubmitAssignZone');
+            if (submitAssignBtn) {
+                submitAssignBtn.addEventListener('click', async () => {
+                    const email = document.getElementById('assignTargetEmail').value;
+                    const zone = document.getElementById('targetZoneSelect').value;
+
+                    try {
+                        submitAssignBtn.disabled = true;
+                        submitAssignBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Assigning...';
+
+                        const headers = window.AuthHelper ? window.AuthHelper.getHeaders() : { 'Content-Type': 'application/json' };
+                        const res = await fetch('/api/auth/assign-zone', {
+                            method: 'POST',
+                            headers: { ...headers, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ responderEmail: email, zone: zone })
+                        });
+
+                        const data = await res.json();
+                        if (res.ok) {
+                            if (window.showToast) window.showToast(`Zone assigned to ${zone} successfully!`, 'success');
+                            closeModal('assignZoneModal');
+                            loadUsers();
+                        } else {
+                            if (window.showToast) window.showToast(data.message || 'Zone assignment failed.', 'error');
+                        }
+                    } catch (err) {
+                        console.error('Zone assignment error:', err);
+                        if (window.showToast) window.showToast('Network error during zone assignment.', 'error');
+                    } finally {
+                        submitAssignBtn.disabled = false;
+                        submitAssignBtn.innerHTML = 'Save Deployment Zone';
+                    }
+                });
+            }
+
+            // Deactivate & Reactivate Actions
+            window.promptDeactivate = function(id, email) {
+                document.getElementById('deactTargetId').value = id;
+                document.getElementById('deactTargetDesc').textContent = `Are you sure you want to deactivate the account for ${email}? The user will be blocked from logging in.`;
+                document.getElementById('deactReasonInput').value = 'Administrative deactivation';
+                openModal('deactivateUserModal');
+            };
+
+            const confirmDeactBtn = document.getElementById('btnConfirmDeactivate');
+            if (confirmDeactBtn) {
+                confirmDeactBtn.addEventListener('click', async () => {
+                    const id = document.getElementById('deactTargetId').value;
+                    const reason = document.getElementById('deactReasonInput').value.trim();
+
+                    try {
+                        confirmDeactBtn.disabled = true;
+                        confirmDeactBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Deactivating...';
+
+                        const headers = window.AuthHelper ? window.AuthHelper.getHeaders() : { 'Content-Type': 'application/json' };
+                        const res = await fetch(`/api/auth/users/${id}/deactivate`, {
+                            method: 'PUT',
+                            headers: { ...headers, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ reason: reason || 'Administrative deactivation' })
+                        });
+
+                        const data = await res.json();
+                        if (res.ok) {
+                            if (window.showToast) window.showToast(data.message || 'User deactivated.', 'success');
+                            closeModal('deactivateUserModal');
+                            loadUsers();
+                        } else {
+                            if (window.showToast) window.showToast(data.message || 'Deactivation failed.', 'error');
+                        }
+                    } catch (err) {
+                        console.error('Deactivation error:', err);
+                        if (window.showToast) window.showToast('Network error during user deactivation.', 'error');
+                    } finally {
+                        confirmDeactBtn.disabled = false;
+                        confirmDeactBtn.innerHTML = 'Deactivate Account';
+                    }
+                });
+            }
+
+            window.reactivateUser = async function(id, email) {
+                if (!confirm(`Reactivate account for ${email}?`)) return;
+
+                try {
+                    const headers = window.AuthHelper ? window.AuthHelper.getHeaders() : {};
+                    const res = await fetch(`/api/auth/users/${id}/reactivate`, {
+                        method: 'PUT',
+                        headers
+                    });
+
+                    const data = await res.json();
+                    if (res.ok) {
+                        if (window.showToast) window.showToast(`User ${email} reactivated!`, 'success');
+                        loadUsers();
+                    } else {
+                        if (window.showToast) window.showToast(data.message || 'Reactivation failed.', 'error');
+                    }
+                } catch (err) {
+                    console.error('Reactivation error:', err);
+                    if (window.showToast) window.showToast('Network error during reactivation.', 'error');
+                }
+            };
+
+            // Direct Messaging Shortcut
+            window.openDirectMessage = function(email, name) {
+                if (window.DirectMessaging) {
+                    window.DirectMessaging.open(email, name);
+                } else {
+                    if (window.showToast) window.showToast(`Opening secure channel with ${email}...`, 'info');
+                }
+            };
+
+            // Initial Load
+            loadUsers();
+        });
+    </script>
+</body>
+</html>

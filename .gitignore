@@ -80,3 +80,8 @@ $RECYCLE.BIN/
 *.dump
 startup-log.txt
 database_backups/
+
+# Native Standalone Distribution & Binaries
+dist/
+*.exe
+

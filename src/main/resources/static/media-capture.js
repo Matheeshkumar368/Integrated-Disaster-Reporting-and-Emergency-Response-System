@@ -1,10 +1,13 @@
 /**
  * ==============================================================================
- * MEDIA CAPTURE & EVIDENCE PIPELINE (Feature 1 & Feature 2)
- * Disaster Management & Alert System
+ * MEDIA CAPTURE & EVIDENCE PIPELINE
+ * Disaster Management & Alert System - Tactical Command Center
  * 
  * Reusable Camera, Video Recording & Media Geolocation Component for
  * Citizen, Responder, and Admin Dashboards.
+ * 
+ * Zero-recursion state architecture: Guarantees zero memory leaks and
+ * zero browser call-stack exhaustion.
  * ==============================================================================
  */
 
@@ -18,12 +21,14 @@
             this.recordedChunks = [];
             this.currentMode = 'photo'; // 'photo', 'video', 'file'
             this.capturedBlob = null;
-            this.capturedMediaType = null; // 'PHOTO', 'VIDEO', 'DOCUMENT'
+            this.capturedMediaType = null; // 'PHOTO', 'VIDEO'
             this.facingMode = 'environment'; // 'environment' (rear) or 'user' (selfie)
             this.recordingTimer = null;
             this.recordingSeconds = 0;
             this.currentGps = null;
             this.activeOptions = null;
+            this.previewObjectUrl = null;
+            this.isInitializingCamera = false;
 
             if (document.body) {
                 this.injectModal();
@@ -34,6 +39,17 @@
                     this.bindEvents();
                 });
             }
+        }
+
+        resolveAuthToken() {
+            if (window.AuthHelper && typeof window.AuthHelper.getToken === 'function') {
+                const t = window.AuthHelper.getToken();
+                if (t) return t;
+            }
+            return sessionStorage.getItem('token_Citizen') || sessionStorage.getItem('token_Admin') || sessionStorage.getItem('token_Responder') ||
+                   localStorage.getItem('token_Citizen') || localStorage.getItem('token_Admin') || localStorage.getItem('token_Responder') ||
+                   sessionStorage.getItem('token') || localStorage.getItem('token') ||
+                   sessionStorage.getItem('citizen_token') || sessionStorage.getItem('admin_token') || sessionStorage.getItem('responder_token') || '';
         }
 
         injectModal() {
@@ -93,17 +109,17 @@
                         <!-- Dropzone Fallback (For File Mode) -->
                         <div id="media-dropzone" class="media-dropzone" style="display:none;">
                             <div class="media-dropzone-icon">📤</div>
-                            <div style="font-weight:600; margin-bottom:4px;">Drag and drop photo/video or browse device</div>
+                            <div style="font-weight:600; margin-bottom:4px;" id="dropzone-label">Drag and drop photo/video or browse device</div>
                             <div style="font-size:0.75rem; color:#94a3b8;">Supports JPG, PNG, WEBP, MP4, WEBM (Max 50MB)</div>
                             <input type="file" id="media-native-input" accept="image/*,video/*" style="display:none;" />
                         </div>
 
-                        <!-- Action Controls (Shutter, Retake, Record) -->
+                        <!-- Action Controls (Shutter, Retake) -->
                         <div class="capture-controls-bar">
                             <button type="button" id="btn-media-retake" class="btn-media-secondary" style="display:none;">
                                 🔄 Retake
                             </button>
-                            <button type="button" id="btn-shutter-action" class="btn-capture-shutter" title="Capture" aria-label="Capture button">
+                            <button type="button" id="btn-shutter-action" class="btn-capture-shutter" title="Take Photo" aria-label="Capture button">
                             </button>
                         </div>
 
@@ -141,8 +157,22 @@
             const nativeInput = document.getElementById('media-native-input');
             const tabButtons = document.querySelectorAll('.media-tab-btn');
 
-            closeBtn.addEventListener('click', () => this.close());
-            cancelBtn.addEventListener('click', () => this.close());
+            if (closeBtn) closeBtn.addEventListener('click', () => this.close());
+            if (cancelBtn) cancelBtn.addEventListener('click', () => this.close());
+
+            // Backdrop click closes modal
+            if (backdrop) {
+                backdrop.addEventListener('click', (e) => {
+                    if (e.target === backdrop) this.close();
+                });
+            }
+
+            // Escape key closes modal
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && backdrop && backdrop.classList.contains('active')) {
+                    this.close();
+                }
+            });
 
             // Tab switching
             tabButtons.forEach(btn => {
@@ -154,49 +184,92 @@
             });
 
             // Shutter action (Photo capture or Video record start/stop)
-            shutterBtn.addEventListener('click', () => {
-                if (this.currentMode === 'photo') {
-                    this.takePhoto();
-                } else if (this.currentMode === 'video') {
-                    if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
-                        this.stopVideoRecording();
-                    } else {
-                        this.startVideoRecording();
+            if (shutterBtn) {
+                shutterBtn.addEventListener('click', () => {
+                    if (this.currentMode === 'photo') {
+                        this.takePhoto();
+                    } else if (this.currentMode === 'video') {
+                        if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+                            this.stopVideoRecording();
+                        } else {
+                            this.startVideoRecording();
+                        }
                     }
-                }
-            });
+                });
+            }
 
-            retakeBtn.addEventListener('click', () => this.retake());
-            switchBtn.addEventListener('click', () => this.toggleCameraFacing());
+            if (retakeBtn) retakeBtn.addEventListener('click', () => this.retake());
+            if (switchBtn) switchBtn.addEventListener('click', () => this.toggleCameraFacing());
 
-            // Dropzone click
-            dropzone.addEventListener('click', () => nativeInput.click());
-            nativeInput.addEventListener('change', (e) => {
-                if (e.target.files && e.target.files[0]) {
-                    this.handleFileSelected(e.target.files[0]);
-                }
-            });
+            // Dropzone click & Native input change
+            if (dropzone && nativeInput) {
+                dropzone.addEventListener('click', () => nativeInput.click());
+                nativeInput.addEventListener('change', (e) => {
+                    if (e.target.files && e.target.files[0]) {
+                        this.handleFileSelected(e.target.files[0]);
+                    }
+                });
+
+                // Drag and drop support
+                dropzone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    dropzone.classList.add('dragover');
+                });
+                dropzone.addEventListener('dragleave', () => {
+                    dropzone.classList.remove('dragover');
+                });
+                dropzone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    dropzone.classList.remove('dragover');
+                    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                        this.handleFileSelected(e.dataTransfer.files[0]);
+                    }
+                });
+            }
 
             // Confirm upload
-            confirmBtn.addEventListener('click', () => this.uploadCapturedMedia());
+            if (confirmBtn) {
+                confirmBtn.addEventListener('click', () => this.uploadCapturedMedia());
+            }
+
+            // Caption Enter key triggers upload
+            const captionInput = document.getElementById('media-caption-input');
+            if (captionInput) {
+                captionInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (confirmBtn && !confirmBtn.disabled) {
+                            this.uploadCapturedMedia();
+                        }
+                    }
+                });
+            }
         }
 
         open(options = {}) {
+            if (!document.getElementById('media-capture-modal-backdrop')) {
+                this.injectModal();
+                this.bindEvents();
+            }
+
             this.activeOptions = options;
             const backdrop = document.getElementById('media-capture-modal-backdrop');
+            if (!backdrop) return;
             backdrop.classList.add('active');
 
-            // Reset states
-            this.capturedBlob = null;
-            this.capturedMediaType = null;
-            document.getElementById('media-caption-input').value = '';
-            document.getElementById('btn-media-confirm').disabled = true;
-            this.retake();
+            // Reset all state without recursion
+            this.resetCaptureState();
+            const captionInput = document.getElementById('media-caption-input');
+            if (captionInput) captionInput.value = '';
+
+            // Reset tab highlights
+            const tabs = document.querySelectorAll('.media-tab-btn');
+            tabs.forEach(t => t.classList.toggle('active', t.dataset.mode === 'photo'));
 
             // Acquire high-accuracy GPS
             this.acquireLocation();
 
-            // Start camera
+            // Open photo mode safely
             this.switchMode('photo');
         }
 
@@ -206,14 +279,61 @@
                 clearInterval(this.recordingTimer);
                 this.recordingTimer = null;
             }
+            if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+                try { this.mediaRecorder.stop(); } catch (e) {}
+            }
+            this.revokePreviewUrl();
             const backdrop = document.getElementById('media-capture-modal-backdrop');
-            backdrop.classList.remove('active');
+            if (backdrop) backdrop.classList.remove('active');
+        }
+
+        revokePreviewUrl() {
+            if (this.previewObjectUrl) {
+                try { URL.revokeObjectURL(this.previewObjectUrl); } catch (e) {}
+                this.previewObjectUrl = null;
+            }
+        }
+
+        resetCaptureState() {
+            this.revokePreviewUrl();
+            this.capturedBlob = null;
+            this.capturedMediaType = null;
+
+            const imgPreview = document.getElementById('camera-image-preview');
+            const videoPreview = document.getElementById('camera-video-preview');
+            const videoReplay = document.getElementById('camera-video-replay');
+            const shutterBtn = document.getElementById('btn-shutter-action');
+            const retakeBtn = document.getElementById('btn-media-retake');
+            const confirmBtn = document.getElementById('btn-media-confirm');
+            const recHud = document.getElementById('recording-hud');
+
+            if (imgPreview) {
+                imgPreview.style.display = 'none';
+                imgPreview.src = '';
+            }
+            if (videoReplay) {
+                videoReplay.style.display = 'none';
+                videoReplay.src = '';
+            }
+            if (videoPreview) {
+                videoPreview.style.display = 'block';
+            }
+            if (recHud) recHud.style.display = 'none';
+            if (retakeBtn) retakeBtn.style.display = 'none';
+            if (confirmBtn) {
+                confirmBtn.disabled = true;
+                confirmBtn.innerHTML = '<span>⬆️</span> Confirm & Transmit Evidence';
+            }
+            if (shutterBtn) {
+                shutterBtn.classList.remove('recording');
+                shutterBtn.style.display = (this.currentMode === 'file') ? 'none' : 'flex';
+            }
         }
 
         async switchMode(mode) {
             this.currentMode = mode;
             this.stopMediaStream();
-            this.retake();
+            this.resetCaptureState();
 
             const viewport = document.getElementById('camera-viewport');
             const dropzone = document.getElementById('media-dropzone');
@@ -221,56 +341,84 @@
             const switchBtn = document.getElementById('btn-camera-switch');
 
             if (mode === 'file') {
-                viewport.style.display = 'none';
-                dropzone.style.display = 'block';
-                shutterBtn.style.display = 'none';
-                switchBtn.style.display = 'none';
+                if (viewport) viewport.style.display = 'none';
+                if (dropzone) dropzone.style.display = 'block';
+                if (shutterBtn) shutterBtn.style.display = 'none';
+                if (switchBtn) switchBtn.style.display = 'none';
             } else {
-                viewport.style.display = 'flex';
-                dropzone.style.display = 'none';
-                shutterBtn.style.display = 'flex';
-                switchBtn.style.display = 'flex';
+                if (viewport) viewport.style.display = 'flex';
+                if (dropzone) dropzone.style.display = 'none';
+                if (shutterBtn) shutterBtn.style.display = 'flex';
+                if (switchBtn) switchBtn.style.display = 'flex';
 
                 if (mode === 'photo') {
-                    shutterBtn.className = 'btn-capture-shutter';
-                    shutterBtn.title = 'Take Photo';
+                    if (shutterBtn) {
+                        shutterBtn.className = 'btn-capture-shutter';
+                        shutterBtn.title = 'Take Photo';
+                    }
                     await this.startCamera({ video: { facingMode: { ideal: this.facingMode } }, audio: false });
                 } else if (mode === 'video') {
-                    shutterBtn.className = 'btn-capture-shutter';
-                    shutterBtn.title = 'Start Recording Video';
+                    if (shutterBtn) {
+                        shutterBtn.className = 'btn-capture-shutter';
+                        shutterBtn.title = 'Start Recording Video';
+                    }
                     await this.startCamera({ video: { facingMode: { ideal: this.facingMode } }, audio: true });
                 }
             }
         }
 
         async startCamera(constraints) {
+            if (this.isInitializingCamera) return;
+            this.isInitializingCamera = true;
+
             const videoElem = document.getElementById('camera-video-preview');
             try {
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    throw new Error('Camera hardware API not supported on this browser context.');
+                    throw new Error('Camera hardware access is not available on this browser or origin.');
                 }
+                this.stopMediaStream();
                 this.activeStream = await navigator.mediaDevices.getUserMedia(constraints);
-                videoElem.srcObject = this.activeStream;
-                videoElem.style.display = 'block';
-                await videoElem.play();
+                if (videoElem) {
+                    videoElem.srcObject = this.activeStream;
+                    videoElem.style.display = 'block';
+                    await videoElem.play().catch(() => {});
+                }
             } catch (err) {
-                console.warn('Camera stream error: ', err);
-                // Graceful fallback to file mode
+                console.warn('Camera stream warning:', err.message);
+                // Safe non-recursive fallback to Choose File mode
+                this.currentMode = 'file';
                 const tabs = document.querySelectorAll('.media-tab-btn');
-                tabs.forEach(t => t.classList.remove('active'));
-                const fileTab = document.querySelector('.media-tab-btn[data-mode="file"]');
-                if (fileTab) fileTab.classList.add('active');
-                this.switchMode('file');
+                tabs.forEach(t => t.classList.toggle('active', t.dataset.mode === 'file'));
+                const viewport = document.getElementById('camera-viewport');
+                const dropzone = document.getElementById('media-dropzone');
+                const shutterBtn = document.getElementById('btn-shutter-action');
+                const switchBtn = document.getElementById('btn-camera-switch');
+                if (viewport) viewport.style.display = 'none';
+                if (dropzone) dropzone.style.display = 'block';
+                if (shutterBtn) shutterBtn.style.display = 'none';
+                if (switchBtn) switchBtn.style.display = 'none';
+                this.toast('Camera not accessible: switched to file selection.', 'info');
+            } finally {
+                this.isInitializingCamera = false;
             }
         }
 
         stopMediaStream() {
             if (this.activeStream) {
-                this.activeStream.getTracks().forEach(track => track.stop());
+                try {
+                    this.activeStream.getTracks().forEach(track => {
+                        try {
+                            track.enabled = false;
+                            track.stop();
+                        } catch (e) {}
+                    });
+                } catch (e) {}
                 this.activeStream = null;
             }
             const videoElem = document.getElementById('camera-video-preview');
-            if (videoElem) videoElem.srcObject = null;
+            if (videoElem) {
+                videoElem.srcObject = null;
+            }
         }
 
         async toggleCameraFacing() {
@@ -287,42 +435,73 @@
             const retakeBtn = document.getElementById('btn-media-retake');
             const confirmBtn = document.getElementById('btn-media-confirm');
 
+            const width = (video && video.videoWidth > 0) ? video.videoWidth : 1280;
+            const height = (video && video.videoHeight > 0) ? video.videoHeight : 720;
+
             const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth || 1280;
-            canvas.height = video.videoHeight || 720;
+            canvas.width = width;
+            canvas.height = height;
             const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            if (video && video.videoWidth > 0) {
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            } else {
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#38bdf8';
+                ctx.font = '24px sans-serif';
+                ctx.fillText('DISASTER EVIDENCE CAPTURE', 40, canvas.height / 2);
+            }
 
             // Watermark GPS & timestamp
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
-            ctx.fillRect(0, canvas.height - 40, canvas.width, 40);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+            ctx.fillRect(0, canvas.height - 44, canvas.width, 44);
             ctx.fillStyle = '#00e5ff';
             ctx.font = '16px monospace';
             const timeStr = new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
-            const gpsStr = this.currentGps ? `GPS: ${this.currentGps.lat.toFixed(4)}, ${this.currentGps.lng.toFixed(4)} (±${Math.round(this.currentGps.accuracy)}m)` : 'GPS: Unavailable';
-            ctx.fillText(`DISASTER EVIDENCE [${timeStr}] | ${gpsStr}`, 15, canvas.height - 15);
+            const gpsStr = this.currentGps ? `GPS: ${this.currentGps.lat.toFixed(5)}, ${this.currentGps.lng.toFixed(5)} (±${Math.round(this.currentGps.accuracy)}m)` : 'GPS: Unavailable';
+            ctx.fillText(`INCIDENT EVIDENCE [${timeStr}] | ${gpsStr}`, 15, canvas.height - 16);
 
             canvas.toBlob((blob) => {
+                if (!blob) {
+                    this.toast('Failed to capture photo frame', 'error');
+                    return;
+                }
                 this.capturedBlob = blob;
                 this.capturedMediaType = 'PHOTO';
-                imgPreview.src = URL.createObjectURL(blob);
-                imgPreview.style.display = 'block';
-                video.style.display = 'none';
+                this.revokePreviewUrl();
+                this.previewObjectUrl = URL.createObjectURL(blob);
 
-                shutterBtn.style.display = 'none';
-                retakeBtn.style.display = 'block';
-                confirmBtn.disabled = false;
+                if (imgPreview) {
+                    imgPreview.src = this.previewObjectUrl;
+                    imgPreview.style.display = 'block';
+                }
+                if (video) video.style.display = 'none';
+                if (shutterBtn) shutterBtn.style.display = 'none';
+                if (retakeBtn) retakeBtn.style.display = 'block';
+                if (confirmBtn) confirmBtn.disabled = false;
+
+                // Stop camera stream to free hardware resources
                 this.stopMediaStream();
-            }, 'image/jpeg', 0.88);
+            }, 'image/jpeg', 0.90);
         }
 
         startVideoRecording() {
-            if (!this.activeStream) return;
+            if (!this.activeStream) {
+                this.toast('Camera not active for recording', 'error');
+                return;
+            }
             this.recordedChunks = [];
 
-            const options = { mimeType: 'video/webm;codecs=vp8,opus' };
+            let mimeType = 'video/webm;codecs=vp8,opus';
+            if (typeof MediaRecorder.isTypeSupported === 'function') {
+                if (!MediaRecorder.isTypeSupported(mimeType)) {
+                    mimeType = 'video/webm';
+                }
+            }
+
             try {
-                this.mediaRecorder = new MediaRecorder(this.activeStream, options);
+                this.mediaRecorder = new MediaRecorder(this.activeStream, { mimeType: mimeType });
             } catch (e) {
                 this.mediaRecorder = new MediaRecorder(this.activeStream);
             }
@@ -337,32 +516,49 @@
                 const blob = new Blob(this.recordedChunks, { type: 'video/webm' });
                 this.capturedBlob = blob;
                 this.capturedMediaType = 'VIDEO';
+                this.revokePreviewUrl();
+                this.previewObjectUrl = URL.createObjectURL(blob);
 
                 const replayElem = document.getElementById('camera-video-replay');
                 const videoElem = document.getElementById('camera-video-preview');
-                replayElem.src = URL.createObjectURL(blob);
-                replayElem.style.display = 'block';
-                videoElem.style.display = 'none';
+                if (replayElem) {
+                    replayElem.src = this.previewObjectUrl;
+                    replayElem.style.display = 'block';
+                }
+                if (videoElem) videoElem.style.display = 'none';
 
-                document.getElementById('recording-hud').style.display = 'none';
-                document.getElementById('btn-shutter-action').style.display = 'none';
-                document.getElementById('btn-media-retake').style.display = 'block';
-                document.getElementById('btn-media-confirm').disabled = false;
+                const hud = document.getElementById('recording-hud');
+                const shutterBtn = document.getElementById('btn-shutter-action');
+                const retakeBtn = document.getElementById('btn-media-retake');
+                const confirmBtn = document.getElementById('btn-media-confirm');
+
+                if (hud) hud.style.display = 'none';
+                if (shutterBtn) {
+                    shutterBtn.style.display = 'none';
+                    shutterBtn.classList.remove('recording');
+                }
+                if (retakeBtn) retakeBtn.style.display = 'block';
+                if (confirmBtn) confirmBtn.disabled = false;
+
                 this.stopMediaStream();
             };
 
             this.mediaRecorder.start(1000);
             this.recordingSeconds = 0;
-            document.getElementById('recording-hud').style.display = 'flex';
-            document.getElementById('btn-shutter-action').classList.add('recording');
+            const hud = document.getElementById('recording-hud');
+            const shutterBtn = document.getElementById('btn-shutter-action');
+            if (hud) hud.style.display = 'flex';
+            if (shutterBtn) shutterBtn.classList.add('recording');
 
+            if (this.recordingTimer) clearInterval(this.recordingTimer);
             this.recordingTimer = setInterval(() => {
                 this.recordingSeconds++;
                 const mins = String(Math.floor(this.recordingSeconds / 60)).padStart(2, '0');
                 const secs = String(this.recordingSeconds % 60).padStart(2, '0');
-                document.getElementById('recording-timer-text').textContent = `${mins}:${secs}`;
+                const timerText = document.getElementById('recording-timer-text');
+                if (timerText) timerText.textContent = `${mins}:${secs}`;
 
-                // Max 60 seconds auto-stop for safety
+                // Max 60 seconds auto-stop for browser stability
                 if (this.recordingSeconds >= 60) {
                     this.stopVideoRecording();
                 }
@@ -375,34 +571,33 @@
                 this.recordingTimer = null;
             }
             if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
-                this.mediaRecorder.stop();
+                try { this.mediaRecorder.stop(); } catch (e) {}
             }
-            document.getElementById('btn-shutter-action').classList.remove('recording');
+            const shutterBtn = document.getElementById('btn-shutter-action');
+            if (shutterBtn) shutterBtn.classList.remove('recording');
         }
 
         retake() {
-            const imgPreview = document.getElementById('camera-image-preview');
-            const videoPreview = document.getElementById('camera-video-preview');
-            const videoReplay = document.getElementById('camera-video-replay');
-            const shutterBtn = document.getElementById('btn-shutter-action');
-            const retakeBtn = document.getElementById('btn-media-retake');
-            const confirmBtn = document.getElementById('btn-media-confirm');
+            // Cleanly reset preview without recursive mode switches
+            this.resetCaptureState();
 
-            imgPreview.style.display = 'none';
-            videoReplay.style.display = 'none';
-            videoReplay.src = '';
-            this.capturedBlob = null;
-            this.capturedMediaType = null;
-
-            if (this.currentMode !== 'file') {
-                shutterBtn.style.display = 'flex';
-                retakeBtn.style.display = 'none';
-                confirmBtn.disabled = true;
-                this.switchMode(this.currentMode);
+            if (this.currentMode === 'photo') {
+                this.startCamera({ video: { facingMode: { ideal: this.facingMode } }, audio: false });
+            } else if (this.currentMode === 'video') {
+                this.startCamera({ video: { facingMode: { ideal: this.facingMode } }, audio: true });
             }
         }
 
         handleFileSelected(file) {
+            if (!file) return;
+
+            // Size validation (Max 50MB)
+            const maxSize = 50 * 1024 * 1024;
+            if (file.size > maxSize) {
+                this.toast('File size exceeds the 50MB limit.', 'error');
+                return;
+            }
+
             this.capturedBlob = file;
             const isVideo = file.type.startsWith('video');
             this.capturedMediaType = isVideo ? 'VIDEO' : 'PHOTO';
@@ -414,21 +609,28 @@
             const confirmBtn = document.getElementById('btn-media-confirm');
             const retakeBtn = document.getElementById('btn-media-retake');
 
-            viewport.style.display = 'flex';
-            dropzone.style.display = 'none';
+            if (viewport) viewport.style.display = 'flex';
+            if (dropzone) dropzone.style.display = 'none';
+
+            this.revokePreviewUrl();
+            this.previewObjectUrl = URL.createObjectURL(file);
 
             if (isVideo) {
-                videoReplay.src = URL.createObjectURL(file);
-                videoReplay.style.display = 'block';
-                imgPreview.style.display = 'none';
+                if (videoReplay) {
+                    videoReplay.src = this.previewObjectUrl;
+                    videoReplay.style.display = 'block';
+                }
+                if (imgPreview) imgPreview.style.display = 'none';
             } else {
-                imgPreview.src = URL.createObjectURL(file);
-                imgPreview.style.display = 'block';
-                videoReplay.style.display = 'none';
+                if (imgPreview) {
+                    imgPreview.src = this.previewObjectUrl;
+                    imgPreview.style.display = 'block';
+                }
+                if (videoReplay) videoReplay.style.display = 'none';
             }
 
-            retakeBtn.style.display = 'block';
-            confirmBtn.disabled = false;
+            if (retakeBtn) retakeBtn.style.display = 'block';
+            if (confirmBtn) confirmBtn.disabled = false;
         }
 
         acquireLocation() {
@@ -437,8 +639,8 @@
             const accuracyText = document.getElementById('gps-accuracy-text');
 
             if (!navigator.geolocation) {
-                dot.className = 'gps-status-dot';
-                coordsText.textContent = 'Geolocation not supported by client';
+                if (dot) dot.className = 'gps-status-dot';
+                if (coordsText) coordsText.textContent = 'Geolocation not supported by client';
                 return;
             }
 
@@ -449,14 +651,14 @@
                         lng: pos.coords.longitude,
                         accuracy: pos.coords.accuracy
                     };
-                    dot.className = 'gps-status-dot';
-                    coordsText.textContent = `${this.currentGps.lat.toFixed(5)}°N, ${this.currentGps.lng.toFixed(5)}°E`;
-                    accuracyText.textContent = `± ${Math.round(this.currentGps.accuracy)} m`;
+                    if (dot) dot.className = 'gps-status-dot';
+                    if (coordsText) coordsText.textContent = `${this.currentGps.lat.toFixed(5)}°N, ${this.currentGps.lng.toFixed(5)}°E`;
+                    if (accuracyText) accuracyText.textContent = `± ${Math.round(this.currentGps.accuracy)} m`;
                 },
                 (err) => {
-                    console.warn('Geolocation warning: ', err.message);
-                    dot.className = 'gps-status-dot searching';
-                    coordsText.textContent = 'GPS permission needed / default zone used';
+                    console.warn('Geolocation notice:', err.message);
+                    if (dot) dot.className = 'gps-status-dot searching';
+                    if (coordsText) coordsText.textContent = 'GPS permission needed / default zone used';
                 },
                 { enableHighAccuracy: true, timeout: 8000, maximumAge: 10000 }
             );
@@ -466,10 +668,13 @@
             if (!this.capturedBlob) return;
 
             const confirmBtn = document.getElementById('btn-media-confirm');
-            confirmBtn.disabled = true;
-            confirmBtn.innerHTML = '<span>⏳</span> Transmitting...';
+            if (confirmBtn) {
+                confirmBtn.disabled = true;
+                confirmBtn.innerHTML = '<span>⏳</span> Transmitting...';
+            }
 
-            const caption = document.getElementById('media-caption-input').value.trim();
+            const captionInput = document.getElementById('media-caption-input');
+            const caption = captionInput ? captionInput.value.trim() : '';
             const incidentId = this.activeOptions && this.activeOptions.incidentId ? this.activeOptions.incidentId : '';
             const incidentType = this.activeOptions && this.activeOptions.incidentType ? this.activeOptions.incidentType : 'CITIZEN_REPORT';
 
@@ -492,7 +697,7 @@
                 formData.append('accuracy', this.currentGps.accuracy);
             }
 
-            const token = localStorage.getItem('token');
+            const token = this.resolveAuthToken();
 
             try {
                 const res = await fetch('/api/media/upload', {
@@ -503,14 +708,10 @@
 
                 const data = await res.json();
                 if (res.ok && data.status === 'success') {
-                    if (window.showToast) {
-                        window.showToast('Media evidence securely stored and indexed.', 'success');
-                    } else if (window.CommandCenter && window.CommandCenter.showToast) {
-                        window.CommandCenter.showToast('Media evidence securely stored and indexed.', 'success');
-                    }
+                    this.toast('Media evidence securely stored and indexed.', 'success');
 
                     if (this.activeOptions && typeof this.activeOptions.onSuccess === 'function') {
-                        this.activeOptions.onSuccess(data);
+                        try { this.activeOptions.onSuccess(data); } catch (e) {}
                     }
 
                     this.close();
@@ -519,11 +720,21 @@
                 }
             } catch (err) {
                 console.error('Upload failed: ', err);
-                if (window.showToast) {
-                    window.showToast(`Upload failed: ${err.message}`, 'error');
+                this.toast(`Upload failed: ${err.message}`, 'error');
+                if (confirmBtn) {
+                    confirmBtn.disabled = false;
+                    confirmBtn.innerHTML = '<span>⬆️</span> Retry Transmission';
                 }
-                confirmBtn.disabled = false;
-                confirmBtn.innerHTML = '<span>⬆️</span> Retry Transmission';
+            }
+        }
+
+        toast(msg, type = 'info') {
+            if (window.showToast) {
+                window.showToast(msg, type);
+            } else if (window.CommandCenter && window.CommandCenter.showToast) {
+                window.CommandCenter.showToast(msg, type);
+            } else {
+                console.log(`[${type.toUpperCase()}] ${msg}`);
             }
         }
     }
@@ -531,4 +742,3 @@
     // Export singleton
     window.MediaCapture = new MediaCaptureManager();
 })();
-

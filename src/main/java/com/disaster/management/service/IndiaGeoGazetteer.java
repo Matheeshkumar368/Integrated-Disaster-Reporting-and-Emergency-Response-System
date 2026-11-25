@@ -296,9 +296,8 @@ public final class IndiaGeoGazetteer {
             }
         }
 
-        // If no genuine geographical location was matched from areaDesc, headline, or SDMA:
-        // Return null so the system marks it as UNLOCATED instead of placing false/invented markers
-        return null;
+        // 5. Fallback: National Centroid of India for broad/unspecified national scope
+        return new GeoLocation(20.5937, 78.9629, "NATIONAL_CENTROID", "India");
     }
 
     /**

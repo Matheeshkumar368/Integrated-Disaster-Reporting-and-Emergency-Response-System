@@ -27,6 +27,16 @@
             }
         }
 
+        resolveAuthToken() {
+            if (window.AuthHelper && typeof window.AuthHelper.getToken === 'function') {
+                const t = window.AuthHelper.getToken('Admin');
+                if (t) return t;
+            }
+            return sessionStorage.getItem('token_Admin') || localStorage.getItem('token_Admin') ||
+                   sessionStorage.getItem('token') || localStorage.getItem('token') ||
+                   sessionStorage.getItem('admin_token') || '';
+        }
+
         injectModal() {
             if (document.getElementById('smart-assign-backdrop')) return;
             if (!document.body) return;
@@ -75,7 +85,7 @@
 
         async fetchRecommendations(taskId) {
             const container = document.getElementById('smart-assign-body');
-            const token = localStorage.getItem('token');
+            const token = this.resolveAuthToken();
 
             try {
                 const res = await fetch(`/api/admin/assignments/recommendations/${taskId}`, {
@@ -173,7 +183,7 @@
         async deployResponder(email, name) {
             if (!this.activeTaskId) return;
 
-            const token = localStorage.getItem('token');
+            const token = this.resolveAuthToken();
             try {
                 const res = await fetch(`/api/tasks/${this.activeTaskId}/assign?responderEmail=${encodeURIComponent(email)}`, {
                     method: 'PUT',

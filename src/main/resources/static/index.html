@@ -574,20 +574,12 @@
 
     <!-- Header HUD -->
     <header class="gateway-topbar">
-        <div class="gateway-brand">
-            <div class="gateway-emblem">
-                <i class="fas fa-shield-halved"></i>
-            </div>
-            <div class="gateway-titles">
-                <h1>NDMA Tactical Operations Command</h1>
-                <p>NATIONAL DISASTER MANAGEMENT PLATFORM // SECURE ACCESS GATEWAY</p>
-            </div>
-        </div>
+        <div></div>
 
         <div class="gateway-top-telemetry">
             <div class="gateway-status-pill">
                 <span class="status-dot-pulse"></span>
-                <span>SYSTEM ACTIVE // SECURE HTTPS</span>
+                <span>SYSTEM ACTIVE</span>
             </div>
             <div id="istClock" style="color: var(--cc-text-secondary);"><i class="far fa-clock"></i> IST --:--:--</div>
         </div>
@@ -758,9 +750,7 @@
 
     <!-- Bottom Telemetry & Hotlines Footer -->
     <footer class="gateway-bottombar">
-        <div>
-            <span>&copy; 2026 National Disaster Management & Alert System &bull; Final Year Academic Project</span>
-        </div>
+        <div></div>
         <div class="hotline-pills">
             <span style="color: var(--cc-text-muted); font-size: 0.75rem; align-self: center;">National Emergency Hotlines:</span>
             <a href="tel:112" class="hotline-pill-link"><i class="fas fa-phone-volume"></i> 112 (National)</a>
@@ -930,14 +920,46 @@
 
                 if (response.ok && data.status === 'success' && data.token) {
                     // Determine role strictly from authenticated backend identity
-                    const actualRole = data.role || 'Citizen';
-                    currentRole = actualRole;
+                    const actualRole = data.role;
+                    if (!actualRole) {
+                        loginBtn.disabled = false;
+                        loginBtnText.innerText = EVALUATOR_PRESETS[currentRole].btnText;
+                        showAlert('Login Failed: Account has no valid role assigned', 'error');
+                        return;
+                    }
 
-                    // Success: store session
+                    // Check if user selected an opposing role tab
+                    if (typeof currentRole !== 'undefined' && currentRole && currentRole !== actualRole) {
+                        loginBtn.disabled = false;
+                        loginBtnText.innerText = EVALUATOR_PRESETS[currentRole].btnText;
+                        showAlert('Account role mismatch. Please select the correct login type.', 'error');
+                        return;
+                    }
+
+                    // Success: store role-isolated credentials to prevent multi-tab interference
+                    sessionStorage.clear();
+
+                    sessionStorage.setItem('token', data.token);
+                    sessionStorage.setItem('userRole', actualRole);
+                    sessionStorage.setItem('token_' + actualRole, data.token);
+                    sessionStorage.setItem(actualRole.toLowerCase() + '_token', data.token);
+                    sessionStorage.setItem('userRole_' + actualRole, actualRole);
+
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('userRole', actualRole);
-                    if (data.name) localStorage.setItem('userName', data.name);
-                    if (data.email) localStorage.setItem('userEmail', data.email);
+                    localStorage.setItem('token_' + actualRole, data.token);
+                    localStorage.setItem(actualRole.toLowerCase() + '_token', data.token);
+                    localStorage.setItem('userRole_' + actualRole, actualRole);
+                    if (data.name) {
+                        localStorage.setItem('userName', data.name);
+                        localStorage.setItem('userName_' + actualRole, data.name);
+                        sessionStorage.setItem('userName', data.name);
+                    }
+                    if (data.email) {
+                        localStorage.setItem('userEmail', data.email);
+                        localStorage.setItem('userEmail_' + actualRole, data.email);
+                        sessionStorage.setItem('userEmail', data.email);
+                    }
                     if (typeof data.sosShortcutEnabled === 'boolean') {
                         localStorage.setItem('emergencyShortcutEnabled', String(data.sosShortcutEnabled));
                     }
@@ -949,21 +971,21 @@
                     }
 
                     if (window.CommandCenterSound) CommandCenterSound.playSuccess();
-                    showAlert('Authentication verified. Transitioning to Command Center...', 'success');
+                    showAlert('Authentication verified. Transitioning to ' + actualRole + ' Command Center...', 'success');
 
-                    // Route to target dedicated notification center
+                    // Route strictly to the appropriate dashboard
                     setTimeout(() => {
                         let targetUrl;
-                        if (actualRole === 'Admin') targetUrl = 'admin-notifications.html';
-                        else if (actualRole === 'Responder') targetUrl = 'responder-notifications.html';
-                        else targetUrl = 'citizen-notifications.html';
+                        if (actualRole === 'Admin') targetUrl = 'admin-dashboard.html';
+                        else if (actualRole === 'Responder') targetUrl = 'responder-dashboard.html';
+                        else targetUrl = 'citizen-dashboard.html';
 
                         if (window.RoleLoadingScreen) {
                             RoleLoadingScreen.showAndNavigate(actualRole, targetUrl);
                         } else {
                             window.location.href = targetUrl;
                         }
-                    }, 400);
+                    }, 300);
 
                 } else {
                     loginBtn.disabled = false;

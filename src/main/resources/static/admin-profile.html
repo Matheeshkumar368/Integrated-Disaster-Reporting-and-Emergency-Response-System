@@ -124,6 +124,7 @@
     <nav class="cc-nav-bar">
         <ul class="cc-nav-links">
             <li><a href="/admin-notifications.html" class="cc-nav-link" style="color:var(--cc-cyan);"><i class="fas fa-bell"></i> Notification Center</a></li>
+            <li><a href="/admin-messages.html" class="cc-nav-link" style="color:var(--cc-cyan);"><i class="fas fa-comments"></i> Messages & Comms</a></li>
             <li><a href="/admin-dashboard.html" class="cc-nav-link"><i class="fas fa-map-location-dot"></i> Mission Control</a></li>
             <li><a href="/admin-alerts.html" class="cc-nav-link"><i class="fas fa-bullhorn"></i> Emergency Broadcasts</a></li>
             <li><a href="/admin-tasks.html" class="cc-nav-link"><i class="fas fa-truck-medical"></i> Responder Tasks</a></li>
@@ -506,9 +507,13 @@
     <script src="role-loading.js?v=2"></script>
 
     <script>
+        function getAdminToken() {
+            return (window.AuthHelper && window.AuthHelper.getToken('Admin')) || sessionStorage.getItem('token_Admin') || localStorage.getItem('token_Admin');
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
-            const token = window.AuthHelper ? window.AuthHelper.getToken() : localStorage.getItem('token');
-            const role = window.AuthHelper ? window.AuthHelper.getRole() : localStorage.getItem('userRole');
+            const token = getAdminToken();
+            const role = (window.AuthHelper && window.AuthHelper.getRole('Admin')) || sessionStorage.getItem('userRole_Admin') || localStorage.getItem('userRole_Admin') || 'Admin';
 
             if (!token || role !== 'Admin') {
                 if (window.showToast) {
@@ -539,7 +544,7 @@
 
         function populateUserData() {
             try {
-                const token = localStorage.getItem('token');
+                const token = getAdminToken();
                 const payload = JSON.parse(atob(token.split('.')[1]));
                 const storedName = localStorage.getItem('userName') || (payload.sub ? payload.sub.split('@')[0] : 'Administrator');
                 const storedEmail = localStorage.getItem('userEmail') || payload.sub || 'admin@disaster.gov.in';
@@ -559,7 +564,7 @@
             const badge = document.getElementById('pinStatusBadge');
             try {
                 const res = await fetch('/api/auth/admin/security-pin/status', {
-                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                    headers: { 'Authorization': 'Bearer ' + getAdminToken() }
                 });
                 if (res.ok) {
                     const data = await res.json();
@@ -607,7 +612,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                        'Authorization': 'Bearer ' + getAdminToken()
                     },
                     body: JSON.stringify(payload)
                 });
@@ -665,7 +670,7 @@
                 const res = await fetch('/api/auth/admin/backup-code/setup', {
                     method: 'POST',
                     headers: {
-                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'Authorization': 'Bearer ' + getAdminToken(),
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ backupCode: code, confirmBackupCode: conf })
@@ -777,7 +782,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                        'Authorization': 'Bearer ' + getAdminToken()
                     },
                     body: JSON.stringify({ currentPassword: curPass, pin: newPin })
                 });
@@ -859,7 +864,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                        'Authorization': 'Bearer ' + getAdminToken()
                     },
                     body: JSON.stringify({
                         backupCode: backupCode,
@@ -939,7 +944,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                        'Authorization': 'Bearer ' + getAdminToken()
                     },
                     body: JSON.stringify({ pin: pin })
                 });
@@ -971,7 +976,7 @@
             const tbody = document.getElementById('auditTrailTableBody');
             tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;"><i class="fas fa-spinner fa-spin"></i> Decrypting audit telemetry from secure database...</td></tr>';
 
-            const token = localStorage.getItem('token');
+            const token = getAdminToken();
             const stepUpToken = sessionStorage.getItem('adminStepUpToken');
 
             const headers = { 'Authorization': 'Bearer ' + token };

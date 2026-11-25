@@ -42,11 +42,29 @@
     <script src="incident-room.js?v=2"></script>
     <link rel="stylesheet" href="direct-messaging.css?v=1" />
     <script src="direct-messaging.js?v=1"></script>
+    <link rel="stylesheet" href="video-call.css?v=1" />
+    <script src="video-call.js?v=1"></script>
     
     <!-- Role Loading & Authentication Helper -->
     <link rel="stylesheet" href="role-loading.css?v=2" />
     <script src="role-loading.js?v=2"></script>
     <script src="auth-helper.js?v=2"></script>
+    <script src="auth-guard.js?v=2"></script>
+    <script>
+        (function() {
+            try {
+                const tok = (window.AuthHelper && window.AuthHelper.getToken('Responder')) || sessionStorage.getItem('token_Responder') || localStorage.getItem('token_Responder') || sessionStorage.getItem('token') || localStorage.getItem('token');
+                if (!tok) { window.location.replace('/index.html'); return; }
+                if (tok.includes('.')) {
+                    const p = JSON.parse(atob(tok.split('.')[1]));
+                    if (p && p.role && p.role !== 'Responder') {
+                        const target = p.role === 'Admin' ? '/admin-dashboard.html' : '/citizen-dashboard.html';
+                        window.location.replace(target);
+                    }
+                }
+            } catch(e) {}
+        })();
+    </script>
 
     <style>
         .cc-responder-container {
@@ -303,6 +321,7 @@
     <nav class="cc-nav-bar">
         <ul class="cc-nav-links">
             <li><a href="/responder-notifications.html" class="cc-nav-link" style="color:#fb923c;"><i class="fas fa-bell"></i> Notification Center</a></li>
+            <li><a href="/responder-messages.html" class="cc-nav-link" style="color:#fb923c;"><i class="fas fa-comments"></i> Tactical Comms</a></li>
             <li><a href="/responder-dashboard.html" class="cc-nav-link active"><i class="fas fa-list-check"></i> Tactical Incident Queue</a></li>
             <li><a href="/responder-rescue.html" class="cc-nav-link"><i class="fas fa-map-location"></i> Live Rescue Operations</a></li>
             <li><a href="/responder-tasks.html" class="cc-nav-link"><i class="fas fa-clipboard-check"></i> Assigned Field Tasks</a></li>
@@ -544,6 +563,10 @@
             const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
             return String(str).replace(/[&<>"']/g, m => map[m]);
         }
+        function getResponderToken() {
+            return (window.AuthHelper && window.AuthHelper.getToken('Responder')) || sessionStorage.getItem('token_Responder') || localStorage.getItem('token_Responder');
+        }
+
         let cachedTasks = [];
         let cachedCitizenReports = [];
         let cachedAlerts = [];
@@ -555,6 +578,10 @@
 
         // Authentication & Role Check
         (async function() {
+            if (window.AuthGuard) {
+                const authed = await window.AuthGuard.requireAuth('Responder');
+                if (!authed) return;
+            }
             if (window.AuthHelper && window.AuthHelper.initUrlAuth) {
                 window.AuthHelper.initUrlAuth();
             }
@@ -586,6 +613,12 @@
                 }
 
                 const userData = await response.json();
+                if (userData.role && userData.role !== 'Responder') {
+                    console.warn('[ResponderDashboard] Server DB role mismatch:', userData.role);
+                    if (userData.role === 'Admin') window.location.replace('/admin-dashboard.html');
+                    else window.location.replace('/citizen-dashboard.html');
+                    return;
+                }
                 if (userData.assignedZone) {
                     document.getElementById('assignedZoneBadge').innerText = `Zone: ${userData.assignedZone}`;
                 }
@@ -593,12 +626,13 @@
                 console.error('Validation error:', e);
             }
 
-            if (userRole !== 'Responder' && userRole !== 'Admin') {
+            if (userRole !== 'Responder') {
                 if (window.showToast) {
                     window.showToast('Access Denied: Only Responders can access Field Operations', 'error');
                 }
                 setTimeout(() => {
-                    window.location.href = '/citizen-dashboard.html';
+                    if (userRole === 'Admin') window.location.href = '/admin-dashboard.html';
+                    else window.location.href = '/citizen-dashboard.html';
                 }, 800);
                 return;
             }
@@ -674,7 +708,8 @@
 
         // Master Data Loader
         async function loadResponderQueue() {
-            const token = localStorage.getItem('token');
+            if (document.hidden) return;
+            const token = getResponderToken();
             if (!token) return;
 
             try {
@@ -810,6 +845,9 @@
                     nextActionHtml = `
                         <button class="cc-btn cc-btn-primary" style="flex:1;" onclick="updateTaskStatus(${task.taskId}, 'Acknowledged')">
                             <i class="fas fa-check"></i> 1. Acknowledge Mission
+                        </button>
+                        <button class="cc-btn cc-btn-danger" style="padding:0.45rem 0.8rem;font-size:0.82rem;" onclick="rejectTaskAssignment(${task.taskId})" title="Decline this mission assignment">
+                            <i class="fas fa-xmark"></i> Decline
                         </button>`;
                 } else if (stageIndex === 1) {
                     nextActionHtml = `
@@ -883,6 +921,9 @@
                         <button type="button" class="cc-btn cc-btn-secondary" style="font-size:0.8rem;padding:0.4rem 0.75rem;" onclick="window.IncidentRoom.open(${task.taskId}, 'TASK', '${escapeJs(task.locationName || '')}')">
                             <i class="fas fa-comments" style="color:#10b981;"></i> Room & Chat
                         </button>
+                        <button type="button" class="cc-btn cc-btn-secondary" style="font-size:0.8rem;padding:0.4rem 0.75rem;background:rgba(245,158,11,0.15);border-color:#f59e0b;color:#fbbf24;" onclick="window.EmergencyVideoCall.startCall(${task.taskId}, null, 'Citizen in Distress')">
+                            <i class="fas fa-video" style="color:#f59e0b;"></i> Video Call Citizen
+                        </button>
                         <button type="button" class="cc-btn cc-btn-secondary" style="font-size:0.8rem;padding:0.4rem 0.75rem;" onclick="window.MediaCapture.open({ incidentId: ${task.taskId}, incidentType: 'TASK', onSuccess: () => loadResponderQueue() })">
                             <i class="fas fa-camera" style="color:#38bdf8;"></i> Upload Field Evidence
                         </button>
@@ -928,7 +969,7 @@
 
         // Update Task Status via PUT /api/tasks/{id}/status
         async function updateTaskStatus(taskId, newStatus, notes = '') {
-            const token = localStorage.getItem('token');
+            const token = getResponderToken();
             if (!token) return;
 
             try {
@@ -1016,7 +1057,7 @@
             }
             if (!notes) return;
             
-            const token = localStorage.getItem('token');
+            const token = getResponderToken();
             if (!token) return;
             try {
                 const res = await fetch(`/api/tasks/${taskId}/notes`, {
@@ -1054,7 +1095,7 @@
             }
             if (!reason) return;
 
-            const token = localStorage.getItem('token');
+            const token = getResponderToken();
             if (!token) return;
             try {
                 const res = await fetch(`/api/tasks/${taskId}/request-cancel`, {
@@ -1090,7 +1131,7 @@
 
         // Responder Availability Handlers
         async function loadResponderAvailability() {
-            const token = localStorage.getItem('token');
+            const token = getResponderToken();
             if (!token) return;
             try {
                 const res = await fetch('/api/auth/responder/availability', {
@@ -1130,7 +1171,7 @@
         }
 
         async function changeAvailabilityStatus(newVal) {
-            const token = localStorage.getItem('token');
+            const token = getResponderToken();
             if (!token) return;
             try {
                 const res = await fetch('/api/auth/responder/availability', {
@@ -1202,7 +1243,7 @@
         }
 
         async function checkExistingGpsStatus() {
-            const token = localStorage.getItem('token');
+            const token = getResponderToken();
             if (!token) return;
 
             try {
@@ -1555,7 +1596,7 @@
                 return;
             }
 
-            const token = localStorage.getItem('token');
+            const token = getResponderToken();
             if (!token) {
                 CommandCenter.showToast('Session expired. Please log in again.', 'error');
                 return;
@@ -1690,7 +1731,7 @@
                 dashboardWatchId = null;
             }
 
-            const token = localStorage.getItem('token');
+            const token = getResponderToken();
             if (token) {
                 try {
                     await fetch('/api/responder/location/stop', {
@@ -1811,6 +1852,9 @@
                         <button type="button" class="cc-btn cc-btn-secondary" style="font-size:0.8rem;padding:0.4rem 0.8rem;" onclick="window.IncidentRoom.open(${cr.reportId}, 'CITIZEN_REPORT', '${escapeJs(cr.location || '')}')">
                             <i class="fas fa-comments"></i> Room & Chat
                         </button>
+                        <button type="button" class="cc-btn cc-btn-secondary" style="font-size:0.8rem;padding:0.4rem 0.8rem;background:rgba(245,158,11,0.15);border-color:#f59e0b;color:#fbbf24;" onclick="window.EmergencyVideoCall.startCall(${cr.reportId}, '${escapeJs(cr.citizenEmail || '')}', 'Citizen')">
+                            <i class="fas fa-video" style="color:#f59e0b;"></i> Video Call
+                        </button>
                         <button type="button" class="cc-btn cc-btn-secondary" style="font-size:0.8rem;padding:0.4rem 0.8rem;" onclick="window.MediaCapture.open({ incidentId: ${cr.reportId}, incidentType: 'CITIZEN_REPORT', onSuccess: () => loadResponderQueue() })">
                             <i class="fas fa-camera"></i> Field Proof
                         </button>
@@ -1818,7 +1862,10 @@
 
                     <div style="display:flex;gap:0.6rem;margin-top:0.8rem;">
                         <button class="cc-btn cc-btn-primary" onclick="acknowledgeCitizenReport(${cr.reportId})" style="flex:1;">
-                            <i class="fas fa-check"></i> Claim & Acknowledge Distress Call
+                            <i class="fas fa-check"></i> Claim & Acknowledge
+                        </button>
+                        <button class="cc-btn cc-btn-danger" onclick="rejectCitizenReportAssignment(${cr.reportId})" style="padding:0.45rem 0.8rem;font-size:0.82rem;" title="Decline distress call">
+                            <i class="fas fa-xmark"></i> Decline
                         </button>
                     </div>
                 `;
@@ -1840,7 +1887,7 @@
         }
 
         async function acknowledgeCitizenReport(reportId) {
-            const token = localStorage.getItem('token');
+            const token = getResponderToken();
             try {
                 const res = await fetch(`/api/citizen-reports/${reportId}/acknowledge`, {
                     method: 'PUT',
@@ -1852,6 +1899,68 @@
                     loadResponderQueue();
                 } else {
                     CommandCenter.showToast('Failed to acknowledge distress call', 'error');
+                }
+            } catch (e) {
+                CommandCenter.showToast('Network error: ' + e.message, 'error');
+            }
+        }
+
+        async function rejectCitizenReportAssignment(reportId) {
+            let reason = '';
+            if (window.showPrompt) {
+                reason = await window.showPrompt({
+                    title: 'Decline / Reject Distress Call',
+                    message: `Please state reason for declining Distress Call #${reportId}:`,
+                    placeholder: 'e.g. Unit engaged in another rescue, out of response sector...',
+                    confirmText: 'Decline Call'
+                });
+            } else {
+                reason = prompt(`Reason for declining Distress Call #${reportId}:`);
+            }
+            if (reason === null) return;
+            const token = getResponderToken();
+            try {
+                const res = await fetch(`/api/citizen-reports/${reportId}/reject-assignment`, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason: reason || 'Declined by responder' })
+                });
+                if (res.ok) {
+                    CommandCenter.showToast(`Distress Call #${reportId} declined and returned to dispatch queue.`, 'info');
+                    loadResponderQueue();
+                } else {
+                    CommandCenter.showToast('Failed to decline distress call', 'error');
+                }
+            } catch (e) {
+                CommandCenter.showToast('Network error: ' + e.message, 'error');
+            }
+        }
+
+        async function rejectTaskAssignment(taskId) {
+            let reason = '';
+            if (window.showPrompt) {
+                reason = await window.showPrompt({
+                    title: 'Decline Task Assignment',
+                    message: `Specify reason for declining Task #${taskId}:`,
+                    placeholder: 'e.g. Mechanical breakdown, casualty in transit...',
+                    confirmText: 'Decline Task'
+                });
+            } else {
+                reason = prompt(`Specify reason for declining Task #${taskId}:`);
+            }
+            if (reason === null) return;
+            const token = getResponderToken();
+            try {
+                const res = await fetch(`/api/tasks/${taskId}/status`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'Rejected', notes: reason || 'Declined by responder' })
+                });
+                if (res.ok) {
+                    CommandCenter.showToast(`Task #${taskId} declined and returned to command dispatch.`, 'info');
+                    loadResponderQueue();
+                } else {
+                    CommandCenter.showToast('Failed to decline task', 'error');
                 }
             } catch (e) {
                 CommandCenter.showToast('Network error: ' + e.message, 'error');
@@ -1989,8 +2098,8 @@
             }
         }, 300);
 
-        // Auto-refresh queue every 30 seconds
-        setInterval(loadResponderQueue, 30000);
+        // Auto-refresh queue every 6 seconds
+        setInterval(loadResponderQueue, 6000);
 
         // Deep linking event listeners
         window.addEventListener('DOMContentLoaded', applyResponderUrlRouting);
@@ -1999,6 +2108,11 @@
 
         if (document.readyState === 'complete' || document.readyState === 'interactive') {
             applyResponderUrlRouting();
+        }
+
+        // Initialize Tactical Emergency Video Calling subsystem
+        if (window.EmergencyVideoCall) {
+            EmergencyVideoCall.init('Responder');
         }
     </script>
 </body>

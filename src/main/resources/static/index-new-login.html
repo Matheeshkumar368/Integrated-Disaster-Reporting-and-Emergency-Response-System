@@ -909,12 +909,36 @@ function login() {
         
         if (data.status === "success" && data.token) {
             // Determine role strictly from authenticated backend identity
-            const actualRole = data.role || 'Citizen';
-            selectedRole = actualRole;
+            const actualRole = data.role;
+            if (!actualRole) {
+                window.showToast('Login Failed: Account has no valid role assigned', 'error');
+                return;
+            }
+
+            // Reject if user selected a different role tab
+            if (typeof selectedRole !== 'undefined' && selectedRole && selectedRole !== actualRole) {
+                window.showToast('Account role mismatch. Please select the correct login type.', 'error');
+                return;
+            }
+
+            // Clear all previous user data from localStorage and sessionStorage
+            localStorage.clear();
+            sessionStorage.clear();
             
-            // Proceed with login
+            // Proceed with fresh session
+            sessionStorage.setItem("token", data.token);
+            sessionStorage.setItem("userRole", actualRole);
+            sessionStorage.setItem("token_" + actualRole, data.token);
+            sessionStorage.setItem(actualRole.toLowerCase() + "_token", data.token);
+            sessionStorage.setItem("userRole_" + actualRole, actualRole);
+
             localStorage.setItem("token", data.token);
-            localStorage.setItem("userRole", actualRole); // Store role for easy access
+            localStorage.setItem("userRole", actualRole);
+            localStorage.setItem("token_" + actualRole, data.token);
+            localStorage.setItem(actualRole.toLowerCase() + "_token", data.token);
+            localStorage.setItem("userRole_" + actualRole, actualRole);
+            if (data.email) localStorage.setItem("userEmail", data.email);
+            if (data.name) localStorage.setItem("userName", data.name);
             if (typeof data.sosShortcutEnabled === 'boolean') {
                 localStorage.setItem('emergencyShortcutEnabled', String(data.sosShortcutEnabled));
             }
@@ -925,20 +949,22 @@ function login() {
                 localStorage.setItem('emergencySoundVolume', String(data.sosSoundVolume));
             }
             
-            // Small delay to ensure localStorage is persisted before navigation
+            // Redirect strictly to the role-specific dashboard
             setTimeout(function() {
-                // Show loading screen and redirect to appropriate dedicated notification center
                 let targetUrl;
                 if (actualRole === 'Admin') {
-                    targetUrl = "admin-notifications.html";
+                    targetUrl = "admin-dashboard.html";
                 } else if (actualRole === 'Responder') {
-                    targetUrl = "responder-notifications.html";
+                    targetUrl = "responder-dashboard.html";
                 } else {
-                    targetUrl = "citizen-notifications.html";
+                    targetUrl = "citizen-dashboard.html";
                 }
                 
-                // Use loading screen with fade transition and resource verification
-                RoleLoadingScreen.showAndNavigate(actualRole, targetUrl);
+                if (window.RoleLoadingScreen) {
+                    RoleLoadingScreen.showAndNavigate(actualRole, targetUrl);
+                } else {
+                    window.location.href = targetUrl;
+                }
             }, 50);
         } else {
             window.showToast(data.message || 'Login Failed - Invalid credentials', 'error');

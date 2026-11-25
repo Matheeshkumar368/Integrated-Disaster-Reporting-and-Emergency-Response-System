@@ -31,6 +31,12 @@ public class Alert {
     private Double latitude;
     private Double longitude;
 
+    private String deliveryMode = "BROADCAST"; // BROADCAST, TARGETED, INCIDENT
+
+    private String targetRecipients; // Comma-separated citizen emails or IDs
+
+    private Long relatedIncidentId;
+
     public Alert() {
         this.createdAt = LocalDateTime.now();
         this.status = "Active";
@@ -76,4 +82,13 @@ public class Alert {
     
     public Double getLongitude() { return longitude; }
     public void setLongitude(Double longitude) { this.longitude = longitude; }
+
+    public String getDeliveryMode() { return deliveryMode != null ? deliveryMode : "BROADCAST"; }
+    public void setDeliveryMode(String deliveryMode) { this.deliveryMode = deliveryMode; }
+
+    public String getTargetRecipients() { return targetRecipients; }
+    public void setTargetRecipients(String targetRecipients) { this.targetRecipients = targetRecipients; }
+
+    public Long getRelatedIncidentId() { return relatedIncidentId; }
+    public void setRelatedIncidentId(Long relatedIncidentId) { this.relatedIncidentId = relatedIncidentId; }
 }

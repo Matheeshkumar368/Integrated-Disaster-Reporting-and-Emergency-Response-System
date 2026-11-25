@@ -68,25 +68,103 @@ public class IncidentRoomController {
         return "CITIZEN_REPORT";
     }
 
-    @GetMapping("/{id}/timeline")
-    public ResponseEntity<List<IncidentTimelineEvent>> getIncidentTimeline(
-            @PathVariable Long id,
-            @RequestParam(value = "type", defaultValue = "CITIZEN_REPORT") String type) {
-        String normType = normalizeType(type);
-        return ResponseEntity.ok(timelineService.getTimeline(id, normType));
+    public static class CanonicalIncident {
+        private final Long id;
+        private final String type;
+        public CanonicalIncident(Long id, String type) {
+            this.id = id;
+            this.type = type;
+        }
+        public Long getId() { return id; }
+        public String getType() { return type; }
     }
 
-    @PostMapping("/{id}/timeline/message")
+    private CanonicalIncident resolveCanonicalIncident(Long id, String type) {
+        String normType = normalizeType(type);
+        if ("RESCUE_TASK".equals(normType) && id != null) {
+            Optional<RescueTask> taskOpt = taskRepository.findById(id);
+            if (taskOpt.isPresent() && taskOpt.get().getCitizenReportId() != null) {
+                return new CanonicalIncident(taskOpt.get().getCitizenReportId(), "CITIZEN_REPORT");
+            }
+        }
+        return new CanonicalIncident(id, normType);
+    }
+
+    private boolean isAuthorizedParticipant(Long incidentId, String incidentType, Authentication auth) {
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            return false;
+        }
+        boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_Admin"));
+        if (isAdmin) {
+            return true;
+        }
+
+        String callerEmail = auth.getName();
+        if ("ALERT_BROADCAST".equalsIgnoreCase(incidentType)) {
+            return true; // Broadcast alerts are accessible to all authenticated responders/citizens
+        }
+
+        if ("CITIZEN_REPORT".equalsIgnoreCase(incidentType)) {
+            Optional<CitizenReport> crOpt = reportRepository.findById(incidentId);
+            if (crOpt.isPresent()) {
+                CitizenReport cr = crOpt.get();
+                if (cr.getCitizenEmail() != null && cr.getCitizenEmail().equalsIgnoreCase(callerEmail)) {
+                    return true;
+                }
+                if (cr.getAssignedResponderEmail() != null && cr.getAssignedResponderEmail().equalsIgnoreCase(callerEmail)) {
+                    return true;
+                }
+            }
+        } else if ("RESCUE_TASK".equalsIgnoreCase(incidentType)) {
+            Optional<RescueTask> taskOpt = taskRepository.findById(incidentId);
+            if (taskOpt.isPresent()) {
+                RescueTask task = taskOpt.get();
+                if (task.getAssignedTo() != null && task.getAssignedTo().equalsIgnoreCase(callerEmail)) {
+                    return true;
+                }
+                if (task.getCitizenReportId() != null) {
+                    Optional<CitizenReport> crOpt = reportRepository.findById(task.getCitizenReportId());
+                    if (crOpt.isPresent() && crOpt.get().getCitizenEmail() != null && crOpt.get().getCitizenEmail().equalsIgnoreCase(callerEmail)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    @GetMapping("/{id}/timeline")
+    public ResponseEntity<?> getIncidentTimeline(
+            @PathVariable Long id,
+            @RequestParam(value = "type", defaultValue = "CITIZEN_REPORT") String type) {
+        CanonicalIncident canon = resolveCanonicalIncident(id, type);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("status", "error", "message", "Authentication required"));
+        }
+        if (!isAuthorizedParticipant(canon.getId(), canon.getType(), auth)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of("status", "error", "message", "Access denied: You are not authorized for this incident room."));
+        }
+        return ResponseEntity.ok(timelineService.getTimeline(canon.getId(), canon.getType()));
+    }
+
+    @PostMapping({"/{id}/timeline/message", "/{id}/note"})
     public ResponseEntity<?> postTimelineMessage(
             @PathVariable Long id,
             @RequestParam(value = "type", defaultValue = "CITIZEN_REPORT") String type,
             @RequestBody Map<String, String> body) {
 
-        String normType = normalizeType(type);
+        CanonicalIncident canon = resolveCanonicalIncident(id, type);
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(Map.of("status", "error", "message", "Authentication required"));
+        }
+        if (!isAuthorizedParticipant(canon.getId(), canon.getType(), auth)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of("status", "error", "message", "Access denied: Only authorized incident participants can post notes."));
         }
 
         String text = body.get("message");
@@ -106,7 +184,7 @@ public class IncidentRoomController {
 
         try {
             IncidentTimelineEvent event = timelineService.postChatMessage(
-                id, normType, userEmail, role, userName, text
+                canon.getId(), canon.getType(), userEmail, role, userName, text
             );
             return ResponseEntity.ok(Map.of(
                 "status", "success",
@@ -161,24 +239,52 @@ public class IncidentRoomController {
             @PathVariable Long id,
             @RequestParam(value = "type", defaultValue = "CITIZEN_REPORT") String type) {
 
-        String normType = normalizeType(type);
-        Map<String, Object> room = new HashMap<>();
-        room.put("incidentId", id);
-        room.put("incidentType", normType);
+        CanonicalIncident canon = resolveCanonicalIncident(id, type);
+        Long canonId = canon.getId();
+        String normType = canon.getType();
 
-        if ("RESCUE_TASK".equalsIgnoreCase(normType)) {
-            Optional<RescueTask> taskOpt = taskRepository.findById(id);
-            taskOpt.ifPresent(task -> room.put("task", task));
-        } else if ("ALERT_BROADCAST".equalsIgnoreCase(normType)) {
-            Optional<Alert> alertOpt = alertRepository.findById(id);
-            alertOpt.ifPresent(alert -> room.put("alert", alert));
-        } else {
-            Optional<CitizenReport> reportOpt = reportRepository.findById(id);
-            reportOpt.ifPresent(report -> room.put("report", report));
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("status", "error", "message", "Authentication required"));
+        }
+        if (!isAuthorizedParticipant(canonId, normType, auth)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of("status", "error", "message", "Access denied: You are not authorized to view this incident collaboration room."));
         }
 
-        List<IncidentTimelineEvent> timeline = timelineService.getTimeline(id, normType);
-        List<IncidentMedia> mediaList = mediaService.getMediaByIncidentAndType(id, normType);
+        Map<String, Object> room = new HashMap<>();
+        room.put("incidentId", canonId);
+        room.put("incidentType", normType);
+        room.put("requestedId", id);
+
+        if ("RESCUE_TASK".equalsIgnoreCase(normType)) {
+            Optional<RescueTask> taskOpt = taskRepository.findById(canonId);
+            taskOpt.ifPresent(task -> {
+                room.put("task", task);
+                room.put("assignedResponderEmail", task.getAssignedTo());
+                room.put("assignedResponderName", task.getAssignedResponderName());
+            });
+        } else if ("ALERT_BROADCAST".equalsIgnoreCase(normType)) {
+            Optional<Alert> alertOpt = alertRepository.findById(canonId);
+            alertOpt.ifPresent(alert -> room.put("alert", alert));
+        } else {
+            Optional<CitizenReport> reportOpt = reportRepository.findById(canonId);
+            reportOpt.ifPresent(report -> {
+                room.put("report", report);
+                room.put("citizenEmail", report.getCitizenEmail());
+                String citizenName = report.getCitizenEmail() != null ? report.getCitizenEmail().split("@")[0] : "Citizen";
+                room.put("citizenName", citizenName);
+                room.put("assignedResponderEmail", report.getAssignedResponderEmail());
+                room.put("assignedResponderName", report.getAssignedResponderName());
+                room.put("assignedResponderPhone", report.getAssignedResponderPhone());
+                room.put("status", report.getStatus());
+                room.put("progressStage", report.getProgressStage());
+            });
+        }
+
+        List<IncidentTimelineEvent> timeline = timelineService.getTimeline(canonId, normType);
+        List<IncidentMedia> mediaList = mediaService.getMediaByIncidentAndType(canonId, normType);
 
         room.put("timeline", timeline);
         room.put("media", mediaList);

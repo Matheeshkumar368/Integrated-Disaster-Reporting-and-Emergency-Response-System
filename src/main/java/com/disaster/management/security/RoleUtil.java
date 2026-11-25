@@ -1,6 +1,7 @@
 package com.disaster.management.security;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.springframework.security.core.Authentication;
@@ -9,7 +10,8 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 /**
  * Central utility for role normalization and role authorization checks.
- * Supports canonical roles ("Admin", "Citizen", "Responder") and multiple authority variations.
+ * Strict fail-closed design: missing or unknown roles return null / empty authorities.
+ * Never defaults an unknown role to Citizen.
  */
 public final class RoleUtil {
 
@@ -20,11 +22,12 @@ public final class RoleUtil {
     private RoleUtil() {}
 
     /**
-     * Normalizes any role string (e.g. "ROLE_ADMIN", "ADMIN", "admin", "Admin") to canonical form.
+     * Normalizes any role string to canonical form ("Admin", "Citizen", "Responder").
+     * Returns null if missing, empty, or unrecognized (Fail-Closed).
      */
     public static String normalizeRole(String role) {
         if (role == null || role.trim().isEmpty()) {
-            return ROLE_CITIZEN;
+            return null;
         }
         String clean = role.trim();
         if (clean.startsWith("ROLE_")) {
@@ -34,17 +37,22 @@ public final class RoleUtil {
             return ROLE_ADMIN;
         } else if ("responder".equalsIgnoreCase(clean)) {
             return ROLE_RESPONDER;
-        } else {
+        } else if ("citizen".equalsIgnoreCase(clean)) {
             return ROLE_CITIZEN;
+        } else {
+            return null; // Fail closed: never default to Citizen!
         }
     }
 
     /**
      * Generates standard GrantedAuthorities for Spring Security.
-     * Generates both canonical ("ROLE_Admin") and uppercase ("ROLE_ADMIN") for maximum compatibility.
+     * If the role is invalid or null, returns an empty list (fail-closed).
      */
     public static List<SimpleGrantedAuthority> toGrantedAuthorities(String role) {
         String canonical = normalizeRole(role);
+        if (canonical == null) {
+            return Collections.emptyList();
+        }
         List<SimpleGrantedAuthority> authorities = new ArrayList<>();
         authorities.add(new SimpleGrantedAuthority("ROLE_" + canonical));
         authorities.add(new SimpleGrantedAuthority("ROLE_" + canonical.toUpperCase()));
@@ -59,13 +67,17 @@ public final class RoleUtil {
             return false;
         }
         String targetNormalized = normalizeRole(targetRole);
+        if (targetNormalized == null) {
+            return false;
+        }
         for (GrantedAuthority ga : auth.getAuthorities()) {
             String authRole = ga.getAuthority();
             if (authRole == null) continue;
             if (authRole.startsWith("ROLE_")) {
                 authRole = authRole.substring(5);
             }
-            if (normalizeRole(authRole).equalsIgnoreCase(targetNormalized)) {
+            String norm = normalizeRole(authRole);
+            if (norm != null && norm.equalsIgnoreCase(targetNormalized)) {
                 return true;
             }
         }

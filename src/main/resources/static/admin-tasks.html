@@ -303,6 +303,7 @@
     <nav class="cc-nav-bar">
         <ul class="cc-nav-links">
             <li><a href="/admin-notifications.html" class="cc-nav-link" style="color:var(--cc-cyan);"><i class="fas fa-bell"></i> Notification Center</a></li>
+            <li><a href="/admin-messages.html" class="cc-nav-link" style="color:var(--cc-cyan);"><i class="fas fa-comments"></i> Messages & Comms</a></li>
             <li><a href="/admin-dashboard.html" class="cc-nav-link"><i class="fas fa-map-location-dot"></i> Mission Control</a></li>
             <li><a href="/admin-alerts.html" class="cc-nav-link"><i class="fas fa-bullhorn"></i> Emergency Broadcasts</a></li>
             <li><a href="/admin-tasks.html" class="cc-nav-link active"><i class="fas fa-truck-medical"></i> Responder Tasks</a></li>
@@ -555,9 +556,13 @@
             createTask();
         });
 
+        function getAdminToken() {
+            return (window.AuthHelper && window.AuthHelper.getToken('Admin')) || sessionStorage.getItem('token_Admin') || localStorage.getItem('token_Admin');
+        }
+
         function checkAuth() {
-            var token = window.AuthHelper ? window.AuthHelper.getToken() : localStorage.getItem('token');
-            var role = window.AuthHelper ? window.AuthHelper.getRole() : localStorage.getItem('userRole');
+            var token = getAdminToken();
+            var role = (window.AuthHelper && window.AuthHelper.getRole('Admin')) || sessionStorage.getItem('userRole_Admin') || localStorage.getItem('userRole_Admin') || 'Admin';
             
             if (!token) {
                 console.log('No token found, redirecting to login');
@@ -619,7 +624,7 @@
         async function loadTasks() {
             console.log('Loading tasks...');
             try {
-                var token = localStorage.getItem('token');
+                var token = getAdminToken();
                 var res = await fetch('/api/tasks', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
@@ -643,7 +648,7 @@
         async function loadResponders() {
             console.log('Loading responders...');
             try {
-                var token = localStorage.getItem('token');
+                var token = getAdminToken();
                 var res = await fetch('/api/tasks/responders', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
@@ -782,7 +787,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    'Authorization': 'Bearer ' + getAdminToken()
                 },
                 body: JSON.stringify({
                     title: title,
@@ -868,7 +873,7 @@
             
             fetch('/api/tasks/' + selectedTaskId + '/assign?responderEmail=' + encodeURIComponent(selectedResponder), {
                 method: 'PUT',
-                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                headers: { 'Authorization': 'Bearer ' + getAdminToken() }
             })
             .then(function(res) { return res.json(); })
             .then(function(data) {
@@ -894,7 +899,7 @@
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    'Authorization': 'Bearer ' + getAdminToken()
                 },
                 body: JSON.stringify({ status: status })
             })
@@ -930,7 +935,7 @@
             
             fetch('/api/tasks/' + taskId, {
                 method: 'DELETE',
-                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                headers: { 'Authorization': 'Bearer ' + getAdminToken() }
             })
             .then(function(res) { return res.json(); })
             .then(function(data) {
@@ -955,7 +960,7 @@
         async function loadResponderStats() {
             console.log('Loading responder stats...');
             try {
-                var token = localStorage.getItem('token');
+                var token = getAdminToken();
                 var res = await fetch('/api/auth/responders/by-zone', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
@@ -1015,7 +1020,7 @@
         
         async function loadAllResponders() {
             try {
-                var token = localStorage.getItem('token');
+                var token = getAdminToken();
                 var res = await fetch('/api/auth/responders/all', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
@@ -1049,7 +1054,7 @@
         }
         
         function viewResponderDetails(email) {
-            var token = localStorage.getItem('token');
+            var token = getAdminToken();
             fetch('/api/auth/responders/all', {
                 headers: { 'Authorization': 'Bearer ' + token }
             })
@@ -1122,7 +1127,7 @@
         }
 
         async function loadCitizenReports() {
-            var token = localStorage.getItem('token');
+            var token = getAdminToken();
             var container = document.getElementById('citizenReportsContainer');
             if (!container) return;
 
@@ -1247,7 +1252,7 @@
         }
 
         async function validateCitizenReport(reportId) {
-            var token = localStorage.getItem('token');
+            var token = getAdminToken();
             try {
                 var res = await fetch('/api/citizen-reports/' + reportId + '/acknowledge', {
                     method: 'PUT',
@@ -1265,7 +1270,7 @@
         }
 
         async function archiveCitizenReport(reportId) {
-            var token = localStorage.getItem('token');
+            var token = getAdminToken();
             try {
                 var res = await fetch('/api/citizen-reports/' + reportId + '/archive', {
                     method: 'PUT',
@@ -1298,7 +1303,7 @@
 
             if (!confirmed) return;
 
-            var token = localStorage.getItem('token');
+            var token = getAdminToken();
             try {
                 var res = await fetch('/api/citizen-reports/' + reportId + '?action=delete', {
                     method: 'DELETE',
@@ -1333,7 +1338,7 @@
 
             if (reason === null) return; // User cancelled
 
-            var token = localStorage.getItem('token');
+            var token = getAdminToken();
             try {
                 var res = await fetch('/api/citizen-reports/' + reportId + '?reason=' + encodeURIComponent(reason || 'Administrative Invalidation'), {
                     method: 'DELETE',
